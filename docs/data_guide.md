@@ -41,7 +41,26 @@ The demo result (13.96σ seizure detection on chb01_03) used no labels, no
 training, and no EEG-specific processing. Try it on any recording and see what
 you find.
 
-Direct download: https://physionet.org/content/chbmit/1.0.0/
+**Navigating the PhysioNet page** (it's not obvious):
+
+1. Go to https://physionet.org/content/chbmit/1.0.0/
+2. Scroll down to the **Files** section
+3. You'll see folders named `chb01` through `chb24` — one per patient
+4. Each folder contains `.edf` recordings and a `chbXX-summary.txt` that lists
+   which recordings contain seizures and at what timestamps
+5. Start with `chb01/chb01_03.edf` — that's the demo recording, seizure at ~2996s
+
+Good recordings to try (all have annotated seizures):
+
+| File | Patient | Seizure window |
+|------|---------|----------------|
+| `chb01/chb01_03.edf` | chb01 | 2996–3036 s |
+| `chb01/chb01_04.edf` | chb01 | 1467–1494 s |
+| `chb02/chb02_16.edf` | chb02 | 130–212 s |
+| `chb03/chb03_01.edf` | chb03 | 362–414 s |
+
+You do not need to know where the seizure is — that's the point. Run SignalForge
+on any recording and look for the anomaly score spike.
 
 Or use the PhysioNet downloader:
 
