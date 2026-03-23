@@ -13,7 +13,7 @@ have a coordinate system based on adelic structure; it almost literally fell out
 I began with just trying to get a coarse fast track calcualtion for uniform
 approximation surfaces.
 
-I finished writing this circa 2008 probably, but I had working dirty code maybe
+I finished writing this,upfpy, circa 2008 probably, but I had working dirty code maybe
 circa 2005 that I used to explore the structure of integer factorization as a
 kind of vector space. That code is pretty dirty too, but it is what I built
 using web tutorials and books, pre-AI:
