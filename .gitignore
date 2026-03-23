@@ -14,8 +14,8 @@ CLAUDE.md
 
 # Domain modules not for distribution
 signalforge/domains/cyber.py
-signalforge/domains/events.py
-examples/run_events.py
+signalforge/domains/kerberos.py
+examples/run_kerberos.py
 
 # Binary array formats
 *.npy
