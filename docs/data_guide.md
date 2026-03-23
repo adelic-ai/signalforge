@@ -37,24 +37,39 @@ Pass `--grain 86400` for year-scale data to use daily bins instead of minute bin
 ### CHB-MIT Scalp EEG (PhysioNet)
 
 The full database contains 24 patients, 983 recordings, 198 annotated seizures.
+The demo result (13.96σ seizure detection on chb01_03) used no labels, no
+training, and no EEG-specific processing. Try it on any recording and see what
+you find.
+
+Direct download: https://physionet.org/content/chbmit/1.0.0/
+
+Or use the PhysioNet downloader:
 
 ```bash
-# Install the PhysioNet downloader
 pip install wfdb
 
-# Download one patient (chb01 is the demo patient, ~1 GB)
+# Single recording (~50 MB)
 python -c "
 import wfdb
 wfdb.dl_database('chbmit', './data/chbmit', records=['chb01/chb01_03'])
 "
 
-# Or download the full corpus (~50 GB) — omit the records argument
+# Full corpus (24 patients, ~50 GB) — omit the records argument
 ```
 
-Direct download: https://physionet.org/content/chbmit/1.0.0/
+Each recording is an EDF file. Convert it to the CSV format SignalForge expects:
 
-Each recording is an EDF file. Use the preprocessing script below to convert
-to the CSV format SignalForge expects.
+```bash
+uv add mne
+uv run python examples/edf_to_rms_csv.py data/chbmit/chb01/chb01_03.edf
+# outputs: chb01_03_eeg_rms.csv
+```
+
+Then run the pipeline:
+
+```bash
+uv run python examples/run_eeg.py --csv chb01_03_eeg_rms.csv
+```
 
 ### INTERMAGNET geomagnetic data
 
