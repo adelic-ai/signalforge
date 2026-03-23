@@ -50,7 +50,7 @@ from .pipeline import (
     FeatureBundle,
 )
 from .pipeline.dag import Pipeline
-from .lattice import SamplingPlan, factorize, FlipFlop
+from .lattice import SamplingPlan, factorize, FlipFlop, horizon_for
 from .lattice.neighborhood import neighborhood, neighborhood_from_vector, Neighborhood
 from . import domains
 from .pipeline import operators as ops
@@ -117,6 +117,7 @@ __all__ = [
     "SamplingPlan",
     "factorize",
     "FlipFlop",
+    "horizon_for",
     # Neighborhood
     "neighborhood",
     "neighborhood_from_vector",
