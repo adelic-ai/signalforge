@@ -29,6 +29,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
+import pandas as pd
 
 from ..lattice.sampling import SamplingPlan
 from .surface import Surface
@@ -156,21 +157,12 @@ def _ewma(arr: np.ndarray, alpha: float = 0.3) -> np.ndarray:
 
     NaN values are skipped — the last non-NaN EWMA value is carried forward.
     """
-    result = np.full_like(arr, np.nan)
-    n_scales, n_time = arr.shape
-    for i in range(n_scales):
-        last = np.nan
-        for t in range(n_time):
-            v = arr[i, t]
-            if np.isnan(v):
-                result[i, t] = last
-            elif np.isnan(last):
-                last = v
-                result[i, t] = v
-            else:
-                last = alpha * v + (1.0 - alpha) * last
-                result[i, t] = last
-    return result
+    # Transpose so time is on rows (pandas operates along axis=0).
+    # ignore_na=True skips NaN in weight calculation; ffill carries the last
+    # computed EWMA forward at NaN positions, matching the original behaviour.
+    df = pd.DataFrame(arr.T)
+    result = df.ewm(alpha=alpha, adjust=False, ignore_na=True).mean().ffill()
+    return result.to_numpy().T
 
 
 def _rolling_median(arr: np.ndarray, window: int = 5) -> np.ndarray:
@@ -178,20 +170,11 @@ def _rolling_median(arr: np.ndarray, window: int = 5) -> np.ndarray:
     Rolling median along the time axis (axis=1).
 
     Uses a lookback window of `window` time steps. NaN values within the
-    window are ignored. Result is NaN where fewer than 2 values are available.
+    window are ignored. Result is NaN where no values are available.
     """
-    result = np.full_like(arr, np.nan)
-    n_scales, n_time = arr.shape
-    for i in range(n_scales):
-        for t in range(n_time):
-            start = max(0, t - window + 1)
-            window_vals = arr[i, start:t + 1]
-            valid = window_vals[~np.isnan(window_vals)]
-            if len(valid) >= 2:
-                result[i, t] = float(np.median(valid))
-            elif len(valid) == 1:
-                result[i, t] = valid[0]
-    return result
+    df = pd.DataFrame(arr.T)
+    result = df.rolling(window, min_periods=1).median()
+    return result.to_numpy().T
 
 
 def _mad_zscore(residual: np.ndarray) -> np.ndarray:
