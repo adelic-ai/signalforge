@@ -175,3 +175,5 @@ Drop it in `signalforge/domains/equities.py`. That's the entire domain.
 | `signalforge/domains/eeg.py` | Clinical EEG at 256 Hz | 921600 samples (1 hr) | 256 samples (1 s) |
 
 `intermagnet.py` is the canonical reference. Read it first.
+
+For adding derived channels, custom cleaning, and other pipeline operators, see [operators_guide.md](operators_guide.md).
