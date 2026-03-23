@@ -24,6 +24,26 @@ Your domain is next.
 
 ---
 
+## Just want specific windows?
+
+If you know which windows you need, let `horizon_for()` compute the geometry
+for you:
+
+```python
+import signalforge as sf
+
+# I need 7s, 30s, and 60s windows at 1s resolution
+plan = sf.SamplingPlan(sf.horizon_for([7, 30, 60], grain=1), grain=1)
+```
+
+`horizon_for()` returns the smallest horizon that contains all your requested
+windows as lattice members. The lattice then fills in any intermediate scales
+automatically. No manual horizon calculation needed.
+
+For most domain masters writing a full domain module, read on.
+
+---
+
 ## What a domain actually is
 
 A single Python file in `signalforge/domains/` that implements one function:
