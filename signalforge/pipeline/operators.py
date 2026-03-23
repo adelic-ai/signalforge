@@ -34,7 +34,7 @@ ops.derive(name, fn)
 ops.derive_temporal(name, fn)
     Full time-axis derivation. fn receives {channel: np.ndarray}, returns np.ndarray.
 
-        ops.derive_temporal("lag5", lambda ch: ch["A"] - np.roll(ch["A"], 5))
+        ops.derive_temporal("flux_lag5", lambda ch: ch["flux"] - np.roll(ch["flux"], 5))
 """
 
 from __future__ import annotations
@@ -269,8 +269,8 @@ def derive(
     Examples
     --------
         ops.derive("flux_ratio", lambda ch: ch["flux_x"] / max(ch["flux_z"], 1.0))
-        ops.derive("component_delta",     lambda ch: ch["flux_x"] - ch["flux_z"])
-        ops.derive("fused",          lambda ch: 0.6 * ch["A"] + 0.4 * ch["B"])
+        ops.derive("component_delta", lambda ch: ch["flux_x"] - ch["flux_z"])
+        ops.derive("fused",           lambda ch: 0.6 * ch["A"] + 0.4 * ch["B"])
     """
     def _derive(binned: list) -> list:
         from collections import defaultdict
@@ -337,11 +337,11 @@ def derive_temporal(
         import numpy as np
 
         ops.derive_temporal("flux_lag5",
-            lambda ch: ch["flux_x"] - np.roll(ch["flux_x"], 5))
+            lambda ch: ch["flux"] - np.roll(ch["flux"], 5))
 
         ops.derive_temporal("flux_residual",
-            lambda ch: ch["flux_x"] - np.convolve(
-                ch["flux_x"], np.ones(10)/10, mode="same"))
+            lambda ch: ch["flux"] - np.convolve(
+                ch["flux"], np.ones(10)/10, mode="same"))
     """
     def _derive_temporal(binned: list) -> list:
         from collections import defaultdict

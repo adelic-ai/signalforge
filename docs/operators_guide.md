@@ -122,7 +122,7 @@ ops.derive(name, fn, metric="derived")
 ))
 ```
 
-**Per-source ratio** (when keys distinguish sources — e.g. station or host):
+**Per-source ratio** (when keys distinguish sources — e.g. station or instrument):
 
 ```python
 .transform(ops.derive(
@@ -155,7 +155,7 @@ import numpy as np
 
 .transform(ops.derive_temporal(
     "flux_lag5",
-    lambda ch: ch["flux_x"] - np.roll(ch["flux_x"], 5)
+    lambda ch: ch["flux"] - np.roll(ch["flux"], 5)
 ))
 ```
 
@@ -165,7 +165,7 @@ first N positions:
 ```python
 lambda ch: np.concatenate([
     np.full(5, np.nan),
-    ch["flux_x"][5:] - ch["flux_x"][:-5]
+    ch["flux"][5:] - ch["flux"][:-5]
 ])
 ```
 
@@ -174,8 +174,8 @@ lambda ch: np.concatenate([
 ```python
 .transform(ops.derive_temporal(
     "flux_residual",
-    lambda ch: ch["flux_x"] - np.convolve(
-        np.nan_to_num(ch["flux_x"]), np.ones(10) / 10, mode="same"
+    lambda ch: ch["flux"] - np.convolve(
+        np.nan_to_num(ch["flux"]), np.ones(10) / 10, mode="same"
     )
 ))
 ```
@@ -210,10 +210,10 @@ bundle = (
           lambda ch: ch["flux_x"] / max(ch["flux_z"], 1.0)
       ))
       .transform(ops.derive_temporal(
-          "ratio_lag10",
+          "flux_ratio_lag10",
           lambda ch: ch["flux_ratio"] - np.roll(ch["flux_ratio"], 10)
       ))
-      .transform(ops.keep_channels("flux_ratio", "ratio_lag10"))
+      .transform(ops.keep_channels("flux_ratio", "flux_ratio_lag10"))
       .measure()
       .engineer()
       .assemble()
