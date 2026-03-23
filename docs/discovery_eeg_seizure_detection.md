@@ -136,10 +136,19 @@ deep learning baselines? The result here suggests the answer may be yes.
 ## Reproducibility
 
 ```bash
-# From repo root
-python docs/eeg_chbmit/edf_to_helix_signal.py   # requires mne
-python docs/run_eeg.py
+# 1. Download the recording from PhysioNet (see data_guide.md for navigation help)
+#    https://physionet.org/content/chbmit/1.0.0/  →  chb01/chb01_03.edf
+
+# 2. Convert EDF to CSV
+uv add mne
+uv run python examples/edf_to_rms_csv.py chb01_03.edf
+# outputs: chb01_03_eeg_rms.csv
+
+# 3. Run the pipeline
+uv run python examples/run_eeg.py --csv chb01_03_eeg_rms.csv
 ```
+
+To run on other recordings or the full corpus, see [data_guide.md](data_guide.md).
 
 Raw data: CHB-MIT Scalp EEG Database v1.0.0
 https://physionet.org/content/chbmit/1.0.0/
