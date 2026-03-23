@@ -1,0 +1,45 @@
+[project]
+name = "adelic-signalforge"
+version = "0.1.0"
+description = "P-adic multiscale signal processing pipeline"
+readme = "README.md"
+requires-python = ">=3.12"
+license = {text = "BUSL-1.1"}
+authors = [
+    {name = "Shun Richard Honda", email = "signalforge@adelic.ai"},
+]
+keywords = ["signal processing", "p-adic", "multiscale", "EEG", "time series", "anomaly detection"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Typing :: Typed",
+]
+dependencies = [
+    "numpy>=2.0",
+    "pandas>=2.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/adelic/signalforge"
+Documentation = "https://github.com/adelic/signalforge/tree/main/docs"
+"Bug Tracker" = "https://github.com/adelic/signalforge/issues"
+
+[project.scripts]
+signalforge = "signalforge.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["signalforge"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
