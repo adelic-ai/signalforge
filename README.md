@@ -68,7 +68,7 @@ Full result: [docs/discovery_eeg_seizure_detection.md](docs/discovery_eeg_seizur
 
 Business Source License 1.1. See [LICENSE](LICENSE).
 
-Free for non-commercial use (research, personal projects, evaluation). Commercial use requires a license from Adelic — contact [signalforge@adelic.ai](mailto:signalforge@adelic.ai).
+Free for non-commercial use (research, personal projects, evaluation). Commercial use requires a license from Adelic — contact [shun.honda@adelic.org](mailto:shun.honda@adelic.org).
 
 Converts to Apache 2.0 on 2029-03-22.
 

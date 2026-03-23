@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 license = {text = "BUSL-1.1"}
 authors = [
-    {name = "Shun Richard Honda", email = "signalforge@adelic.ai"},
+    {name = "Shun Richard Honda", email = "shun.honda@adelic.org"},
 ]
 keywords = ["signal processing", "p-adic", "multiscale", "EEG", "time series", "anomaly detection"]
 classifiers = [
