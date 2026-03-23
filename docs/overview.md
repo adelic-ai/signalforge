@@ -31,6 +31,13 @@ the coordinate space) and `grain` (the finest meaningful unit). All valid
 measurement windows must divide `horizon`. That constraint is what makes the
 surfaces invariant.
 
+The surface is not just a feature matrix. It is a discretized integral transform
+over scale space, with the lattice as the quadrature rule. As `grain` approaches
+the native resolution of the data, the partitioning gets finer and finer — the
+limit recovers the full signal. The `horizon` is the upper bound of integration.
+The lattice determines the quadrature points, not arbitrarily, but by the
+arithmetic structure of the prime factorization.
+
 ---
 
 ## The name
