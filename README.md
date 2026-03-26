@@ -4,6 +4,18 @@ Multiscale signal processing pipeline built on the p-adic divisibility lattice. 
 
 ---
 
+## What counts as a signal
+
+SignalForge works on any ordered sequence. Time is not required.
+
+**No timestamps**: If your data is a sequence of events with no time component — log entries, transactions, genomic positions, ranked items — each event is already one bin. Feed it directly. Set `grain=1`.
+
+**Time-ordered data**: The standard path bins by the smallest meaningful time unit (`grain`). A second view is also available: collapsing the time axis entirely, treating each event as the next position in an ordered sequence regardless of when it occurred. This can reveal structure that time-binning distributes across windows. Both views are valid and often complementary.
+
+Within a time-ordered sequence, a finer ordering axis may exist — a sequence number, monotonic counter, or sub-second timestamp — that places events more precisely. Whether that resolution is meaningful is a domain judgment. `grain` is where that decision is encoded.
+
+---
+
 ## Install
 
 ```bash

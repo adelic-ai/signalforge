@@ -15,6 +15,7 @@ name = "adelic-signalforge"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "binjamin" },
     { name = "numpy" },
     { name = "pandas" },
 ]
@@ -27,6 +28,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "binjamin", editable = "../binjamin" },
     { name = "numpy", specifier = ">=2.0" },
     { name = "pandas", specifier = ">=2.0" },
 ]
@@ -34,6 +36,23 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "pytest", specifier = ">=9.0.2" },
+    { name = "twine", specifier = ">=6.2.0" },
+]
+
+[[package]]
+name = "binjamin"
+version = "0.1.0"
+source = { editable = "../binjamin" }
+dependencies = [
+    { name = "numpy" },
+]
+
+[package.metadata]
+requires-dist = [{ name = "numpy", specifier = ">=1.24" }]
+
+[package.metadata.requires-dev]
+dev = [
+    { name = "pytest", specifier = ">=8.0" },
     { name = "twine", specifier = ">=6.2.0" },
 ]
 

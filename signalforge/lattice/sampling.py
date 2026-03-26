@@ -31,6 +31,8 @@ from functools import reduce
 from math import gcd
 from typing import Sequence, Tuple, Union
 
+import binjamin as bj
+
 from .coordinates import (
     Coordinate,
     factorize,
@@ -73,6 +75,59 @@ def horizon_for(windows: Sequence[int], grain: int) -> int:
         raise ValueError("windows must be non-empty")
     lcm = reduce(lambda a, b: a * b // gcd(a, b), windows)
     return lcm
+
+
+def grain_from_orders(orders: Sequence[int], horizon: int) -> int:
+    """
+    Derive a lattice-compatible grain from a sequence of primary_order values.
+
+    Two-step approach:
+      1. Freedman-Diaconis estimates the natural bin width from inter-event
+         intervals: h = 2 * IQR * n^(-1/3)
+      2. smallest_divisor_gte(horizon, h) snaps the estimate to the nearest
+         divisor of horizon, ensuring arithmetic coherence with the lattice.
+
+    Fallbacks
+    ---------
+    - Zero IQR (uniformly spaced events): use the minimum observed interval.
+    - Fewer than 3 intervals: use the minimum observed interval directly.
+    - Estimate rounds to zero: return 1.
+
+    Parameters
+    ----------
+    orders : sequence of int
+        primary_order values from a CanonicalSequence. Need not be sorted.
+    horizon : int
+        The horizon of the SamplingPlan being constructed.
+
+    Returns
+    -------
+    int
+        A grain value that divides horizon (via cbin derivation) and is
+        consistent with the natural resolution of the data.
+
+    Examples
+    --------
+    >>> grain_from_orders(range(0, 3600, 60), horizon=86400)
+    60
+    """
+    import numpy as np
+    intervals = np.diff(np.sort(np.asarray(orders, dtype=np.int64)))
+    intervals = intervals[intervals > 0]
+
+    if len(intervals) == 0:
+        h = 1
+    elif len(intervals) < 3:
+        h = max(1, int(intervals.min()))
+    else:
+        q75, q25 = np.percentile(intervals, [75, 25])
+        if q75 == q25:
+            # Uniform spacing — FD is degenerate, use minimum interval
+            h = max(1, int(intervals.min()))
+        else:
+            h = max(1, round(bj.freedman_diaconis(intervals)))
+
+    return smallest_divisor_gte(horizon, int(h))
 
 
 # ---------------------------------------------------------------------------

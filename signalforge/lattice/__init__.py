@@ -22,5 +22,5 @@ from .coordinates import (
     set_factorization_backend, clear_factorization_cache, factorization_cache_size,
 )
 from .flipflop import FlipFlop
-from .sampling import SamplingPlan, horizon_for
+from .sampling import SamplingPlan, horizon_for, grain_from_orders
 from .neighborhood import Neighborhood, neighborhood, neighborhood_from_vector
