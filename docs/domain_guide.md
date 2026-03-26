@@ -84,6 +84,13 @@ The smallest unit your data meaningfully supports. Not the raw sample rate —
 the smallest unit you would actually analyze. For 256 Hz EEG, one second (256
 samples). For 1-minute geomagnetic data, one minute (60 seconds).
 
+If your data is unfamiliar and the right grain is not obvious, a future version
+of SignalForge will integrate [binjamin](https://pypi.org/project/binjamin/) to
+estimate it automatically. `binjamin` implements all major bin width estimation
+methods (Freedman-Diaconis, Bayesian blocks, Scott, Knuth, and others) in one
+package. The default will be Freedman-Diaconis, with other methods selectable.
+For now, grain is a declaration — use your domain knowledge.
+
 **3. Which windows does your field already use?**
 
 These become your anchors. Standard clinical EEG epochs are 1s, 4s, 16s, 30s,
