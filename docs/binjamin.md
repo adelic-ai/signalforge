@@ -38,12 +38,13 @@ properties for event-driven or sensor data.
 from signalforge.lattice.sampling import grain_from_orders
 
 grain = grain_from_orders(orders, horizon=86400)
+grain = grain_from_orders(orders, horizon=86400, method="scott")
 ```
 
-It takes a sequence of `primary_order` values and a candidate horizon, and
-returns a grain that is:
+It takes a sequence of `primary_order` values, a candidate horizon, and an
+optional method name, and returns a grain that is:
 
-1. **Statistically grounded** — Freedman-Diaconis estimates the natural bin
+1. **Statistically grounded** — the chosen method estimates the natural bin
    width from the inter-event intervals in the data
 2. **Lattice-compatible** — the estimate is snapped to the nearest divisor of
    the horizon via `smallest_divisor_gte(horizon, estimate)`, ensuring the
@@ -55,9 +56,23 @@ grain_from_orders(range(0, 3600, 60), horizon=86400)
 # → 60
 ```
 
-**Fallbacks**: if the IQR is zero (uniform spacing), the minimum observed
-interval is used. If fewer than 3 intervals are available, the minimum
-interval is used directly.
+**Available methods:**
+
+| Method | Notes |
+|--------|-------|
+| `freedman_diaconis` | Default. Robust, no distributional assumption |
+| `auto` | `max(freedman_diaconis, sturges)` — numpy default |
+| `scott` | Assumes normality, sensitive to outliers |
+| `sturges` | Simple, tends to underbin for large n |
+| `rice` | No assumption, more bins than Sturges |
+| `sqrt` | Simplest, exploratory use |
+| `doane` | Sturges adjusted for skewness |
+| `stone` | Leave-one-out cross-validation; slower, accurate |
+| `knuth` | Maximum likelihood; optimal for uniform bins |
+| `gcd_interval` | Exact GCD of intervals — lattice-native but brittle |
+
+**Fallbacks**: if fewer than 3 intervals are available, the minimum observed
+interval is used directly regardless of method.
 
 ---
 

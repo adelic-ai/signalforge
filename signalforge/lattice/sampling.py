@@ -77,19 +77,36 @@ def horizon_for(windows: Sequence[int], grain: int) -> int:
     return lcm
 
 
-def grain_from_orders(orders: Sequence[int], horizon: int) -> int:
+_GRAIN_METHODS = (
+    "freedman_diaconis",
+    "auto",
+    "scott",
+    "sturges",
+    "rice",
+    "sqrt",
+    "doane",
+    "stone",
+    "knuth",
+    "gcd_interval",
+)
+
+
+def grain_from_orders(
+    orders: Sequence[int],
+    horizon: int,
+    method: str = "freedman_diaconis",
+) -> int:
     """
     Derive a lattice-compatible grain from a sequence of primary_order values.
 
     Two-step approach:
-      1. Freedman-Diaconis estimates the natural bin width from inter-event
-         intervals: h = 2 * IQR * n^(-1/3)
+      1. A binjamin scalar method estimates the natural bin width from
+         inter-event intervals.
       2. smallest_divisor_gte(horizon, h) snaps the estimate to the nearest
          divisor of horizon, ensuring arithmetic coherence with the lattice.
 
     Fallbacks
     ---------
-    - Zero IQR (uniformly spaced events): use the minimum observed interval.
     - Fewer than 3 intervals: use the minimum observed interval directly.
     - Estimate rounds to zero: return 1.
 
@@ -99,6 +116,18 @@ def grain_from_orders(orders: Sequence[int], horizon: int) -> int:
         primary_order values from a CanonicalSequence. Need not be sorted.
     horizon : int
         The horizon of the SamplingPlan being constructed.
+    method : str, default "freedman_diaconis"
+        Bin width estimation method. One of:
+            "freedman_diaconis"  — 2·IQR·n^(-1/3); robust, no distributional assumption
+            "auto"               — max(freedman_diaconis, sturges)
+            "scott"              — 3.5·σ·n^(-1/3); assumes normality
+            "sturges"            — (max-min)/(1+log₂n); simple, assumes normality
+            "rice"               — (max-min)/(2·n^(1/3))
+            "sqrt"               — (max-min)/√n; simplest
+            "doane"              — Sturges adjusted for skewness
+            "stone"              — leave-one-out cross-validation; slower, accurate
+            "knuth"              — maximum likelihood; optimal for uniform bins
+            "gcd_interval"       — GCD of intervals; exact but brittle
 
     Returns
     -------
@@ -110,7 +139,14 @@ def grain_from_orders(orders: Sequence[int], horizon: int) -> int:
     --------
     >>> grain_from_orders(range(0, 3600, 60), horizon=86400)
     60
+    >>> grain_from_orders(range(0, 3600, 60), horizon=86400, method="scott")
+    60
     """
+    if method not in _GRAIN_METHODS:
+        raise ValueError(
+            f"unknown method {method!r}. Choose from: {', '.join(_GRAIN_METHODS)}"
+        )
+
     import numpy as np
     intervals = np.diff(np.sort(np.asarray(orders, dtype=np.int64)))
     intervals = intervals[intervals > 0]
@@ -120,12 +156,8 @@ def grain_from_orders(orders: Sequence[int], horizon: int) -> int:
     elif len(intervals) < 3:
         h = max(1, int(intervals.min()))
     else:
-        q75, q25 = np.percentile(intervals, [75, 25])
-        if q75 == q25:
-            # Uniform spacing — FD is degenerate, use minimum interval
-            h = max(1, int(intervals.min()))
-        else:
-            h = max(1, round(bj.freedman_diaconis(intervals)))
+        estimator = getattr(bj, method)
+        h = max(1, round(estimator(intervals)))
 
     return smallest_divisor_gte(horizon, int(h))
 

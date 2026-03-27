@@ -91,13 +91,14 @@ If your data is unfamiliar and the right grain is not obvious, use
 from signalforge.lattice.sampling import grain_from_orders
 
 orders = [r.primary_order for r in records]
-grain  = grain_from_orders(orders, horizon=horizon)
+grain  = grain_from_orders(orders, horizon=horizon)                      # Freedman-Diaconis (default)
+grain  = grain_from_orders(orders, horizon=horizon, method="knuth")      # or any other method
 ```
 
-This uses Freedman-Diaconis bin width estimation (via
+This estimates the natural bin width from inter-event intervals (via
 [binjamin](https://pypi.org/project/binjamin/)) and snaps the result to the
 nearest divisor of the horizon, so the grain is always lattice-compatible.
-See [docs/binjamin.md](binjamin.md) for details.
+See [docs/binjamin.md](binjamin.md) for the full method list.
 
 **3. Which windows does your field already use?**
 
