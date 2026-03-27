@@ -81,10 +81,11 @@ sense SignalForge requires.
 | Boundary artifacts | Possible | Possible | N/A | None (by construction) |
 | Computation | O(H log H) per scale | O(H) | O(H²) typical | O(H · τ(H)), nearly linear |
 
-The scales in SignalForge are not chosen. They are forced by `H`: given a
-horizon and grain, the valid windows are exactly the divisors of `H`, and
-the lattice structure is a consequence of unique prime factorization. The
-analyst declares the geometry; the arithmetic determines the measurement space.
+The scales in SignalForge are not chosen. Given windows and a grain, the horizon
+is derived as `lcm(windows + [grain])`, and the valid windows are exactly the
+divisors of that horizon. The lattice structure is a consequence of unique prime
+factorization. The analyst declares the windows and grain; the arithmetic
+determines the measurement space.
 
 ---
 

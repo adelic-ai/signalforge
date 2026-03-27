@@ -2,12 +2,12 @@
 
 SignalForge does not choose window sizes. It derives them.
 
-Given two declarations — a **grain** (the smallest meaningful unit — a position,
-step, or time interval) and a **horizon** (the total sequence length in units of
-grain) — the valid window sizes
-are exactly the divisors of the horizon. This is not a design choice. It is a
-consequence of requiring that windows partition the signal without remainder and
-nest into each other without overlap.
+Declare a **grain** (the pixel — the smallest meaningful unit: a position, step,
+or time interval) and the **windows** you want to compute. The horizon is derived
+automatically as `lcm(windows + [grain])`, and the valid window sizes are exactly
+the divisors of that horizon. This is not a design choice. It is a consequence of
+requiring that windows partition the sequence without remainder and nest into each
+other without overlap.
 
 ---
 

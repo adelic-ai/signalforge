@@ -13,63 +13,52 @@ the grain automatically when the data can inform that choice.
 
 ## What binjamin is
 
-`binjamin` is a bin width estimation library. It implements all major
-statistical methods for choosing an optimal histogram bin width in one package:
+`binjamin` is a bin width estimation library implementing all major statistical
+methods in one package. Every function takes a 1-D array and returns a scalar
+bin width estimate.
 
-| Method | Description |
-|--------|-------------|
-| Freedman-Diaconis | `h = 2 × IQR × n⁻¹/³` — robust to outliers, default choice |
-| Bayesian blocks | Variable-width bins that adapt to local event density |
-| Scott | `h = 3.49 × σ × n⁻¹/³` — assumes normality |
-| Knuth | Maximum likelihood bin count via Bayesian model selection |
-| Sturges | `k = ⌈log₂(n)⌉ + 1` — fast, less accurate for large n |
+| Method | Notes |
+|--------|-------|
+| `freedman_diaconis` | `h = 2·IQR·n⁻¹/³` — robust, no distributional assumption. Default. |
+| `auto` | `max(freedman_diaconis, sturges)` — numpy default rule |
+| `scott` | `h = 3.5·σ·n⁻¹/³` — assumes normality, sensitive to outliers |
+| `sturges` | `(max-min)/(1+log₂n)` — simple, underbins for large n |
+| `rice` | `(max-min)/(2·n¹/³)` — no assumption, more bins than Sturges |
+| `sqrt` | `(max-min)/√n` — simplest, exploratory use |
+| `doane` | Sturges adjusted for skewness |
+| `stone` | Leave-one-out cross-validation — slower, accurate, no assumption |
+| `knuth` | Maximum likelihood — optimal for uniform bins |
+| `gcd_interval` | GCD of intervals — exact but brittle on irregular data |
 
-Freedman-Diaconis is the default in SignalForge because it makes no assumption
-about the distribution shape and is stable under outliers — both important
-properties for event-driven or sensor data.
+Freedman-Diaconis is the default because it makes no distributional assumption
+and is stable under outliers — both important for event-driven or sensor data.
 
 ---
 
 ## How grain_from_orders works
 
-`grain_from_orders` is available in `signalforge.lattice.sampling`:
+`grain_from_orders` estimates the grain from the inter-event intervals in a
+sequence of `primary_order` values:
 
 ```python
 from signalforge.lattice.sampling import grain_from_orders
 
-grain = grain_from_orders(orders, horizon=86400)
-grain = grain_from_orders(orders, horizon=86400, method="scott")
+g = grain_from_orders(orders)                   # Freedman-Diaconis (default)
+g = grain_from_orders(orders, method="knuth")   # any other method
 ```
 
-It takes a sequence of `primary_order` values, a candidate horizon, and an
-optional method name, and returns a grain that is:
-
-1. **Statistically grounded** — the chosen method estimates the natural bin
-   width from the inter-event intervals in the data
-2. **Lattice-compatible** — the estimate is snapped to the nearest divisor of
-   the horizon via `smallest_divisor_gte(horizon, estimate)`, ensuring the
-   grain divides the horizon cleanly
+Without a `horizon` argument, it returns the raw rounded estimate. This is
+the recommended form — pass the result directly to `SamplingPlan.from_windows`:
 
 ```python
-# Uniformly spaced events at 60-second intervals
-grain_from_orders(range(0, 3600, 60), horizon=86400)
-# → 60
+from signalforge.lattice.sampling import SamplingPlan
+
+plan = SamplingPlan.from_windows([g*5, g*15, g*60, g*360], grain=g)
 ```
 
-**Available methods:**
-
-| Method | Notes |
-|--------|-------|
-| `freedman_diaconis` | Default. Robust, no distributional assumption |
-| `auto` | `max(freedman_diaconis, sturges)` — numpy default |
-| `scott` | Assumes normality, sensitive to outliers |
-| `sturges` | Simple, tends to underbin for large n |
-| `rice` | No assumption, more bins than Sturges |
-| `sqrt` | Simplest, exploratory use |
-| `doane` | Sturges adjusted for skewness |
-| `stone` | Leave-one-out cross-validation; slower, accurate |
-| `knuth` | Maximum likelihood; optimal for uniform bins |
-| `gcd_interval` | Exact GCD of intervals — lattice-native but brittle |
+`from_windows` derives `horizon = lcm(windows + [g])`, guaranteeing `g`
+divides the horizon exactly. Every binjamin method produces a valid grain —
+the lattice is always correct regardless of which estimator was used.
 
 **Fallbacks**: if fewer than 3 intervals are available, the minimum observed
 interval is used directly regardless of method.
@@ -82,8 +71,7 @@ interval is used directly regardless of method.
 
 - Your data arrives at irregular intervals and you need to choose a bin size
 - You are writing a new domain and are unsure what grain is appropriate
-- You want the grain to adapt to the actual resolution of the data rather
-  than a fixed declaration
+- You want the grain to adapt to the actual resolution of the data
 
 For data with a known, fixed cadence (EEG at 256 Hz, INTERMAGNET at 1 minute,
 equity bars at 1 minute), declare the grain directly — `grain_from_orders`
@@ -94,52 +82,28 @@ adds no value when the cadence is already known.
 ## Example: unknown-cadence event log
 
 ```python
-import signalforge as sf
-from signalforge.lattice.sampling import grain_from_orders
+from signalforge.lattice.sampling import grain_from_orders, SamplingPlan
 
-# Load raw event timestamps (e.g. from a log file)
 orders = [r.primary_order for r in records]
-horizon = 86400  # one day
 
-grain = grain_from_orders(orders, horizon=horizon)
-plan  = sf.SamplingPlan(horizon, grain)
+g    = grain_from_orders(orders)
+plan = SamplingPlan.from_windows(
+    windows=[g*5, g*20, g*100, g*500],
+    grain=g,
+)
 
-print(f"Estimated grain: {grain}s")
-print(f"Windows: {plan.windows}")
+print(f"Estimated grain : {g}")
+print(f"Derived horizon : {plan.horizon}")
+print(f"Windows         : {plan.windows}")
 ```
 
-The pipeline then runs without modification. The grain estimate is reproducible
-— given the same data and horizon, `grain_from_orders` always returns the same
-value.
+The grain estimate is reproducible — given the same data and method,
+`grain_from_orders` always returns the same value.
 
 ---
 
----
-
-## Using the grain estimate with from_windows
-
-The recommended workflow passes the raw grain estimate — no snapping — directly
-to `SamplingPlan.from_windows()`, which derives the horizon automatically:
-
-```python
-from signalforge.lattice.sampling import grain_from_orders
-from signalforge.lattice.sampling import SamplingPlan
-
-g    = grain_from_orders(orders)                    # raw estimate, no horizon needed
-plan = SamplingPlan.from_windows([7, 30, 90, 360], grain=g)
-```
-
-`from_windows` computes `horizon = lcm(windows + [grain])`, guaranteeing that
-`grain | horizon` exactly. No snapping. The grain the data suggests is the grain
-used. See [design_grain_snapping.md](design_grain_snapping.md) for the full
-explanation.
-
-If you need the old snapping behavior (grain snapped to a divisor of a fixed
-horizon), pass `horizon` explicitly:
-
-```python
-g = grain_from_orders(orders, horizon=86400)   # snapped, backward-compatible
-```
+For the design rationale behind `from_windows` and why the derived horizon
+costs nothing, see [design_grain_snapping.md](design_grain_snapping.md).
 
 ---
 

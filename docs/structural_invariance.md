@@ -15,9 +15,9 @@ statistics of sequence `x` within windows of size `d` — not on where in the
 sequence those windows occur, not on the absolute scale of the data, and not
 on anything outside `x` itself.
 
-When two signals share the same `horizon` and `grain`, they have the same `H`,
-and therefore the same `Div(H)` — the same set of window sizes in the same
-lattice arrangement. The feature at scale `d` measures the same structural
+When two sequences are processed with the same `SamplingPlan` — same windows
+and grain, therefore the same derived `H` — they have the same `Div(H)`: the
+same set of window sizes in the same lattice arrangement. The feature at scale `d` measures the same structural
 property in both signals: the same window size, the same position in the
 scale hierarchy, the same relationship to every other scale.
 
