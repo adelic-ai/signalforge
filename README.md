@@ -9,6 +9,36 @@ No labels. No domain-specific processing. No normalization between recordings.
 
 ---
 
+## Where this came from
+
+Computing a signal at multiple window sizes used to mean running each window
+separately — re-read the data, re-aggregate, re-score. Adding a window added
+another full pass. Adding a feature multiplied the cost again. The pipeline was
+doing something that looked like integration, badly.
+
+The cleaner way is hiding in plain sight in any calculus course. Integration
+starts with Riemann sums — partition the domain, sum the rectangles — and the
+punchline is: take the limit as the partition gets infinitely fine and you get
+the exact area under the curve. That is the triumphant conclusion of the whole
+story. But for a discrete signal there is no limit to take. The grain *is* the
+finest partition. Read the data once at grain resolution, aggregate upward, and
+every coarser window is already determined by the finer values beneath it —
+nothing to recompute. You get the same compositional structure that makes
+integration work, without needing the limit that makes it exact in the
+continuous case, because at the grain you are already exact.
+
+The arithmetic that makes this exact is divisibility. A window tiles a sequence
+cleanly if and only if it divides the sequence length. Windows nest without
+remainder if and only if one divides the other. The set of valid windows for a
+given grain and horizon is the divisor lattice of that horizon — a structure
+from number theory that turns out to be exactly the right coordinate system for
+multi-scale signal analysis.
+
+That is what SignalForge is: multi-scale analysis built on the arithmetic that
+was always implicit in windowed computation, made explicit and used directly.
+
+---
+
 ## What counts as a signal
 
 SignalForge works on any ordered sequence. Time is not required.
@@ -42,7 +72,7 @@ uv run signalforge run eeg path/to/data.csv    # run on your data
 
 ---
 
-## What it does
+## Demonstrated capabilities
 
 SignalForge detected a clinical epileptic seizure at **13.96σ** on CHB-MIT
 EEG data — with no training data, no labels, and no EEG-specific code. The
@@ -109,9 +139,10 @@ SignalForge ships with two domains: `eeg` (clinical EEG) and `intermagnet`
 (geomagnetic observatory). To add your own, write a single Python file in
 `signalforge/domains/`.
 
-Declare a `horizon` and a `grain`, let the lattice enumerate valid windows,
-select the ones meaningful for your data, return a `SamplingPlan`. Everything
-downstream runs without modification.
+Specify the windows meaningful for your data and a grain — either declared
+directly when the cadence is known, or estimated from the data via
+[`grain_from_orders`](docs/binjamin.md). Pass both to `from_windows` and the
+lattice is determined. Everything downstream runs without modification.
 
 - [docs/domain_guide.md](docs/domain_guide.md) — how to write a domain
 - [docs/data_guide.md](docs/data_guide.md) — downloading data, running examples
@@ -136,6 +167,7 @@ measurement space with guaranteed cross-recording comparability.
 - [docs/empirical_results.md](docs/empirical_results.md) — EEG and geomagnetic results, reproducibility
 - [docs/sampling_domain.md](docs/sampling_domain.md) — why divisors, the lattice, computational efficiency
 - [docs/structural_invariance.md](docs/structural_invariance.md) — why features are directly comparable
+- [docs/scale_space.md](docs/scale_space.md) — the surface, gradients, anomaly geometry, and where this is going
 - [docs/comparison.md](docs/comparison.md) — STFT, wavelets, EMD, and this
 - [docs/overview.md](docs/overview.md) — pipeline detail, the mathematics, the name
 - [docs/domain_guide.md](docs/domain_guide.md) — writing a domain
