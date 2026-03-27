@@ -114,5 +114,20 @@ value.
 
 ---
 
+---
+
+## The snapping constraint
+
+`grain_from_orders` always snaps the estimate to the nearest divisor of the
+horizon. This is what makes the grain lattice-compatible and unlocks the
+aggregation and structural invariance guarantees — but it means the raw
+estimate is nudged, which may not always be desirable.
+
+Free-grain mode (no snapping, arbitrary windows, prefix-sum computation) is
+not yet implemented. For the design tradeoffs and how to provide feedback, see
+[design_grain_snapping.md](design_grain_snapping.md).
+
+---
+
 *binjamin source: [github.com/adelic-ai/binjamin](https://github.com/adelic-ai/binjamin)*
 *binjamin on PyPI: [pypi.org/project/binjamin](https://pypi.org/project/binjamin)*
