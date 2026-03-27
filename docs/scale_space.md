@@ -86,13 +86,13 @@ geometry.
 
 ## Where SignalForge is going
 
-The surface and its geometry suggest a natural next step: a detection layer
-that treats anomalies as geometric objects rather than threshold crossings.
-The scale signature, the gradient field, and the path consistency test are
-not just descriptive tools — they are the inputs to a structured detection
-algorithm that SignalForge is working toward.
+The surface and its geometry suggest a natural next step: a principled way
+to navigate and interpret the structure of the surface itself. The scale
+signature, the gradient field, the path consistency test, and the learned
+eigenspace are not just descriptive tools — they are the basis for
+something more general than any single application.
 
-The geometry is the foundation. The detection layer follows from it.
+The geometry is the foundation. What follows from it is still being mapped.
 
 ---
 
