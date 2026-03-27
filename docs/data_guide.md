@@ -94,7 +94,7 @@ uv run python examples/run_eeg.py --csv chb01_03_eeg_rms.csv
 
 Minute-cadence observatory data, freely available for research.
 
-1. Go to https://intermagnet.org/data-donnee/data-donnee-eng.php
+1. Go to https://intermagnet.org/data_download.html
 2. Select observatory: **YKC** (Yellowknife) for the reference dataset
 3. Select format: **IAGA-2002** (text, minute data)
 4. Download any date range
