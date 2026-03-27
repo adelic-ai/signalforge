@@ -84,12 +84,20 @@ The smallest unit your data meaningfully supports. Not the raw sample rate —
 the smallest unit you would actually analyze. For 256 Hz EEG, one second (256
 samples). For 1-minute geomagnetic data, one minute (60 seconds).
 
-If your data is unfamiliar and the right grain is not obvious, a future version
-of SignalForge will integrate [binjamin](https://pypi.org/project/binjamin/) to
-estimate it automatically. `binjamin` implements all major bin width estimation
-methods (Freedman-Diaconis, Bayesian blocks, Scott, Knuth, and others) in one
-package. The default will be Freedman-Diaconis, with other methods selectable.
-For now, grain is a declaration — use your domain knowledge.
+If your data is unfamiliar and the right grain is not obvious, use
+`grain_from_orders` to estimate it from the data:
+
+```python
+from signalforge.lattice.sampling import grain_from_orders
+
+orders = [r.primary_order for r in records]
+grain  = grain_from_orders(orders, horizon=horizon)
+```
+
+This uses Freedman-Diaconis bin width estimation (via
+[binjamin](https://pypi.org/project/binjamin/)) and snaps the result to the
+nearest divisor of the horizon, so the grain is always lattice-compatible.
+See [docs/binjamin.md](binjamin.md) for details.
 
 **3. Which windows does your field already use?**
 

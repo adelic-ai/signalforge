@@ -135,6 +135,7 @@ measurement space with guaranteed cross-recording comparability.
 - [docs/comparison.md](docs/comparison.md) — STFT, wavelets, EMD, and this
 - [docs/overview.md](docs/overview.md) — pipeline detail, the mathematics, the name
 - [docs/domain_guide.md](docs/domain_guide.md) — writing a domain
+- [docs/binjamin.md](docs/binjamin.md) — automatic grain selection
 - [docs/data_guide.md](docs/data_guide.md) — data access and preprocessing
 - [docs/operators_guide.md](docs/operators_guide.md) — pipeline operators
 
