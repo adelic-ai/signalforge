@@ -86,19 +86,13 @@ geometry.
 
 ## Where SignalForge is going
 
-The surface and its geometry suggest a natural next step: a traversal
-algorithm that follows gradients through scale space to locate, characterize,
-and validate anomalies. Rather than flagging threshold crossings at individual
-scales, such an algorithm would:
+The surface and its geometry suggest a natural next step: a detection layer
+that treats anomalies as geometric objects rather than threshold crossings.
+The scale signature, the gradient field, and the path consistency test are
+not just descriptive tools — they are the inputs to a structured detection
+algorithm that SignalForge is working toward.
 
-- scan at coarse scales where signal-to-noise is highest
-- descend the gradient toward finer scales to find the resolution peak
-- validate the structure by checking path consistency
-- stop at the support boundary where coherence is lost
-- return the full scale signature as the detection result
-
-This is the direction of Wellington — a detector that treats anomalies as
-geometric objects and reports them as such, not as a list of z-scores.
+The geometry is the foundation. The detection layer follows from it.
 
 ---
 
@@ -113,9 +107,8 @@ address in a product of integer axes.
 
 Once the coordinates existed, gradients existed. Once gradients existed,
 geometry existed. The scale signature concept, the ridge structure, the
-path consistency test, the Wellington traversal — these are the natural
-conceptual neighbors of the arithmetic that was already there. They were
-not designed; they followed.
+path consistency test — these are the natural conceptual neighbors of the
+arithmetic that was already there. They were not designed; they followed.
 
 This is not unusual in mathematics. A structure introduced for one reason
 often turns out to carry more than intended. The p-adic lattice as a signal
