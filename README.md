@@ -62,14 +62,18 @@ Full results and reproducibility instructions: [docs/empirical_results.md](docs/
 ### The sampling domain
 
 A standard multi-scale analysis requires the analyst to choose window sizes.
-SignalForge does not. Declare a `horizon` (total length) and a `grain`
-(smallest meaningful unit), and the valid windows are determined by
-arithmetic: they are exactly the divisors of `H = horizon / grain`.
+SignalForge does not. Declare the windows you want and your grain — the finest
+resolution unit — and the lattice is determined by arithmetic:
 
-Divisors are the only window sizes that partition the signal without remainder
-and nest into each other without overlap. They form a lattice — one independent
-scale axis per prime dividing `H` — and computation flows up the lattice in a
-single pass, without re-reading the raw data at each scale.
+```python
+plan = SamplingPlan.from_windows([7, 30, 90, 360], grain=g)
+```
+
+The horizon is derived as `lcm(windows + [grain])`, guaranteeing the grain is
+an exact lattice member with no snapping. Divisors are the only window sizes
+that partition the sequence without remainder and nest into each other exactly
+— computation flows up the lattice in a single pass, without re-reading the
+raw data at each scale.
 
 [docs/sampling_domain.md](docs/sampling_domain.md) — [arXiv preprint — forthcoming]
 
@@ -136,7 +140,7 @@ measurement space with guaranteed cross-recording comparability.
 - [docs/overview.md](docs/overview.md) — pipeline detail, the mathematics, the name
 - [docs/domain_guide.md](docs/domain_guide.md) — writing a domain
 - [docs/binjamin.md](docs/binjamin.md) — automatic grain selection
-- [docs/design_grain_snapping.md](docs/design_grain_snapping.md) — design note: snapping, free-grain mode, feedback
+- [docs/design_grain_snapping.md](docs/design_grain_snapping.md) — grain, horizon as derived value, from_windows design
 - [docs/data_guide.md](docs/data_guide.md) — data access and preprocessing
 - [docs/operators_guide.md](docs/operators_guide.md) — pipeline operators
 

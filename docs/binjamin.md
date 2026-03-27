@@ -116,16 +116,30 @@ value.
 
 ---
 
-## The snapping constraint
+## Using the grain estimate with from_windows
 
-`grain_from_orders` always snaps the estimate to the nearest divisor of the
-horizon. This is what makes the grain lattice-compatible and unlocks the
-aggregation and structural invariance guarantees — but it means the raw
-estimate is nudged, which may not always be desirable.
+The recommended workflow passes the raw grain estimate — no snapping — directly
+to `SamplingPlan.from_windows()`, which derives the horizon automatically:
 
-Free-grain mode (no snapping, arbitrary windows, prefix-sum computation) is
-not yet implemented. For the design tradeoffs and how to provide feedback, see
-[design_grain_snapping.md](design_grain_snapping.md).
+```python
+from signalforge.lattice.sampling import grain_from_orders
+from signalforge.lattice.sampling import SamplingPlan
+
+g    = grain_from_orders(orders)                    # raw estimate, no horizon needed
+plan = SamplingPlan.from_windows([7, 30, 90, 360], grain=g)
+```
+
+`from_windows` computes `horizon = lcm(windows + [grain])`, guaranteeing that
+`grain | horizon` exactly. No snapping. The grain the data suggests is the grain
+used. See [design_grain_snapping.md](design_grain_snapping.md) for the full
+explanation.
+
+If you need the old snapping behavior (grain snapped to a divisor of a fixed
+horizon), pass `horizon` explicitly:
+
+```python
+g = grain_from_orders(orders, horizon=86400)   # snapped, backward-compatible
+```
 
 ---
 

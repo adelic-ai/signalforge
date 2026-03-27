@@ -93,29 +93,24 @@ _GRAIN_METHODS = (
 
 def grain_from_orders(
     orders: Sequence[int],
-    horizon: int,
+    horizon: int | None = None,
     method: str = "freedman_diaconis",
 ) -> int:
     """
-    Derive a lattice-compatible grain from a sequence of primary_order values.
+    Estimate a grain from a sequence of primary_order values.
 
-    Two-step approach:
-      1. A binjamin scalar method estimates the natural bin width from
-         inter-event intervals.
-      2. smallest_divisor_gte(horizon, h) snaps the estimate to the nearest
-         divisor of horizon, ensuring arithmetic coherence with the lattice.
-
-    Fallbacks
-    ---------
-    - Fewer than 3 intervals: use the minimum observed interval directly.
-    - Estimate rounds to zero: return 1.
+    When horizon is provided, snaps the estimate to the nearest divisor of
+    horizon (lattice-compatible grain). When horizon is omitted, returns the
+    raw rounded estimate — suitable for use with SamplingPlan.from_windows(),
+    which derives the horizon from the grain and windows automatically.
 
     Parameters
     ----------
     orders : sequence of int
         primary_order values from a CanonicalSequence. Need not be sorted.
-    horizon : int
-        The horizon of the SamplingPlan being constructed.
+    horizon : int or None, optional
+        If given, snaps the estimate to smallest_divisor_gte(horizon, estimate).
+        If None, returns the raw rounded estimate with no snapping.
     method : str, default "freedman_diaconis"
         Bin width estimation method. One of:
             "freedman_diaconis"  — 2·IQR·n^(-1/3); robust, no distributional assumption
@@ -132,15 +127,18 @@ def grain_from_orders(
     Returns
     -------
     int
-        A grain value that divides horizon (via cbin derivation) and is
-        consistent with the natural resolution of the data.
+        Grain estimate. Snapped to a divisor of horizon if horizon is given;
+        raw rounded estimate otherwise.
 
     Examples
     --------
     >>> grain_from_orders(range(0, 3600, 60), horizon=86400)
     60
-    >>> grain_from_orders(range(0, 3600, 60), horizon=86400, method="scott")
+    >>> grain_from_orders(range(0, 3600, 60))   # raw, no snapping
     60
+    >>> # Typical workflow with from_windows:
+    >>> g = grain_from_orders(orders)
+    >>> plan = SamplingPlan.from_windows([7, 30, 90, 360], grain=g)
     """
     if method not in _GRAIN_METHODS:
         raise ValueError(
@@ -159,6 +157,8 @@ def grain_from_orders(
         estimator = getattr(bj, method)
         h = max(1, round(estimator(intervals)))
 
+    if horizon is None:
+        return int(h)
     return smallest_divisor_gte(horizon, int(h))
 
 
@@ -433,6 +433,65 @@ class SamplingPlan:
         return tuple(dict(c) for c in self._coordinates)
 
     # --- Inspection ---
+
+    @classmethod
+    def from_windows(
+        cls,
+        windows: Sequence[int],
+        grain: int,
+        hops: Sequence[int] | None = None,
+    ) -> "SamplingPlan":
+        """
+        Build a SamplingPlan from desired windows and a grain.
+
+        The horizon is derived as lcm(windows + [grain]), ensuring that grain
+        divides the horizon exactly. No snapping occurs: cbin == grain.
+
+        This is the ergonomic entry point when you know what windows you want
+        and what your grain is. The horizon is scaffolding — it is larger than
+        max(windows) in general, but only the slice [grain, max(windows)] is
+        ever computed. The lattice above max(windows) is never materialized.
+
+        Use grain_from_orders() without a horizon argument to get a raw grain
+        estimate suitable for passing here.
+
+        Parameters
+        ----------
+        windows : sequence of int
+            The window sizes to compute. All must be positive integers >= grain.
+        grain : int
+            The pixel — finest resolution unit. Becomes cbin exactly.
+        hops : sequence of int, optional
+            One hop per window. Defaults to grain for every window.
+
+        Returns
+        -------
+        SamplingPlan
+
+        Examples
+        --------
+        >>> plan = SamplingPlan.from_windows([7, 30, 90, 360], grain=1)
+        >>> plan.cbin
+        1
+        >>> plan.grain == plan.cbin
+        True
+        >>> # With grain from data:
+        >>> g = grain_from_orders(orders)
+        >>> plan = SamplingPlan.from_windows([g*7, g*30, g*90], grain=g)
+        """
+        if not windows:
+            raise ValueError("windows must be non-empty")
+        if grain < 1:
+            raise ValueError(f"grain must be a positive integer, got {grain}")
+        ws = [int(w) for w in windows]
+        if any(w < grain for w in ws):
+            raise ValueError(
+                f"all windows must be >= grain ({grain}); "
+                f"got {[w for w in ws if w < grain]}"
+            )
+        all_values = ws + [grain]
+        horizon = reduce(lambda a, b: a * b // gcd(a, b), all_values)
+        return cls(horizon, grain, windows=sorted(set(ws)), hops=hops)
 
     def valid_windows(self) -> Tuple[int, ...]:
         """Full lattice member set — all divisors of horizon that are multiples of cbin."""

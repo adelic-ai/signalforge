@@ -66,15 +66,30 @@ artifact-free, perfectly nested, and closed under finest-common-refinement.
 
 ## What this means for a SamplingPlan
 
+The ergonomic entry point is `from_windows` — declare the scales you want and
+the grain, and the horizon is derived automatically as `lcm(windows + [grain])`:
+
+```python
+plan = SamplingPlan.from_windows([1, 5, 15, 30, 60, 360], grain=1)
+```
+
+The derived horizon is `lcm(1, 5, 15, 30, 60, 360, 1) = 360`. The grain divides
+the horizon exactly — no snapping. The pipeline computes features at all selected
+scales in one pass. Units are whatever grain represents: seconds, minutes, events,
+ticks.
+
+For full control, declare the horizon directly:
+
 ```python
 plan = sf.SamplingPlan(horizon=3600, grain=1)
 ```
 
-`horizon=3600` and `grain=1` give `H = 3600 = 2³ × 3² × 5²`. The valid windows
-are all 36 divisors of 3600 — from 1 unit up to 3600 units — organized as a
-3-axis lattice (prime axes 2, 3, 5). The pipeline computes features at all 36
-scales in one pass. The units are whatever grain represents: seconds, minutes,
-events, ticks.
+`H = 3600 = 2³ × 3² × 5²` gives 36 divisors across a 3-axis lattice (prime axes
+2, 3, 5). The grain is snapped to the nearest divisor of 3600 if it does not
+already divide 3600.
+
+See [design_grain_snapping.md](design_grain_snapping.md) for why `from_windows`
+is preferred when the grain comes from data.
 
 ---
 
