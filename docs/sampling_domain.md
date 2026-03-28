@@ -105,8 +105,8 @@ scales to whatever compute is available, and the precision is whatever the task
 requires — not a fixed constraint imposed by the method.
 
 Total cost: one raw-data read at grain resolution, plus lightweight aggregation
-up the lattice — O(H · τ(H)), nearly linear in signal length regardless of how
-many window sizes are selected.
+up the lattice — O(max(W) · τ(H)), nearly linear in the maximum window size
+regardless of how many window sizes are selected.
 
 `Div(H)` is the unique maximal window family that is simultaneously
 artifact-free, perfectly nested, and closed under finest-common-refinement.
