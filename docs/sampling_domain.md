@@ -2,14 +2,20 @@
 
 SignalForge does not choose window sizes. It derives them.
 
-Specify a **grain** (the pixel — the smallest meaningful unit: a position, step,
-or time interval) and the **windows** you want to compute. The grain can be
-declared directly when the cadence is known, or estimated from the data using
-[binjamin](binjamin.md) when it is not — any estimation method produces a valid
-grain. The horizon is derived automatically as `lcm(windows + [grain])`, and the
-valid window sizes are exactly the divisors of that horizon. This is not a design
-choice. It is a consequence of requiring that windows partition the sequence
-without remainder and nest into each other without overlap.
+The construction has two stages. **Unitization** embeds the analyst's
+quantities into a common integer domain: specify a **grain** (the smallest
+meaningful unit — a position, step, or time interval) and the **windows** you
+want to compute. The grain can be declared directly when the cadence is known,
+or estimated from the data using [binjamin](binjamin.md) when it is not — any
+estimation method produces a valid grain. Once declared, all window sizes
+become integer multiples of the grain. This produces commensurability but not
+structure.
+
+**Normalization** completes the unitized set to the divisibility lattice: the
+horizon is derived automatically as `lcm(windows + [grain])`, and the valid
+window sizes are exactly the divisors of that horizon. This is not a design
+choice. It is the necessary completion — the minimal lattice containing the
+unitized windows that is closed under divisibility and gcd.
 
 ---
 

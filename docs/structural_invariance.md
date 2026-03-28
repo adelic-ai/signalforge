@@ -25,7 +25,7 @@ There is nothing to align. The lattice is the shared coordinate system.
 
 ---
 
-## Why normalization is not needed
+## Why post-hoc normalization is not needed
 
 Standard multi-scale methods produce features whose meaning depends on choices
 made by the analyst: which window sizes, which basis functions, which
@@ -34,9 +34,12 @@ choices to be identical and requires additional alignment steps to account for
 differences in length, sampling rate, or amplitude range.
 
 SignalForge features are indexed by lattice position, not by analyst choice.
-Two surfaces at scale `d` are measuring the same thing because `d` has the same
-arithmetic meaning in both lattices — the same divisibility relationships, the
-same nesting structure, the same distance from grain and horizon.
+The measurement space is not designed — it is derived from the arithmetic
+constraints of the signal domain. Two surfaces at scale `d` are measuring the
+same thing because `d` has the same arithmetic meaning in both lattices — the
+same divisibility relationships, the same nesting structure, the same distance
+from grain and horizon. The measurement space does the work that post-hoc
+normalization would otherwise have to do.
 
 Amplitude differences between recordings are handled by the z-score
 construction in the Engineer stage, which normalizes each scale row relative

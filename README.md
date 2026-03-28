@@ -5,7 +5,7 @@ Give it any ordered sequence — clinical EEG, geomagnetic field measurements,
 network traffic, log events — and it produces a multiscale surface of
 structurally invariant features, ready for anomaly detection or ML.
 
-No labels. No domain-specific processing. No normalization between recordings.
+No labels. No domain-specific processing. No post-hoc normalization between recordings.
 
 ---
 
@@ -93,7 +93,9 @@ Full results and reproducibility instructions: [docs/empirical_results.md](docs/
 
 A standard multi-scale analysis requires the analyst to choose window sizes.
 SignalForge does not. Declare the windows you want and your grain — the finest
-resolution unit — and the lattice is determined by arithmetic:
+resolution unit — and the measurement space is derived in two stages:
+unitization embeds your quantities into a common integer domain; normalization
+completes that set to the divisibility lattice via the horizon:
 
 ```python
 plan = SamplingPlan.from_windows([7, 30, 90, 360], grain=g)

@@ -78,7 +78,7 @@ sense SignalForge requires.
 | Scale relationship | None | Dyadic chain | None | Full lattice |
 | Cross-recording comparability | Requires matching params | Requires matching params | Difficult | Guaranteed by lattice |
 | Prime axes covered | — | Prime 2 only | — | All primes dividing H |
-| Boundary artifacts | Possible | Possible | N/A | None (by construction) |
+| Boundary artifacts | Possible | Possible | N/A | None within lattice; recording boundaries handled as in any windowed method |
 | Computation | O(H log H) per scale | O(H) | O(H²) typical | O(H · τ(H)), nearly linear |
 
 The scales in SignalForge are not chosen. Given windows and a grain, the horizon
