@@ -46,6 +46,27 @@ Full result and scale-by-scale z-scores: [discovery_eeg_seizure_detection.md](di
 
 ---
 
+## EEG: second independent dataset (Siena)
+
+**Dataset**: Siena Scalp EEG Database, patient PN00, recording PN00-1.
+A different hospital, different equipment, 512 Hz sampling rate (vs 256 Hz
+for CHB-MIT).
+
+**What the pipeline was given**: the same pipeline, same code, different
+SamplingPlan reflecting the 512 Hz sampling rate.
+
+**What it found**: a peak z-score of **5.24σ at t=1240s, scales 15–25s**.
+
+This is a second independent confirmation: different hospital, different
+sampling rate, different equipment, same pipeline, same result class.
+Seizure detected with no labels, no training, no domain-specific processing.
+
+Download instructions: [data_guide.md](data_guide.md) (Siena Scalp EEG section).
+Raw `.edf` files are not tracked in git due to size — download from
+[PhysioNet](https://physionet.org/content/siena-scalp-eeg/1.0.0/).
+
+---
+
 ## Geomagnetic: full-year observatory data
 
 **Dataset**: INTERMAGNET, Yellowknife YKC station, one full year of
