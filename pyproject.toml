@@ -20,6 +20,8 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
+    "binjamin",
+    "mne>=1.11.0",
     "numpy>=2.0",
     "pandas>=2.0",
 ]
@@ -34,6 +36,9 @@ signalforge = "signalforge.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["signalforge"]
+
+[tool.uv.sources]
+binjamin = { path = "../binjamin", editable = true }
 
 [build-system]
 requires = ["hatchling"]

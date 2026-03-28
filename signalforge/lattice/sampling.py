@@ -31,6 +31,8 @@ from functools import reduce
 from math import gcd
 from typing import Sequence, Tuple, Union
 
+import binjamin as bj
+
 from .coordinates import (
     Coordinate,
     factorize,
@@ -39,6 +41,57 @@ from .coordinates import (
 )
 
 WindowSpec = Union[str, Sequence[int]]
+
+
+def suggest_cbin(grain: int, windows: Sequence[int]) -> int:
+    """
+    Suggest the finest cbin >= grain that divides all windows.
+
+    cbin must divide every w in windows, so it must divide gcd(windows).
+    Returns the smallest divisor of gcd(windows) that is >= grain.
+
+    If no such divisor exists (gcd(windows) < grain), returns gcd(windows)
+    with a warning: the finest commensurable resolution is finer than
+    the data supports.
+
+    Parameters
+    ----------
+    grain : int
+        Data minimum bin — finest resolution the data supports
+        (e.g. from grain_from_orders).
+    windows : sequence of int
+        Desired analysis windows.
+
+    Returns
+    -------
+    int
+        Finest cbin that divides all windows and is >= grain (if possible).
+
+    Examples
+    --------
+    >>> suggest_cbin(60, [3600, 86400, 604800])
+    60
+    >>> suggest_cbin(7, [3600, 86400])
+    8
+    >>> suggest_cbin(50, [60, 90])   # warns: finest commensurable is 30
+    30
+    """
+    if not windows:
+        raise ValueError("windows must be non-empty")
+    common = reduce(lambda a, b: gcd(a, b), windows)
+    from .coordinates import divisors
+    for d in divisors(common):
+        if d >= grain:
+            return d
+    # No divisor of gcd(W) is >= grain
+    import warnings
+    warnings.warn(
+        f"Finest commensurable cbin ({common}) is finer than "
+        f"data_minbin ({grain}). Analysis resolution exceeds "
+        f"what the data supports.",
+        stacklevel=2,
+    )
+    return common
 
 
 def horizon_for(windows: Sequence[int], grain: int) -> int:
@@ -73,6 +126,91 @@ def horizon_for(windows: Sequence[int], grain: int) -> int:
         raise ValueError("windows must be non-empty")
     lcm = reduce(lambda a, b: a * b // gcd(a, b), windows)
     return lcm
+
+
+_GRAIN_METHODS = (
+    "freedman_diaconis",
+    "auto",
+    "scott",
+    "sturges",
+    "rice",
+    "sqrt",
+    "doane",
+    "stone",
+    "knuth",
+    "gcd_interval",
+)
+
+
+def grain_from_orders(
+    orders: Sequence[int],
+    horizon: int | None = None,
+    method: str = "freedman_diaconis",
+) -> int:
+    """
+    Estimate a grain from a sequence of primary_order values.
+
+    When horizon is provided, snaps the estimate to the nearest divisor of
+    horizon (lattice-compatible grain). When horizon is omitted, returns the
+    raw rounded estimate — suitable for use with SamplingPlan.from_windows(),
+    which derives the horizon from the grain and windows automatically.
+
+    Parameters
+    ----------
+    orders : sequence of int
+        primary_order values from a CanonicalSequence. Need not be sorted.
+    horizon : int or None, optional
+        If given, snaps the estimate to smallest_divisor_gte(horizon, estimate).
+        If None, returns the raw rounded estimate with no snapping.
+    method : str, default "freedman_diaconis"
+        Bin width estimation method. One of:
+            "freedman_diaconis"  — 2·IQR·n^(-1/3); robust, no distributional assumption
+            "auto"               — max(freedman_diaconis, sturges)
+            "scott"              — 3.5·σ·n^(-1/3); assumes normality
+            "sturges"            — (max-min)/(1+log₂n); simple, assumes normality
+            "rice"               — (max-min)/(2·n^(1/3))
+            "sqrt"               — (max-min)/√n; simplest
+            "doane"              — Sturges adjusted for skewness
+            "stone"              — leave-one-out cross-validation; slower, accurate
+            "knuth"              — maximum likelihood; optimal for uniform bins
+            "gcd_interval"       — GCD of intervals; exact but brittle
+
+    Returns
+    -------
+    int
+        Grain estimate. Snapped to a divisor of horizon if horizon is given;
+        raw rounded estimate otherwise.
+
+    Examples
+    --------
+    >>> grain_from_orders(range(0, 3600, 60), horizon=86400)
+    60
+    >>> grain_from_orders(range(0, 3600, 60))   # raw, no snapping
+    60
+    >>> # Typical workflow with from_windows:
+    >>> g = grain_from_orders(orders)
+    >>> plan = SamplingPlan.from_windows([7, 30, 90, 360], grain=g)
+    """
+    if method not in _GRAIN_METHODS:
+        raise ValueError(
+            f"unknown method {method!r}. Choose from: {', '.join(_GRAIN_METHODS)}"
+        )
+
+    import numpy as np
+    intervals = np.diff(np.sort(np.asarray(orders, dtype=np.int64)))
+    intervals = intervals[intervals > 0]
+
+    if len(intervals) == 0:
+        h = 1
+    elif len(intervals) < 3:
+        h = max(1, int(intervals.min()))
+    else:
+        estimator = getattr(bj, method)
+        h = max(1, round(estimator(intervals)))
+
+    if horizon is None:
+        return int(h)
+    return smallest_divisor_gte(horizon, int(h))
 
 
 # ---------------------------------------------------------------------------
@@ -346,6 +484,74 @@ class SamplingPlan:
         return tuple(dict(c) for c in self._coordinates)
 
     # --- Inspection ---
+
+    @classmethod
+    def from_windows(
+        cls,
+        windows: Sequence[int],
+        cbin: int,
+        hops: Sequence[int] | None = None,
+    ) -> "SamplingPlan":
+        """
+        Build a SamplingPlan from desired windows and a cbin.
+
+        The horizon is derived as lcm(windows + [cbin]), ensuring that cbin
+        divides the horizon exactly. No snapping occurs.
+
+        This is the ergonomic entry point when you know what windows you want
+        and what your cbin is. The horizon is scaffolding — it is larger than
+        max(windows) in general, but only the slice [cbin, max(windows)] is
+        ever computed. The lattice above max(windows) is never materialized.
+
+        Use suggest_cbin(grain_from_orders(orders), windows) to derive a
+        cbin that is commensurable with your windows and at least as coarse
+        as the data supports.
+
+        Parameters
+        ----------
+        windows : sequence of int
+            The window sizes to compute. All must be positive integers >= cbin
+            and divisible by cbin (commensurability).
+        cbin : int
+            The computational bin — declared analysis unit. Must divide every
+            window. Use suggest_cbin() to derive from grain and windows.
+        hops : sequence of int, optional
+            One hop per window. Defaults to cbin for every window.
+
+        Returns
+        -------
+        SamplingPlan
+
+        Examples
+        --------
+        >>> plan = SamplingPlan.from_windows([7, 30, 90, 360], cbin=1)
+        >>> plan.cbin
+        1
+        >>> # With cbin derived from data grain:
+        >>> grain = grain_from_orders(orders)
+        >>> cb = suggest_cbin(grain, [3600, 86400])
+        >>> plan = SamplingPlan.from_windows([3600, 86400], cbin=cb)
+        """
+        if not windows:
+            raise ValueError("windows must be non-empty")
+        if cbin < 1:
+            raise ValueError(f"cbin must be a positive integer, got {cbin}")
+        ws = [int(w) for w in windows]
+        if any(w < cbin for w in ws):
+            raise ValueError(
+                f"all windows must be >= cbin ({cbin}); "
+                f"got {[w for w in ws if w < cbin]}"
+            )
+        bad = [w for w in ws if w % cbin != 0]
+        if bad:
+            raise ValueError(
+                f"Windows {bad} are not multiples of cbin ({cbin}). "
+                f"Every window must be divisible by cbin. "
+                f"Use suggest_cbin(grain, windows) to find a compatible cbin."
+            )
+        all_values = ws + [cbin]
+        horizon = reduce(lambda a, b: a * b // gcd(a, b), all_values)
+        return cls(horizon, cbin, windows=sorted(set(ws)), hops=hops)
 
     def valid_windows(self) -> Tuple[int, ...]:
         """Full lattice member set — all divisors of horizon that are multiples of cbin."""

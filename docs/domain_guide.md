@@ -84,6 +84,31 @@ The smallest unit your data meaningfully supports. Not the raw sample rate —
 the smallest unit you would actually analyze. For 256 Hz EEG, one second (256
 samples). For 1-minute geomagnetic data, one minute (60 seconds).
 
+If your data is unfamiliar and the right grain is not obvious, estimate it
+from the data and let the horizon be derived automatically:
+
+```python
+from signalforge.lattice.sampling import grain_from_orders, SamplingPlan
+
+orders = [r.primary_order for r in records]
+g      = grain_from_orders(orders)               # raw estimate, no snapping
+plan   = SamplingPlan.from_windows(
+    windows=[g*5, g*15, g*60, g*360],            # anchor windows as multiples of grain
+    grain=g,
+)
+```
+
+`from_windows` derives `horizon = lcm(windows + [grain])`, guaranteeing the
+grain is an exact lattice member — no nudging. The grain the data suggests is
+the grain used. A different method can be selected:
+
+```python
+g = grain_from_orders(orders, method="knuth")
+```
+
+See [binjamin.md](binjamin.md) for the full method list and
+[design_grain_snapping.md](design_grain_snapping.md) for the design rationale.
+
 **3. Which windows does your field already use?**
 
 These become your anchors. Standard clinical EEG epochs are 1s, 4s, 16s, 30s,
