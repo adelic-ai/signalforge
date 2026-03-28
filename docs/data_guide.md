@@ -90,6 +90,17 @@ Then run the pipeline:
 uv run python examples/run_eeg.py --csv chb01_03_eeg_rms.csv
 ```
 
+### Siena Scalp EEG Database
+
+A second independent EEG dataset (different hospital, 512 Hz sampling rate).
+
+1. Go to https://physionet.org/content/siena-scalp-eeg/1.0.0/
+2. Download individual `.edf` files from patient folders
+3. Convert to RMS CSV using the same `edf_to_rms_csv.py` script
+
+Place `.edf` files in `data/siena_eeg/`. These are not tracked in git due to
+file size — download from the source above.
+
 ### INTERMAGNET geomagnetic data
 
 Minute-cadence observatory data, freely available for research.

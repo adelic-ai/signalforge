@@ -17,6 +17,9 @@ signalforge/domains/cyber.py
 signalforge/domains/kerberos.py
 examples/run_kerberos.py
 
+# Large data files — download from source
+data/siena_eeg/*.edf
+
 # Binary array formats
 *.npy
 *.npz
