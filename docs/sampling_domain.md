@@ -1,6 +1,6 @@
 # The Sampling Domain
 
-SignalForge does not choose window sizes. It derives them.
+SignalForge does not choose the measurement space. It derives it from the windows you declare.
 
 The construction has two stages. **Unitization** embeds the analyst's
 quantities into a common integer domain: specify a **grain** (the smallest
@@ -104,8 +104,8 @@ This is the DAG: computation flows upward from grain through the lattice in a
 single pass. Each coarser scale costs only the aggregation of already-computed
 finer-scale values. Reading the raw data happens once.
 
-The resolution — the grain — is a choice matched to the detection task. A finer
-grain resolves structure at shorter scales; anomalies that are invisible at
+The resolution — the grain — is a choice matched to the analysis task. A finer
+grain resolves structure at shorter scales; patterns that are invisible at
 coarser resolution become detectable. A coarser grain is cheaper. The pipeline
 scales to whatever compute is available, and the precision is whatever the task
 requires — not a fixed constraint imposed by the method.
@@ -116,6 +116,9 @@ regardless of how many window sizes are selected.
 
 `Div(H)` is the unique maximal window family that is simultaneously
 artifact-free, perfectly nested, and closed under finest-common-refinement.
+The artifact-free guarantee applies within the lattice structure; recording
+boundaries are handled the same way as in any windowed analysis (stop at the
+last complete window, pad, or flag partial windows).
 
 ---
 
@@ -147,11 +150,12 @@ plan = sf.SamplingPlan(horizon=3600, grain=1)
 ```
 
 `H = 3600 = 2³ × 3² × 5²` gives 36 divisors across a 3-axis lattice (prime axes
-2, 3, 5). The grain is snapped to the nearest divisor of 3600 if it does not
-already divide 3600.
+2, 3, 5). If the grain does not already divide the declared horizon, it is
+snapped to the nearest divisor — which is why `from_windows` is preferred when
+the grain comes from data: it derives `H` from the grain, guaranteeing exactness
+by construction.
 
-See [design_grain_snapping.md](design_grain_snapping.md) for why `from_windows`
-is preferred when the grain comes from data.
+See [design_grain_snapping.md](design_grain_snapping.md) for the design rationale.
 
 ---
 
