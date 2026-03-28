@@ -37,9 +37,6 @@ signalforge = "signalforge.cli:main"
 [tool.hatch.build.targets.wheel]
 packages = ["signalforge"]
 
-[tool.uv.sources]
-binjamin = { path = "../binjamin", editable = true }
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
