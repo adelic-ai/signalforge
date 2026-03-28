@@ -73,7 +73,7 @@ See [binjamin.md](binjamin.md) for the full method list.
   swept.
 
 - **Cost scales with divisor count, not horizon magnitude** — lattice traversal
-  is O(H · τ(H)) where τ(H) is the number of divisors, not H itself.
+  is O(max(W) · τ(H)) where τ(H) is the number of divisors, not H itself.
 
 - **New prime axes from `g` are shallow** — if `g = 58 = 2 × 29` adds a
   29-axis, it does so at depth 1. One extra scale level.

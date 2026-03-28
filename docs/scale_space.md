@@ -117,4 +117,4 @@ territory.
 
 ---
 
-*Rigorous treatment: [zeta/scale_space_geometry.md](../../zeta/scale_space_geometry.md)*
+*Rigorous treatment: forthcoming companion paper on scale-space geometry.*
