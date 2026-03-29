@@ -44,7 +44,7 @@ from .canonical import CanonicalRecord, OrderType
 Scope = Optional[Dict[str, List[str]]]
 
 # Default aggregation function applied when none is specified per channel/metric.
-_DEFAULT_AGG = "count"
+_DEFAULT_AGG = "mean"
 
 
 class BinnedRecord:
