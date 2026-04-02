@@ -569,6 +569,126 @@ def _render_heatmap(surfaces: list, plan, filename: str = "", dates=None,
 # main
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# inspect
+# ---------------------------------------------------------------------------
+
+_INSPECT_ENTRIES = {
+    "ewma": {
+        "name": "Exponentially Weighted Moving Average",
+        "formula": "s_t = α · x_t + (1 - α) · s_{t-1}",
+        "params": "α (alpha): smoothing factor in (0, 1]. Higher = more responsive.",
+        "description": (
+            "Tracks a drifting baseline by weighting recent values more heavily.\n"
+            "  The effective memory is ~1/α observations. At α=0.1, the baseline\n"
+            "  reflects roughly the last 10 points; at α=0.01, the last 100."
+        ),
+        "use_when": (
+            "The underlying process has a slowly changing mean — trending markets,\n"
+            "  gradual load shifts, seasonal drift. Not ideal for periodic baselines\n"
+            "  (use periodic or median for those)."
+        ),
+        "cli": "sf surface data.csv -hm --baseline ewma --alpha 0.1",
+    },
+    "median": {
+        "name": "Rolling Median Filter",
+        "formula": "s_t = median(x_{t-w/2}, ..., x_{t+w/2})",
+        "params": "window: number of observations in the centered window.",
+        "description": (
+            "Robust to spikes and outliers — a single extreme value doesn't move\n"
+            "  the baseline. Produces a smooth estimate of the 'typical' value."
+        ),
+        "use_when": (
+            "You expect sharp transient spikes that shouldn't contaminate the\n"
+            "  baseline. Good for bursty event data, noisy sensors, or any signal\n"
+            "  where outliers are common and the underlying level is stable."
+        ),
+        "cli": "sf surface data.csv -hm --baseline median --window 20",
+    },
+    "rolling_mean": {
+        "name": "Rolling Mean",
+        "formula": "s_t = mean(x_{t-w+1}, ..., x_t)",
+        "params": "window: number of observations in the trailing window.",
+        "description": (
+            "Simple trailing average. Every point in the window contributes equally.\n"
+            "  Responds to level shifts after ~window observations."
+        ),
+        "use_when": (
+            "A straightforward smoothing baseline when you don't need outlier\n"
+            "  robustness (use median) or exponential decay (use EWMA)."
+        ),
+        "cli": "sf surface data.csv -hm --baseline rolling_mean --window 20",
+    },
+    "difference": {
+        "name": "Difference Residual",
+        "formula": "r_t = x_t - baseline_t",
+        "params": "None (applied via --residual difference)",
+        "description": (
+            "Absolute deviation from baseline. Preserves units.\n"
+            "  A residual of 10 means 10 units above baseline."
+        ),
+        "use_when": (
+            "The absolute magnitude of deviation matters — e.g., event counts\n"
+            "  where '50 extra logins' is meaningful regardless of the base rate."
+        ),
+        "cli": "sf surface data.csv -hm --baseline ewma --residual difference",
+    },
+    "ratio": {
+        "name": "Ratio Residual",
+        "formula": "r_t = x_t / baseline_t",
+        "params": "None (applied via --residual ratio)",
+        "description": (
+            "Multiplicative deviation. A ratio of 2.0 means double the baseline.\n"
+            "  Scale-invariant: a 2x spike means the same whether the base is 10 or 10,000."
+        ),
+        "use_when": (
+            "The proportional deviation matters more than absolute — common for\n"
+            "  count data, throughput, or any metric where the baseline varies\n"
+            "  across entities or time periods."
+        ),
+        "cli": "sf surface data.csv -hm --baseline ewma --residual ratio",
+    },
+    "z": {
+        "name": "Z-Score Residual",
+        "formula": "r_t = (x_t - baseline_t) / σ_baseline",
+        "params": "None (applied via --residual z)",
+        "description": (
+            "Deviation normalized by the baseline's standard deviation.\n"
+            "  Measures 'how unusual' relative to the baseline's own variability."
+        ),
+        "use_when": (
+            "You want a unitless anomaly score that accounts for how variable\n"
+            "  the signal normally is. A z of 3 means the same thing whether\n"
+            "  the signal is VIX or Kerberos TGT counts."
+        ),
+        "cli": "sf surface data.csv -hm --baseline ewma --residual z",
+    },
+}
+
+
+def cmd_inspect(args: argparse.Namespace) -> int:
+    """Show documentation for a baseline or residual method."""
+    name = args.name.lower()
+    entry = _INSPECT_ENTRIES.get(name)
+
+    if entry is None:
+        print(f"Unknown: {name!r}")
+        print(f"Available: {', '.join(sorted(_INSPECT_ENTRIES))}")
+        return 1
+
+    print(f"\n  {entry['name']}")
+    print(f"  {'=' * len(entry['name'])}")
+    print(f"\n  Formula:  {entry['formula']}")
+    print(f"  Params:   {entry['params']}")
+    print(f"\n  {entry['description']}")
+    print(f"\n  Use when:")
+    print(f"  {entry['use_when']}")
+    print(f"\n  Example:")
+    print(f"  {entry['cli']}")
+    print()
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="signalforge",
@@ -592,6 +712,10 @@ def main(argv: list[str] | None = None) -> int:
     p_plan.add_argument("domain",
                         choices=["intermagnet", "intermagnet-yearly", "eeg", "equities", "equities-daily", "timeseries"],
                         help="Domain name")
+
+    # inspect
+    p_insp = sub.add_parser("inspect", help="Show docs for a method or operator")
+    p_insp.add_argument("name", help="Method name (e.g. ewma, median, ratio, z)")
 
     # load
     p_load = sub.add_parser("load", help="Show a summary of a CSV file")
@@ -630,6 +754,7 @@ def main(argv: list[str] | None = None) -> int:
         "demo":         cmd_demo,
         "run":          cmd_run,
         "plan":         cmd_plan,
+        "inspect":      cmd_inspect,
         "load":         cmd_load,
         "surface":      cmd_surface,
         "neighborhood": cmd_neighborhood,
