@@ -49,7 +49,7 @@ This produces a [multiscale heatmap](docs/scale_space.md) showing z-score deviat
 
 ![VIX 2005–2012 heatmap](docs/img/heatmap_vix.png)
 
-`--max-window 360` means "analyze at scales up to 360 bins." The [measurement geometry](docs/sampling_domain.md) — horizon, lattice, coordinates — is derived automatically from that declaration.
+`--max-window 360` means "analyze at scales up to 360 bins." The bin size is [estimated from the data](docs/binjamin.md), and the full set of valid analysis scales is [derived from the bins and your window choice](docs/sampling_domain.md) — every scale nests cleanly into the others with no boundary artifacts.
 
 ### Try different baselines
 
