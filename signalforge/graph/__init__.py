@@ -18,6 +18,7 @@ Keras-style functional computation graph for composing pipeline stages.
 
 from ._core import Artifact, GraphPipeline, Node, Op
 from ._ops import AssembleOp, BinOp, EngineerOp, InputOp, MeasureOp
+from ._multi_ops import BaselineOp, ResidualOp, StackOp
 from ._types import ArtifactType, parse_duration
 
 
@@ -51,6 +52,21 @@ def Assemble(**kwargs) -> AssembleOp:
     return AssembleOp(**kwargs)
 
 
+def Baseline(**kwargs) -> BaselineOp:
+    """Create a Baseline operator. Call with (surfaces_node) to wire into graph."""
+    return BaselineOp(**kwargs)
+
+
+def Residual(**kwargs) -> ResidualOp:
+    """Create a Residual operator. Call with (measured_node, baseline_node)."""
+    return ResidualOp(**kwargs)
+
+
+def Stack(**kwargs) -> StackOp:
+    """Create a Stack operator. Call with ([node1, node2, ...])."""
+    return StackOp(**kwargs)
+
+
 Pipeline = GraphPipeline
 
 __all__ = [
@@ -59,6 +75,9 @@ __all__ = [
     "Measure",
     "Engineer",
     "Assemble",
+    "Baseline",
+    "Residual",
+    "Stack",
     "Pipeline",
     "Artifact",
     "ArtifactType",
