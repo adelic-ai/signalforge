@@ -1,6 +1,6 @@
 # SignalForge
 
-Multiscale signal analysis on the p-adic divisibility lattice.
+Multiscale signal analysis on a [normalized scale space](docs/sampling_domain.md).
 Give it any ordered sequence and explore its structure across scales — no labels, no training, no domain-specific code.
 
 ## Install
@@ -19,7 +19,7 @@ uv sync
 
 ## Explore your data
 
-SignalForge works on any two-column CSV (date/index, value). Download some data and start exploring:
+SignalForge works on CSV data — from a simple two-column time series to multi-channel, multi-entity datasets. Each channel gets its own surface; channels can be combined to derive new ones. Start with something simple:
 
 ```bash
 # Grab VIX volatility data (2005–2012)
