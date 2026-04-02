@@ -336,10 +336,29 @@ def cmd_load(args: argparse.Namespace) -> int:
 
 def cmd_surface(args: argparse.Namespace) -> int:
     """Load CSV, build surface, show anomaly summary. Optional heatmap."""
-    csv_path = Path(args.csv)
+    # Resolve CSV path: explicit arg > workspace config
+    csv_arg = getattr(args, "csv", None)
+    ws = _find_workspace()
+    ws_config = _load_workspace(ws) if ws else {}
+
+    if csv_arg:
+        csv_path = Path(csv_arg)
+    elif "csv" in ws_config:
+        csv_path = Path(ws_config["csv"])
+    else:
+        print("  No CSV specified and no workspace found.")
+        print("  Usage: sf surface <csv> or cd into a workspace.")
+        return 1
+
     if not csv_path.exists():
         print(f"File not found: {csv_path}")
         return 1
+
+    # Inherit workspace defaults if not overridden on CLI
+    if args.max_window is None and "max_window" in ws_config:
+        args.max_window = ws_config["max_window"]
+    if args.grain is None and "grain" in ws_config:
+        args.grain = ws_config["grain"]
 
     t_total = time.perf_counter()
 
@@ -623,6 +642,99 @@ def _render_heatmap(surfaces: list, plan, filename: str = "", dates=None,
 # ---------------------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# workspace (sf init)
+# ---------------------------------------------------------------------------
+
+_SF_CONFIG = "sf.json"
+
+
+def _find_workspace() -> Path | None:
+    """Walk up from cwd looking for sf.json."""
+    p = Path.cwd()
+    for _ in range(10):
+        if (p / _SF_CONFIG).exists():
+            return p
+        if p.parent == p:
+            break
+        p = p.parent
+    return None
+
+
+def _load_workspace(ws: Path) -> dict:
+    import json
+    with open(ws / _SF_CONFIG) as f:
+        return json.load(f)
+
+
+def _save_workspace(ws: Path, config: dict) -> None:
+    import json
+    with open(ws / _SF_CONFIG, "w") as f:
+        json.dump(config, f, indent=2)
+    print(f"  config: {ws / _SF_CONFIG}")
+
+
+def cmd_init(args: argparse.Namespace) -> int:
+    """Initialize a workspace directory."""
+    import json
+
+    ws = Path(args.name)
+    csv_path = Path(args.csv) if args.csv else None
+
+    if ws.exists() and (ws / _SF_CONFIG).exists():
+        print(f"  Workspace already exists: {ws}")
+        return 1
+
+    ws.mkdir(parents=True, exist_ok=True)
+    (ws / "cache").mkdir(exist_ok=True)
+    (ws / "output").mkdir(exist_ok=True)
+
+    config = {
+        "version": 1,
+        "name": args.name,
+    }
+
+    if csv_path:
+        if not csv_path.exists():
+            print(f"  File not found: {csv_path}")
+            return 1
+        config["csv"] = str(csv_path.resolve())
+
+        # Auto-detect and summarize
+        records = _auto_ingest(csv_path)
+        if records:
+            channels = sorted({r.channel for r in records})
+            from .lattice.sampling import grain_from_orders
+            orders = [r.primary_order for r in records]
+            grain = grain_from_orders(orders)
+            config["summary"] = {
+                "records": len(records),
+                "channels": channels,
+                "estimated_grain": grain,
+            }
+
+    if args.max_window:
+        config["max_window"] = args.max_window
+    if args.grain:
+        config["grain"] = args.grain
+
+    _save_workspace(ws, config)
+
+    print(f"  workspace : {ws}/")
+    print(f"  cache     : {ws}/cache/")
+    print(f"  output    : {ws}/output/")
+    if csv_path:
+        print(f"  data      : {config['csv']}")
+        if "summary" in config:
+            s = config["summary"]
+            print(f"  records   : {s['records']:,}  channels={s['channels']}")
+            print(f"  est grain : {s['estimated_grain']}")
+    print()
+    print(f"  cd {ws} && sf surface -hm")
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # inspect
 # ---------------------------------------------------------------------------
 
@@ -766,6 +878,14 @@ def main(argv: list[str] | None = None) -> int:
                         choices=["intermagnet", "intermagnet-yearly", "eeg", "equities", "equities-daily", "timeseries"],
                         help="Domain name")
 
+    # init
+    p_init = sub.add_parser("init", help="Initialize a workspace directory")
+    p_init.add_argument("name", help="Workspace directory name")
+    p_init.add_argument("--csv", default=None, help="Path to CSV data file")
+    p_init.add_argument("--max-window", type=int, default=None,
+                        help="Default max analysis window")
+    p_init.add_argument("--grain", type=int, default=None, help="Default grain")
+
     # inspect
     p_insp = sub.add_parser("inspect", help="Show docs for a method or operator")
     p_insp.add_argument("name", help="Method name (e.g. ewma, median, ratio, z)")
@@ -776,7 +896,8 @@ def main(argv: list[str] | None = None) -> int:
 
     # surface
     p_surf = sub.add_parser("surface", help="Build and display a surface from a CSV")
-    p_surf.add_argument("csv", help="Input CSV file path")
+    p_surf.add_argument("csv", nargs="?", default=None,
+                        help="Input CSV file path (optional if in a workspace)")
     p_surf.add_argument("-hm", action="store_true", help="Render heatmap")
     p_surf.add_argument("--max-window", type=int, default=None,
                         help="Largest analysis window (horizon derived automatically)")
@@ -816,6 +937,7 @@ def main(argv: list[str] | None = None) -> int:
         "demo":         cmd_demo,
         "run":          cmd_run,
         "plan":         cmd_plan,
+        "init":         cmd_init,
         "inspect":      cmd_inspect,
         "load":         cmd_load,
         "surface":      cmd_surface,

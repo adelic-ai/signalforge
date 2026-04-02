@@ -26,6 +26,9 @@ data/*.csv
 *.npz
 *.pt
 
+# Workspaces (user-created via sf init)
+vix_analysis/
+
 # Environment and system
 .env
 .DS_Store
