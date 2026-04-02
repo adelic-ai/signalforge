@@ -47,6 +47,8 @@ sf surface vix.csv -hm --max-window 360
 
 This produces a [multiscale heatmap](docs/scale_space.md) showing z-score deviations across all scales. The 2008 financial crisis appears as a vertical band of red — visible across every scale simultaneously.
 
+![VIX 2005–2012 heatmap](docs/img/heatmap_vix.png)
+
 `--max-window 360` means "analyze at scales up to 360 bins." The [measurement geometry](docs/sampling_domain.md) — horizon, lattice, coordinates — is derived automatically from that declaration.
 
 ### Try different baselines
