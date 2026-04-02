@@ -83,6 +83,11 @@ def derive_plan(
     # Derive grain from data if not explicitly set
     if grain is None and records is not None:
         grain = derive_grain_from_records(records)
+    if grain is None and windows:
+        # Paper default: g = gcd(W), finest grain the window family permits
+        from math import gcd
+        from functools import reduce
+        grain = reduce(gcd, windows)
     if grain is None:
         grain = 1
 
