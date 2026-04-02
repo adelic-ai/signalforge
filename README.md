@@ -161,7 +161,7 @@ Time is not required — event-ordered sequences work with `grain=1`, where each
 
 ## Demonstrated results
 
-SignalForge detected a clinical epileptic seizure at **13.96σ** on CHB-MIT EEG data — the windowed mean during the seizure deviated nearly 14 standard deviations from the scale baseline. No training data, no labels, no EEG-specific code. The same pipeline processes INTERMAGNET geomagnetic observatory data unchanged.
+SignalForge detected a clinical epileptic seizure at **13.96σ** on [CHB-MIT EEG](https://physionet.org/content/chbmit/1.0.0/) data — the windowed mean during the seizure deviated nearly 14 standard deviations from the scale baseline. No training data, no labels, no EEG-specific code. The same pipeline processes [INTERMAGNET](https://intermagnet.org/data_download.html) geomagnetic observatory data unchanged.
 
 [docs/empirical_results.md](docs/empirical_results.md) — full results and reproducibility
 
