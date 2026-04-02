@@ -18,7 +18,7 @@ Keras-style functional computation graph for composing pipeline stages.
 
 from ._core import Artifact, GraphPipeline, Node, Op
 from ._ops import AssembleOp, BinOp, EngineerOp, InputOp, MeasureOp
-from ._multi_ops import BaselineOp, ResidualOp, StackOp
+from ._multi_ops import BaselineOp, HilbertOp, ResidualOp, StackOp
 from ._types import ArtifactType, parse_duration
 
 
@@ -71,6 +71,11 @@ def Residual(mode: str = "difference", **kwargs) -> ResidualOp:
     return ResidualOp(mode=mode, **kwargs)
 
 
+def Hilbert(**kwargs) -> HilbertOp:
+    """Compute analytic signal: amplitude, phase, instantaneous frequency."""
+    return HilbertOp(**kwargs)
+
+
 def Stack(**kwargs) -> StackOp:
     """Create a Stack operator. Call with ([node1, node2, ...])."""
     return StackOp(**kwargs)
@@ -86,6 +91,7 @@ __all__ = [
     "Assemble",
     "Baseline",
     "Residual",
+    "Hilbert",
     "Stack",
     "Pipeline",
     "Artifact",

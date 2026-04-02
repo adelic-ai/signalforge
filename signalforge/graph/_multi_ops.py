@@ -93,6 +93,92 @@ _BASELINE_METHODS = {
 # BaselineOp
 # ---------------------------------------------------------------------------
 
+# ---------------------------------------------------------------------------
+# HilbertOp
+# ---------------------------------------------------------------------------
+
+class HilbertOp(Op):
+    """
+    Compute the analytic signal via Hilbert transform.
+
+    Adds amplitude (envelope), phase, and instantaneous frequency
+    to each Surface. Operates per-scale row.
+
+    Input: SURFACES. Output: SURFACES (same shape, additional value arrays).
+    """
+
+    input_types = (ArtifactType.SURFACES,)
+    output_type = ArtifactType.SURFACES
+
+    def execute(self, *inputs: Artifact, plan: Any = None) -> Artifact:
+        from scipy.signal import hilbert
+        from ..pipeline.surface import Surface
+
+        surfaces = inputs[0].value
+        result_surfaces = []
+
+        for s in surfaces:
+            new_values = dict(s.values)  # keep originals
+
+            # Use "mean" if available, else first value array
+            source_key = "mean" if "mean" in s.values else next(iter(s.values))
+            arr = s.values[source_key]
+
+            amplitude = np.full_like(arr, np.nan)
+            phase = np.full_like(arr, np.nan)
+            inst_freq = np.full_like(arr, np.nan)
+
+            for i in range(arr.shape[0]):
+                row = arr[i]
+                finite_mask = np.isfinite(row)
+                if finite_mask.sum() < 4:
+                    continue
+
+                # Fill NaN for Hilbert (needs contiguous data)
+                filled = np.where(finite_mask, row, np.nanmean(row))
+                analytic = hilbert(filled)
+
+                amp = np.abs(analytic)
+                ph = np.angle(analytic)
+                # Instantaneous frequency: d(phase)/dt, unwrapped
+                unwrapped = np.unwrap(ph)
+                ifreq = np.gradient(unwrapped)
+
+                amplitude[i] = np.where(finite_mask, amp, np.nan)
+                phase[i] = np.where(finite_mask, ph, np.nan)
+                inst_freq[i] = np.where(finite_mask, ifreq, np.nan)
+
+            new_values["amplitude"] = amplitude
+            new_values["phase"] = phase
+            new_values["inst_freq"] = inst_freq
+
+            result_surfaces.append(Surface(
+                channel=s.channel,
+                keys=s.keys,
+                metric=s.metric,
+                profile=s.profile,
+                time_axis=s.time_axis,
+                scale_axis=s.scale_axis,
+                values=new_values,
+                n_events=s.n_events,
+                coverage=s.coverage,
+                coordinates=s.coordinates,
+                sampling_plan_id=s.sampling_plan_id,
+            ))
+
+        return Artifact(
+            type=ArtifactType.SURFACES,
+            value=result_surfaces,
+            producing_op=self,
+            plan=plan,
+            metadata={},
+        )
+
+
+# ---------------------------------------------------------------------------
+# BaselineOp
+# ---------------------------------------------------------------------------
+
 class BaselineOp(Op):
     """
     Compute a baseline from a Surface.
