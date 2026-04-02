@@ -131,17 +131,16 @@ from signalforge.domains import timeseries
 records = timeseries.ingest("vix.csv")
 
 x = Input()
-b = Bin(agg_funcs={"value": {"value": "mean"}})(x)
-m = Measure(profile="continuous")(b)
-bl = Baseline(method="ewma", alpha=0.1)(m)
-r = Residual(mode="ratio")(m, bl)
+b = Bin()(x)
+m = Measure()(b)
+bl = Baseline("ewma", alpha=0.1)(m)
+r = Residual("ratio")(m, bl)
 
 pipe = Pipeline(x, r)
-pipe.resolve(records=records)
-result = pipe.build(records)
+result = pipe.run(records)
 ```
 
-Pipelines are lazy DAGs — define the graph, resolve the geometry, then build. Branch and merge freely: two baselines, two residuals, [stack](docs/operators_guide.md) them into one surface.
+Pipelines are lazy DAGs — define the graph, run it. Branch and merge freely: two baselines, two residuals, [stack](docs/operators_guide.md) them into one surface.
 
 ## What makes this different
 

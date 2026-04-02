@@ -48,6 +48,13 @@ class BinOp(Op):
         from ..pipeline.binned import materialize
         records = inputs[0].value
         agg_funcs = self.params.get("agg_funcs")
+
+        # If agg is a simple string like "mean", derive full agg_funcs from channels
+        agg = self.params.get("agg")
+        if agg and not agg_funcs:
+            channels = sorted({r.channel for r in records})
+            agg_funcs = {ch: {"value": agg} for ch in channels}
+
         binned = materialize(records, plan, agg_funcs=agg_funcs)
         return Artifact(
             type=ArtifactType.BINNED,

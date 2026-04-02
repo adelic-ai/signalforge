@@ -236,6 +236,11 @@ class GraphPipeline:
             return self.outputs[0].artifact
         return tuple(o.artifact for o in self.outputs)
 
+    def run(self, records: Any = None, **resolve_kwargs: Any) -> Union[Artifact, Tuple[Artifact, ...]]:
+        """Resolve and build in one call."""
+        self.resolve(records=records, **resolve_kwargs)
+        return self.build(records)
+
     def summary(self) -> str:
         """Print the graph structure."""
         lines = [f"GraphPipeline ({len(self._nodes)} nodes)"]

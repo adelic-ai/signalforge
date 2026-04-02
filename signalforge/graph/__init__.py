@@ -32,14 +32,17 @@ def Input(**kwargs) -> Node:
     return Node(op)
 
 
-def Bin(**kwargs) -> BinOp:
-    """Create a Bin operator. Call with (input_node) to wire into graph."""
-    return BinOp(**kwargs)
+def Bin(agg: str = "mean", **kwargs) -> BinOp:
+    """Create a Bin operator. Call with (input_node) to wire into graph.
+
+    agg: aggregation function name (e.g. "mean", "count", "max").
+    """
+    return BinOp(agg=agg, **kwargs)
 
 
-def Measure(**kwargs) -> MeasureOp:
+def Measure(profile: str = "continuous", **kwargs) -> MeasureOp:
     """Create a Measure operator. Call with (binned_node) to wire into graph."""
-    return MeasureOp(**kwargs)
+    return MeasureOp(profile=profile, **kwargs)
 
 
 def Engineer(**kwargs) -> EngineerOp:
@@ -52,14 +55,20 @@ def Assemble(**kwargs) -> AssembleOp:
     return AssembleOp(**kwargs)
 
 
-def Baseline(**kwargs) -> BaselineOp:
-    """Create a Baseline operator. Call with (surfaces_node) to wire into graph."""
-    return BaselineOp(**kwargs)
+def Baseline(method: str = "ewma", **kwargs) -> BaselineOp:
+    """Create a Baseline operator. Call with (surfaces_node) to wire into graph.
+
+    method: "ewma", "median", or "rolling_mean".
+    """
+    return BaselineOp(method=method, **kwargs)
 
 
-def Residual(**kwargs) -> ResidualOp:
-    """Create a Residual operator. Call with (measured_node, baseline_node)."""
-    return ResidualOp(**kwargs)
+def Residual(mode: str = "difference", **kwargs) -> ResidualOp:
+    """Create a Residual operator. Call with (measured_node, baseline_node).
+
+    mode: "difference", "ratio", or "z".
+    """
+    return ResidualOp(mode=mode, **kwargs)
 
 
 def Stack(**kwargs) -> StackOp:
