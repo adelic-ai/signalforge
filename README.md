@@ -130,11 +130,11 @@ from signalforge.domains import timeseries
 
 records = timeseries.ingest("vix.csv")
 
-x = Input()
-b = Bin()(x)
-m = Measure()(b)
-bl = Baseline("ewma", alpha=0.1)(m)
-r = Residual("ratio")(m, bl)
+x = Input()                              # data bound at run time
+b = Bin()(x)                             # default: agg="mean". also: "count", "max"
+m = Measure()(b)                         # default: profile="continuous"
+bl = Baseline("ewma", alpha=0.1)(m)      # also: "median", "rolling_mean"
+r = Residual("ratio")(m, bl)             # also: "difference", "z"
 
 pipe = Pipeline(x, r)
 result = pipe.run(records)
