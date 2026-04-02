@@ -384,10 +384,10 @@ def cmd_surface(args: argparse.Namespace) -> int:
 
     pipe = Pipeline(x, output)
 
-    # Resolve — use explicit overrides if provided, else derive from data
+    # Resolve — derive horizon from max_window if given
     resolve_kwargs = {}
-    if args.horizon:
-        resolve_kwargs["horizon"] = args.horizon
+    if args.max_window:
+        resolve_kwargs["windows"] = [args.max_window]
     if args.grain:
         resolve_kwargs["grain"] = args.grain
 
@@ -725,8 +725,9 @@ def main(argv: list[str] | None = None) -> int:
     p_surf = sub.add_parser("surface", help="Build and display a surface from a CSV")
     p_surf.add_argument("csv", help="Input CSV file path")
     p_surf.add_argument("-hm", action="store_true", help="Render heatmap")
-    p_surf.add_argument("--horizon", type=int, default=None, help="Explicit horizon")
-    p_surf.add_argument("--grain", type=int, default=None, help="Explicit grain")
+    p_surf.add_argument("--max-window", type=int, default=None,
+                        help="Largest analysis window (horizon derived automatically)")
+    p_surf.add_argument("--grain", type=int, default=None, help="Finest resolution")
     p_surf.add_argument("--baseline", default=None,
                         choices=["ewma", "median", "rolling_mean"],
                         help="Baseline method")
