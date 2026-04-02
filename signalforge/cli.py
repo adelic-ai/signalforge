@@ -223,6 +223,299 @@ def cmd_neighborhood(args: argparse.Namespace) -> int:
 
 
 # ---------------------------------------------------------------------------
+# load
+# ---------------------------------------------------------------------------
+
+def _auto_ingest(csv_path: Path) -> list:
+    """Auto-detect CSV format and ingest into CanonicalRecords."""
+    import pandas as pd
+    from .pipeline.canonical import CanonicalRecord, OrderType
+
+    df = pd.read_csv(csv_path)
+    cols = list(df.columns)
+
+    # Two-column CSV: treat as generic timeseries
+    if len(cols) == 2:
+        date_col, value_col = cols
+        df[value_col] = pd.to_numeric(df[value_col], errors="coerce")
+        df = df.dropna(subset=[value_col])
+        return [
+            CanonicalRecord(
+                primary_order=i,
+                order_type=OrderType.SEQUENCE,
+                channel="value",
+                metric="value",
+                value=float(row[value_col]),
+                seq_order=i,
+            )
+            for i, row in df.iterrows()
+        ]
+
+    # Multi-column: look for known patterns
+    lower = {c.lower(): c for c in cols}
+
+    # timestamp + ticker + metric + value (equities format)
+    if all(k in lower for k in ("timestamp", "ticker", "metric", "value")):
+        from .domains import equities
+        return equities.ingest(str(csv_path))
+
+    # timestamp + station + component + value (intermagnet format)
+    if all(k in lower for k in ("timestamp", "station", "component", "value")):
+        from .domains import intermagnet
+        return intermagnet.ingest(str(csv_path))
+
+    # t_sec + eeg_rms (EEG format)
+    if all(k in lower for k in ("t_sec", "eeg_rms")):
+        from .domains import eeg
+        return eeg.ingest(str(csv_path))
+
+    # Fallback: use first column as index, second as value
+    if len(cols) >= 2:
+        value_col = cols[1]
+        df[value_col] = pd.to_numeric(df[value_col], errors="coerce")
+        df = df.dropna(subset=[value_col])
+        return [
+            CanonicalRecord(
+                primary_order=i,
+                order_type=OrderType.SEQUENCE,
+                channel=value_col,
+                metric="value",
+                value=float(row[value_col]),
+                seq_order=i,
+            )
+            for i, row in df.iterrows()
+        ]
+
+    print(f"Cannot auto-detect format for {csv_path.name}")
+    return []
+
+
+def cmd_load(args: argparse.Namespace) -> int:
+    """Show a summary of a CSV file."""
+    csv_path = Path(args.csv)
+    if not csv_path.exists():
+        print(f"File not found: {csv_path}")
+        return 1
+
+    import pandas as pd
+
+    t0 = time.perf_counter()
+    records = _auto_ingest(csv_path)
+    elapsed = time.perf_counter() - t0
+
+    if not records:
+        return 1
+
+    channels = sorted({r.channel for r in records})
+    keys_all = set()
+    for r in records:
+        if hasattr(r, 'keys') and r.keys:
+            keys_all.update(r.keys.keys())
+
+    orders = [r.primary_order for r in records]
+    min_o, max_o = min(orders), max(orders)
+
+    # Estimate grain
+    from .lattice.sampling import grain_from_orders
+    grain = grain_from_orders(orders)
+
+    print(f"  file      : {csv_path.name}")
+    print(f"  records   : {len(records):,}")
+    print(f"  channels  : {channels}")
+    if keys_all:
+        print(f"  keys      : {sorted(keys_all)}")
+    print(f"  range     : {min_o:,} → {max_o:,}  (span: {max_o - min_o:,})")
+    print(f"  est grain : {grain}")
+    print(f"  ({elapsed:.2f}s)")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+# surface
+# ---------------------------------------------------------------------------
+
+def cmd_surface(args: argparse.Namespace) -> int:
+    """Load CSV, build surface, show anomaly summary. Optional heatmap."""
+    csv_path = Path(args.csv)
+    if not csv_path.exists():
+        print(f"File not found: {csv_path}")
+        return 1
+
+    t_total = time.perf_counter()
+
+    # Ingest
+    t0 = time.perf_counter()
+    records = _auto_ingest(csv_path)
+    if not records:
+        return 1
+    t_ingest = time.perf_counter() - t0
+
+    channels = sorted({r.channel for r in records})
+    print(f"  file      : {csv_path.name}")
+    print(f"  records   : {len(records):,}  channels={channels}  ({t_ingest:.2f}s)")
+
+    # Build graph
+    from .graph import Input, Bin, Measure, Pipeline
+
+    x = Input()
+    agg = {ch: {"value": "mean"} for ch in channels}
+    b = Bin(agg_funcs=agg)(x)
+    m = Measure(profile="continuous")(b)
+
+    pipe = Pipeline(x, m)
+
+    # Resolve — use explicit overrides if provided, else derive from data
+    resolve_kwargs = {}
+    if args.horizon:
+        resolve_kwargs["horizon"] = args.horizon
+    if args.grain:
+        resolve_kwargs["grain"] = args.grain
+
+    pipe.resolve(records=records, **resolve_kwargs)
+    plan = pipe.plan
+
+    print(f"  horizon   : {plan.horizon:,}  grain={plan.grain}  cbin={plan.cbin}")
+    print(f"  windows   : {plan.windows}")
+    print(f"  basis     : {plan.prime_basis}")
+
+    # Build
+    t0 = time.perf_counter()
+    result = pipe.build(records)
+    surfaces = result.value
+    t_build = time.perf_counter() - t0
+
+    print(f"  surfaces  : {len(surfaces)}  ({t_build:.2f}s)")
+    for s in surfaces:
+        finite = np.isfinite(list(s.values.values())[0])
+        print(f"    {s.channel:12s}  shape={s.shape}  coverage={finite.mean():.1%}")
+
+    # Anomaly summary
+    print()
+    print("  Anomaly summary (peak |z| per scale):")
+    for s in surfaces:
+        means = s.values.get("mean")
+        if means is None:
+            continue
+        print(f"    {s.channel}")
+        scale_peaks = []
+        for i, w in enumerate(plan.windows):
+            row = means[i]
+            finite = row[np.isfinite(row)]
+            if len(finite) == 0:
+                continue
+            mu = np.mean(finite)
+            sigma = np.std(finite)
+            if sigma == 0:
+                continue
+            z = (finite - mu) / sigma
+            peak_idx = int(np.argmax(np.abs(z)))
+            peak = float(np.max(np.abs(z)))
+            scale_peaks.append((peak, w, peak_idx))
+        scale_peaks.sort(reverse=True)
+        for peak, w, idx in scale_peaks[:8]:
+            bar = "█" * min(int(peak), 30)
+            print(f"      scale={w:>6}  peak |z| = {peak:>6.2f}σ  {bar}")
+
+    total = time.perf_counter() - t_total
+    print(f"\n  total: {total:.2f}s")
+
+    # Heatmap
+    if args.hm:
+        # Try to read dates from the CSV for the time axis
+        import pandas as pd
+        df = pd.read_csv(csv_path)
+        date_col = df.columns[0]
+        dates = None
+        try:
+            dates = pd.to_datetime(df[date_col])
+            # Drop rows with missing values to match records
+            value_col = df.columns[1] if len(df.columns) == 2 else None
+            if value_col:
+                mask = pd.to_numeric(df[value_col], errors="coerce").notna()
+                dates = dates[mask].reset_index(drop=True)
+        except Exception:
+            pass
+        _render_heatmap(surfaces, plan, csv_path.name, dates)
+
+    return 0
+
+
+def _render_heatmap(surfaces: list, plan, filename: str = "", dates=None) -> None:
+    """Render a z-score heatmap of the mean surface for each channel."""
+    import matplotlib.pyplot as plt
+    import matplotlib.dates as mdates
+
+    for s in surfaces:
+        means = s.values.get("mean")
+        if means is None:
+            continue
+
+        fig, ax = plt.subplots(figsize=(14, 6))
+        finite_means = np.where(np.isfinite(means), means, np.nan)
+
+        # Compute z-scores per scale
+        z = np.full_like(finite_means, np.nan)
+        for i in range(finite_means.shape[0]):
+            row = finite_means[i]
+            valid = row[np.isfinite(row)]
+            if len(valid) > 0 and np.std(valid) > 0:
+                z[i] = (row - np.nanmean(row)) / np.nanstd(row)
+
+        n_scales, n_time = z.shape
+
+        # Time axis: use dates if available (allow partial coverage)
+        if dates is not None and len(dates) > 0:
+            last_idx = min(len(dates) - 1, n_time - 1)
+            extent = [
+                mdates.date2num(dates.iloc[0]),
+                mdates.date2num(dates.iloc[last_idx]),
+                -0.5,
+                n_scales - 0.5,
+            ]
+            im = ax.imshow(
+                z,
+                aspect="auto",
+                interpolation="nearest",
+                cmap="RdBu_r",
+                vmin=-4, vmax=4,
+                origin="lower",
+                extent=extent,
+            )
+            ax.xaxis_date()
+            ax.xaxis.set_major_locator(mdates.AutoDateLocator())
+            ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m"))
+            fig.autofmt_xdate(rotation=45)
+        else:
+            im = ax.imshow(
+                z,
+                aspect="auto",
+                interpolation="nearest",
+                cmap="RdBu_r",
+                vmin=-4, vmax=4,
+                origin="lower",
+            )
+            ax.set_xlabel("Time (bins)")
+
+        ax.set_ylabel("Window scale")
+        ax.set_yticks(range(n_scales))
+        ax.set_yticklabels([str(w) for w in plan.windows], fontsize=7)
+
+        title = f"SignalForge — {s.channel}"
+        if filename:
+            title += f"  ({filename})"
+        ax.set_title(title, fontsize=13, fontweight="bold")
+
+        cbar = fig.colorbar(im, ax=ax, shrink=0.8)
+        cbar.set_label(
+            "z-score (σ)\nDeviation of windowed mean from scale baseline",
+            fontsize=9,
+        )
+
+        plt.tight_layout()
+        plt.show()
+
+
+# ---------------------------------------------------------------------------
 # main
 # ---------------------------------------------------------------------------
 
@@ -250,6 +543,17 @@ def main(argv: list[str] | None = None) -> int:
                         choices=["intermagnet", "intermagnet-yearly", "eeg", "equities", "equities-daily", "timeseries"],
                         help="Domain name")
 
+    # load
+    p_load = sub.add_parser("load", help="Show a summary of a CSV file")
+    p_load.add_argument("csv", help="Input CSV file path")
+
+    # surface
+    p_surf = sub.add_parser("surface", help="Build and display a surface from a CSV")
+    p_surf.add_argument("csv", help="Input CSV file path")
+    p_surf.add_argument("-hm", action="store_true", help="Render heatmap")
+    p_surf.add_argument("--horizon", type=int, default=None, help="Explicit horizon")
+    p_surf.add_argument("--grain", type=int, default=None, help="Explicit grain")
+
     # neighborhood
     p_nb = sub.add_parser("neighborhood", help="Show the p-adic arithmetic viewing box")
     p_nb.add_argument("anchor", type=int, help="Center integer")
@@ -264,6 +568,8 @@ def main(argv: list[str] | None = None) -> int:
         "demo":         cmd_demo,
         "run":          cmd_run,
         "plan":         cmd_plan,
+        "load":         cmd_load,
+        "surface":      cmd_surface,
         "neighborhood": cmd_neighborhood,
     }
     return dispatch[args.command](args)
