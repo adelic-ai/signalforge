@@ -19,6 +19,7 @@ examples/run_kerberos.py
 
 # Large data files — download from source
 data/siena_eeg/*.edf
+data/*.csv
 
 # Binary array formats
 *.npy
