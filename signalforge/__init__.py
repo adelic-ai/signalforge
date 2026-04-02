@@ -94,7 +94,7 @@ def acquire(domain, path: str, **plan_kwargs) -> Pipeline:
     plan = mod.sampling_plan(**plan_kwargs)
     return Pipeline(records, plan)
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     # Pipeline: Stage 0
