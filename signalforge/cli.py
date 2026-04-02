@@ -135,7 +135,7 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     script = EXAMPLES / f"run_{domain}.py"
     if not script.exists():
-        print(f"No run script for domain {domain!r}. Available: intermagnet, eeg")
+        print(f"No run script for domain {domain!r}. Available: intermagnet, eeg, equities, timeseries")
         return 1
 
     import runpy
@@ -165,9 +165,18 @@ def cmd_plan(args: argparse.Namespace) -> int:
         elif domain == "eeg":
             from .domains import eeg
             plan = eeg.sampling_plan()
+        elif domain == "equities":
+            from .domains import equities
+            plan = equities.sampling_plan()
+        elif domain == "equities-daily":
+            from .domains import equities
+            plan = equities.sampling_plan_daily()
+        elif domain == "timeseries":
+            from .domains import timeseries
+            plan = timeseries.sampling_plan()
         else:
             print(f"Unknown domain {domain!r}.")
-            print("Available: intermagnet, intermagnet-yearly, eeg")
+            print("Available: intermagnet, intermagnet-yearly, eeg, equities, equities-daily, timeseries")
             return 1
     except Exception as e:
         print(f"Error: {e}")
@@ -230,7 +239,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # run
     p_run = sub.add_parser("run", help="Run the pipeline on a CSV file")
-    p_run.add_argument("domain", choices=["intermagnet", "eeg"],
+    p_run.add_argument("domain", choices=["intermagnet", "eeg", "equities", "timeseries"],
                        help="Domain (determines SamplingPlan and ingest)")
     p_run.add_argument("csv", help="Input CSV file path")
     p_run.add_argument("--out", default=None, help="Output directory for CSV export")
@@ -238,7 +247,7 @@ def main(argv: list[str] | None = None) -> int:
     # plan
     p_plan = sub.add_parser("plan", help="Show a SamplingPlan for a domain")
     p_plan.add_argument("domain",
-                        choices=["intermagnet", "intermagnet-yearly", "eeg"],
+                        choices=["intermagnet", "intermagnet-yearly", "eeg", "equities", "equities-daily", "timeseries"],
                         help="Domain name")
 
     # neighborhood
