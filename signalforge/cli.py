@@ -350,9 +350,48 @@ def cmd_surface(args: argparse.Namespace) -> int:
         return 1
     t_ingest = time.perf_counter() - t0
 
+    # Zoom — slice records by index or date
+    zoom_label = ""
+    if args.start_date or args.end_date:
+        import pandas as pd
+        df = pd.read_csv(csv_path)
+        dates = pd.to_datetime(df[df.columns[0]], errors="coerce")
+        value_col = df.columns[1] if len(df.columns) == 2 else None
+        if value_col:
+            mask = pd.to_numeric(df[value_col], errors="coerce").notna()
+            dates = dates[mask].reset_index(drop=True)
+
+        start_idx = 0
+        end_idx = len(records)
+        if args.start_date:
+            sd = pd.Timestamp(args.start_date)
+            start_idx = int((dates >= sd).idxmax()) if (dates >= sd).any() else 0
+        if args.end_date:
+            ed = pd.Timestamp(args.end_date)
+            end_idx = int((dates <= ed)[::-1].idxmax()) + 1 if (dates <= ed).any() else len(records)
+
+        records = records[start_idx:end_idx]
+        # Re-index primary_order from 0
+        for i, r in enumerate(records):
+            r.primary_order = i
+            if hasattr(r, 'seq_order') and r.seq_order is not None:
+                r.seq_order = i
+        zoom_label = f"  zoom      : {args.start_date or 'start'} → {args.end_date or 'end'} ({len(records):,} records)"
+    elif args.start is not None or args.end is not None:
+        s = args.start or 0
+        e = args.end or len(records)
+        records = records[s:e]
+        for i, r in enumerate(records):
+            r.primary_order = i
+            if hasattr(r, 'seq_order') and r.seq_order is not None:
+                r.seq_order = i
+        zoom_label = f"  zoom      : bin {s} → {e} ({len(records):,} records)"
+
     channels = sorted({r.channel for r in records})
     print(f"  file      : {csv_path.name}")
     print(f"  records   : {len(records):,}  channels={channels}  ({t_ingest:.2f}s)")
+    if zoom_label:
+        print(zoom_label)
 
     # Build graph
     from .graph import Input, Bin, Measure, Baseline, Residual, Pipeline
@@ -457,11 +496,25 @@ def cmd_surface(args: argparse.Namespace) -> int:
         dates = None
         try:
             dates = pd.to_datetime(df[date_col])
-            # Drop rows with missing values to match records
             value_col = df.columns[1] if len(df.columns) == 2 else None
             if value_col:
                 mask = pd.to_numeric(df[value_col], errors="coerce").notna()
                 dates = dates[mask].reset_index(drop=True)
+            # Apply same zoom slice to dates
+            if args.start_date or args.end_date:
+                start_idx = 0
+                end_idx = len(dates)
+                if args.start_date:
+                    sd = pd.Timestamp(args.start_date)
+                    start_idx = int((dates >= sd).idxmax()) if (dates >= sd).any() else 0
+                if args.end_date:
+                    ed = pd.Timestamp(args.end_date)
+                    end_idx = int((dates <= ed)[::-1].idxmax()) + 1 if (dates <= ed).any() else len(dates)
+                dates = dates.iloc[start_idx:end_idx].reset_index(drop=True)
+            elif args.start is not None or args.end is not None:
+                s = args.start or 0
+                e = args.end or len(dates)
+                dates = dates.iloc[s:e].reset_index(drop=True)
         except Exception:
             pass
 
@@ -738,6 +791,14 @@ def main(argv: list[str] | None = None) -> int:
     p_surf.add_argument("--residual", default=None,
                         choices=["difference", "ratio", "z"],
                         help="Residual mode (requires --baseline)")
+    p_surf.add_argument("--start", type=int, default=None,
+                        help="Start index (bin number) for zoom")
+    p_surf.add_argument("--end", type=int, default=None,
+                        help="End index (bin number) for zoom")
+    p_surf.add_argument("--start-date", default=None,
+                        help="Start date for zoom (e.g. 2008-01-01)")
+    p_surf.add_argument("--end-date", default=None,
+                        help="End date for zoom (e.g. 2009-12-31)")
     p_surf.add_argument("--save", default=None,
                         help="Save heatmap to file instead of displaying")
 
