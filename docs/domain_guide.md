@@ -26,19 +26,18 @@ Your domain is next.
 
 ## Just want specific windows?
 
-If you know which windows you need, let `horizon_for()` compute the geometry
-for you:
+If you know which windows you need, declare them directly:
 
 ```python
 import signalforge as sf
 
 # I need 7s, 30s, and 60s windows at 1s resolution
-plan = sf.SamplingPlan(sf.horizon_for([7, 30, 60], grain=1), grain=1)
+plan = sf.SamplingPlan.from_windows([7, 30, 60], grain=1)
 ```
 
-`horizon_for()` returns the smallest horizon that contains all your requested
-windows as lattice members. The lattice then fills in any intermediate scales
-automatically. No manual horizon calculation needed.
+`from_windows()` derives the measurement geometry from your declared windows
+and grain. The normalized scale space fills in any intermediate scales
+automatically.
 
 For most domain masters writing a full domain module, read on.
 
@@ -59,7 +58,7 @@ The `SamplingPlan` answers two questions:
 | `horizon` | What is the natural outer span of your data? One day, one session, one orbit. |
 | `grain` | What is the finest meaningful unit? One second, one sample, one tick. |
 
-From those two integers, the p-adic divisibility lattice enumerates every valid
+From those two integers, the normalized scale space enumerates every valid
 measurement window. You select the ones your field actually uses. The pipeline
 builds a surface — a time × scale grid — and extracts features from it.
 

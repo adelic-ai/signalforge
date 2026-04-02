@@ -21,7 +21,7 @@ factorization as a coordinate system — each prime is an axis, each exponent is
 coordinate. Under this embedding, divisibility becomes geometry: one window
 divides another if and only if its coordinate vector is componentwise ≤.
 
-This is the p-adic divisibility lattice. It determines which measurement windows
+This is the normalized scale space. It determines which measurement windows
 are valid, how they relate to each other, and why surfaces from different sources
 are directly comparable. The geometry is not a metaphor — it is the load-bearing
 structure of the pipeline.
