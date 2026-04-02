@@ -355,14 +355,34 @@ def cmd_surface(args: argparse.Namespace) -> int:
     print(f"  records   : {len(records):,}  channels={channels}  ({t_ingest:.2f}s)")
 
     # Build graph
-    from .graph import Input, Bin, Measure, Pipeline
+    from .graph import Input, Bin, Measure, Baseline, Residual, Pipeline
 
     x = Input()
     agg = {ch: {"value": "mean"} for ch in channels}
     b = Bin(agg_funcs=agg)(x)
     m = Measure(profile="continuous")(b)
 
-    pipe = Pipeline(x, m)
+    # Default output is the measured surface
+    output = m
+
+    # Apply baseline and/or residual if requested
+    if args.baseline:
+        bl_kwargs = {"method": args.baseline}
+        if args.baseline == "ewma":
+            bl_kwargs["alpha"] = args.alpha
+        else:
+            bl_kwargs["window"] = args.window
+        bl = Baseline(**bl_kwargs)(m)
+
+        if args.residual:
+            output = Residual(mode=args.residual)(m, bl)
+        else:
+            output = bl
+    elif args.residual:
+        print("  --residual requires --baseline")
+        return 1
+
+    pipe = Pipeline(x, output)
 
     # Resolve — use explicit overrides if provided, else derive from data
     resolve_kwargs = {}
@@ -390,16 +410,25 @@ def cmd_surface(args: argparse.Namespace) -> int:
         print(f"    {s.channel:12s}  shape={s.shape}  coverage={finite.mean():.1%}")
 
     # Anomaly summary
+    # Pick the first available value array from the surface
     print()
-    print("  Anomaly summary (peak |z| per scale):")
+    label = "peak |z| per scale"
+    if args.baseline and args.residual:
+        label = f"{args.residual} residual vs {args.baseline} baseline"
+    elif args.baseline:
+        label = f"{args.baseline} baseline"
+    print(f"  Anomaly summary ({label}):")
     for s in surfaces:
-        means = s.values.get("mean")
-        if means is None:
+        # Use "mean" if available, else first value array
+        arr = s.values.get("mean")
+        if arr is None:
+            arr = next(iter(s.values.values()), None)
+        if arr is None:
             continue
         print(f"    {s.channel}")
         scale_peaks = []
         for i, w in enumerate(plan.windows):
-            row = means[i]
+            row = arr[i]
             finite = row[np.isfinite(row)]
             if len(finite) == 0:
                 continue
@@ -420,7 +449,7 @@ def cmd_surface(args: argparse.Namespace) -> int:
     print(f"\n  total: {total:.2f}s")
 
     # Heatmap
-    if args.hm:
+    if args.hm or args.save:
         # Try to read dates from the CSV for the time axis
         import pandas as pd
         df = pd.read_csv(csv_path)
@@ -435,28 +464,43 @@ def cmd_surface(args: argparse.Namespace) -> int:
                 dates = dates[mask].reset_index(drop=True)
         except Exception:
             pass
-        _render_heatmap(surfaces, plan, csv_path.name, dates)
+
+        subtitle = ""
+        if args.baseline and args.residual:
+            subtitle = f"{args.residual} residual vs {args.baseline}"
+        elif args.baseline:
+            subtitle = f"baseline: {args.baseline}"
+
+        _render_heatmap(surfaces, plan, csv_path.name, dates,
+                        subtitle=subtitle, save_path=args.save)
 
     return 0
 
 
-def _render_heatmap(surfaces: list, plan, filename: str = "", dates=None) -> None:
+def _render_heatmap(surfaces: list, plan, filename: str = "", dates=None,
+                    subtitle: str = "", save_path: str = None) -> None:
     """Render a z-score heatmap of the mean surface for each channel."""
+    import matplotlib
+    if save_path:
+        matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     import matplotlib.dates as mdates
 
     for s in surfaces:
-        means = s.values.get("mean")
-        if means is None:
+        # Use "mean" if available, else first value array
+        arr = s.values.get("mean")
+        if arr is None:
+            arr = next(iter(s.values.values()), None)
+        if arr is None:
             continue
 
         fig, ax = plt.subplots(figsize=(14, 6))
-        finite_means = np.where(np.isfinite(means), means, np.nan)
+        finite_arr = np.where(np.isfinite(arr), arr, np.nan)
 
         # Compute z-scores per scale
-        z = np.full_like(finite_means, np.nan)
-        for i in range(finite_means.shape[0]):
-            row = finite_means[i]
+        z = np.full_like(finite_arr, np.nan)
+        for i in range(finite_arr.shape[0]):
+            row = finite_arr[i]
             valid = row[np.isfinite(row)]
             if len(valid) > 0 and np.std(valid) > 0:
                 z[i] = (row - np.nanmean(row)) / np.nanstd(row)
@@ -503,6 +547,8 @@ def _render_heatmap(surfaces: list, plan, filename: str = "", dates=None) -> Non
         title = f"SignalForge — {s.channel}"
         if filename:
             title += f"  ({filename})"
+        if subtitle:
+            title += f"\n{subtitle}"
         ax.set_title(title, fontsize=13, fontweight="bold")
 
         cbar = fig.colorbar(im, ax=ax, shrink=0.8)
@@ -512,7 +558,11 @@ def _render_heatmap(surfaces: list, plan, filename: str = "", dates=None) -> Non
         )
 
         plt.tight_layout()
-        plt.show()
+        if save_path:
+            plt.savefig(save_path, dpi=150)
+            print(f"  Saved: {save_path}")
+        else:
+            plt.show()
 
 
 # ---------------------------------------------------------------------------
@@ -553,6 +603,18 @@ def main(argv: list[str] | None = None) -> int:
     p_surf.add_argument("-hm", action="store_true", help="Render heatmap")
     p_surf.add_argument("--horizon", type=int, default=None, help="Explicit horizon")
     p_surf.add_argument("--grain", type=int, default=None, help="Explicit grain")
+    p_surf.add_argument("--baseline", default=None,
+                        choices=["ewma", "median", "rolling_mean"],
+                        help="Baseline method")
+    p_surf.add_argument("--alpha", type=float, default=0.1,
+                        help="EWMA smoothing factor (default: 0.1)")
+    p_surf.add_argument("--window", type=int, default=20,
+                        help="Baseline window size for median/rolling_mean (default: 20)")
+    p_surf.add_argument("--residual", default=None,
+                        choices=["difference", "ratio", "z"],
+                        help="Residual mode (requires --baseline)")
+    p_surf.add_argument("--save", default=None,
+                        help="Save heatmap to file instead of displaying")
 
     # neighborhood
     p_nb = sub.add_parser("neighborhood", help="Show the p-adic arithmetic viewing box")
