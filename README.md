@@ -1,57 +1,15 @@
 # SignalForge
 
-Multiscale signal processing pipeline built on the p-adic divisibility lattice.
-Give it any ordered sequence — clinical EEG, geomagnetic field measurements,
-network traffic, log events — and it produces a multiscale surface of
-structurally invariant features, ready for anomaly detection or ML.
-
-No labels. No domain-specific processing. No post-hoc normalization between recordings.
-
----
-
-## Where this came from
-
-Computing a signal at multiple window sizes used to mean running each window
-separately — re-read the data, re-aggregate, re-score. Adding a window added
-another full pass. Adding a feature multiplied the cost again. The pipeline was
-doing something that looked like integration, badly.
-
-The cleaner way is hiding in plain sight in any calculus course. Integration
-starts with Riemann sums — partition the domain, sum the rectangles — and the
-punchline is: take the limit as the partition gets infinitely fine and you get
-the exact area under the curve. That is the triumphant conclusion of the whole
-story. But for a discrete signal there is no limit to take. The grain *is* the
-finest partition. Read the data once at grain resolution, aggregate upward, and
-every coarser window is already determined by the finer values beneath it —
-nothing to recompute. You get the same compositional structure that makes
-integration work, without needing the limit that makes it exact in the
-continuous case, because at the grain you are already exact.
-
-The arithmetic that makes this exact is divisibility. A window tiles a sequence
-cleanly if and only if it divides the sequence length. Windows nest without
-remainder if and only if one divides the other. The set of valid windows for a
-given grain and horizon is the divisor lattice of that horizon — a structure
-from number theory that turns out to be exactly the right coordinate system for
-multi-scale signal analysis.
-
-That is what SignalForge is: multi-scale analysis built on the arithmetic that
-was always implicit in windowed computation, made explicit and used directly.
-
----
-
-## What counts as a signal
-
-SignalForge works on any ordered sequence. Time is not required.
-
-**No timestamps**: If your data is a sequence of events with no time component — log entries, transactions, genomic positions, ranked items — each event is already one bin. Feed it directly. Set `grain=1`.
-
-**Time-ordered data**: The standard path bins by the smallest meaningful time unit (`grain`). A second view is also available: collapsing the time axis entirely, treating each event as the next position in an ordered sequence regardless of when it occurred. This can reveal structure that time-binning distributes across windows. Both views are valid and often complementary.
-
-Within a time-ordered sequence, a finer ordering axis may exist — a sequence number, monotonic counter, or sub-second timestamp — that places events more precisely. Whether that resolution is meaningful is a domain judgment. `grain` is where that decision is encoded.
-
----
+Multiscale signal analysis on the p-adic divisibility lattice.
+Give it any ordered sequence and explore its structure across scales — no labels, no training, no domain-specific code.
 
 ## Install
+
+```bash
+pip install adelic-signalforge
+```
+
+Or from source:
 
 ```bash
 git clone https://github.com/adelic-ai/signalforge
@@ -59,126 +17,168 @@ cd signalforge
 uv sync
 ```
 
----
+## Explore your data
 
-## Quick start
+SignalForge works on any two-column CSV (date/index, value). Download some data and start exploring:
 
 ```bash
-uv run signalforge demo                        # EEG seizure detection demo
-uv run signalforge neighborhood 36 6           # p-adic arithmetic viewing box
-uv run signalforge plan eeg                    # sampling plan for EEG
-uv run signalforge run eeg path/to/data.csv    # run on your data
+# Grab VIX volatility data (2005–2012)
+curl -o vix.csv "https://fred.stlouisfed.org/graph/fredgraph.csv?id=VIXCLS&cosd=2005-01-01&coed=2012-12-31"
+
+# What's in it?
+sf load vix.csv
 ```
 
----
+```
+  file      : vix.csv
+  records   : 2,013
+  channels  : ['value']
+  range     : 0 → 2,085  (span: 2,085)
+  est grain : 2
+```
 
-## Demonstrated capabilities
+### Build a surface
 
-SignalForge detected a clinical epileptic seizure at **13.96σ** on CHB-MIT
-EEG data — with no training data, no labels, and no EEG-specific code. The
-same pipeline, unchanged, processes a full year of INTERMAGNET geomagnetic
-observatory data.
+A surface is a 2D grid — time on one axis, analysis scale on the other. One command:
 
-The signal types have nothing in common. The pipeline does not know that.
-It operates on the arithmetic structure of the data's sequential organization,
-not on its physical content.
+```bash
+sf surface vix.csv -hm --max-window 360
+```
 
-Full results and reproducibility instructions: [docs/empirical_results.md](docs/empirical_results.md)
+This produces a [multiscale heatmap](docs/scale_space.md) showing z-score deviations across all scales. The 2008 financial crisis appears as a vertical band of red — visible across every scale simultaneously.
 
----
+`--max-window 360` means "analyze at scales up to 360 bins." The [measurement geometry](docs/sampling_domain.md) — horizon, lattice, coordinates — is derived automatically from that declaration.
 
-## How it works
+### Try different baselines
 
-### The sampling domain
+What's the deviation *relative to*? That's the baseline. Swap it:
 
-A standard multi-scale analysis requires the analyst to choose window sizes.
-SignalForge does not. Declare the windows you want and your grain — the finest
-resolution unit — and the measurement space is derived in two stages:
-unitization embeds your quantities into a common integer domain; normalization
-completes that set to the divisibility lattice via the horizon:
+```bash
+sf surface vix.csv -hm --baseline ewma --alpha 0.1
+sf surface vix.csv -hm --baseline median --window 20
+```
+
+Don't know what EWMA does? Ask:
+
+```bash
+sf inspect ewma
+```
+
+```
+  Exponentially Weighted Moving Average
+  =====================================
+
+  Formula:  s_t = α · x_t + (1 - α) · s_{t-1}
+  Params:   α (alpha): smoothing factor in (0, 1]. Higher = more responsive.
+  ...
+```
+
+Available methods: `ewma`, `median`, `rolling_mean`. See `sf inspect <name>` for any of them.
+
+### Score the residual
+
+Remove the baseline and look at what's left:
+
+```bash
+sf surface vix.csv -hm --baseline ewma --residual ratio
+sf surface vix.csv -hm --baseline median --residual z
+```
+
+Residual modes: `difference` (absolute), `ratio` (multiplicative), `z` (normalized by baseline variability). See `sf inspect ratio`, `sf inspect z`.
+
+### Zoom in
+
+Spotted something interesting? Zoom:
+
+```bash
+sf surface vix.csv -hm --start-date 2008-01-01 --end-date 2009-12-31
+sf surface vix.csv -hm --start 800 --end 1200
+```
+
+The surface is recomputed over the zoomed region — the lattice geometry applies fresh to the subset.
+
+### Set up a workspace
+
+When you're doing serious exploration, initialize a workspace:
+
+```bash
+sf init my_analysis --csv vix.csv --max-window 360
+cd my_analysis
+sf surface -hm
+sf surface -hm --baseline ewma --residual ratio --save output/ratio.png
+```
+
+The workspace stores your config, so you don't repeat flags. Outputs go to `output/`. You can version your experiments with git.
+
+### View the lattice geometry
+
+```bash
+sf plan equities-daily
+```
+
+Shows the [sampling plan](docs/sampling_domain.md) — every window, hop, and [p-adic coordinate](docs/scale_space.md) in the lattice. This is the measurement space your surfaces live in.
+
+## Compose pipelines in Python
+
+For more control, compose pipelines programmatically using the [graph API](docs/overview.md):
 
 ```python
-plan = SamplingPlan.from_windows([7, 30, 90, 360], grain=g)
+from signalforge.graph import Input, Bin, Measure, Baseline, Residual, Pipeline
+from signalforge.domains import timeseries
+
+records = timeseries.ingest("vix.csv")
+
+x = Input()
+b = Bin(agg_funcs={"value": {"value": "mean"}})(x)
+m = Measure(profile="continuous")(b)
+bl = Baseline(method="ewma", alpha=0.1)(m)
+r = Residual(mode="ratio")(m, bl)
+
+pipe = Pipeline(x, r)
+pipe.resolve(records=records)
+result = pipe.build(records)
 ```
 
-The horizon is derived as `lcm(windows + [grain])`, guaranteeing the grain is
-an exact lattice member with no snapping. Divisors are the only window sizes
-that partition the sequence without remainder and nest into each other exactly
-— computation flows up the lattice in a single pass, without re-reading the
-raw data at each scale.
+Pipelines are lazy DAGs — define the graph, resolve the geometry, then build. Branch and merge freely: two baselines, two residuals, [stack](docs/operators_guide.md) them into one surface.
 
-[docs/sampling_domain.md](docs/sampling_domain.md) — [arXiv preprint — forthcoming]
+## What makes this different
 
-### Structural invariance
+Standard multiscale analysis (STFT, wavelets) requires the analyst to choose window sizes. SignalForge [derives the measurement space](docs/sampling_domain.md) from your declared windows and grain. The valid scales are the divisors of the horizon — a structure from number theory that guarantees artifact-free tiling, perfect nesting, and [structural invariance](docs/structural_invariance.md) across recordings.
 
-Because the measurement space is determined by `H`, two recordings that share a
-SamplingPlan share an identical lattice. Features at scale `d` measure the same
-structural property in both — no alignment, no cross-recording normalization
-required. Surfaces from different recordings, patients, instruments, and sites
-stack directly into an ML-ready bundle.
+Two signals with the same sampling plan produce surfaces that are [directly comparable](docs/structural_invariance.md) — no post-hoc normalization needed. This is what makes ML on surfaces meaningful: features at each scale occupy the same structural position in the lattice.
 
-[docs/structural_invariance.md](docs/structural_invariance.md)
+For a detailed comparison with wavelets, STFT, and EMD: [docs/comparison.md](docs/comparison.md)
 
-### The pipeline
+## What counts as a signal
 
-| Stage | Name | Input → Output |
-|------:|------|----------------|
-| 0 | Ingest | Raw source data → CanonicalRecord |
-| 1 | Plan | Declarations → SamplingPlan |
-| 2 | Materialize | CanonicalRecords → BinnedRecord |
-| 3 | Measure | BinnedRecords → Surface (time × scale grid) |
-| 4 | Engineer | Surface → FeatureTensor |
-| 5 | Assemble | FeatureTensors → FeatureBundle (ML-ready) |
+Anything ordered. Time-stamped sensor data, sequential event logs, daily market prices, clinical recordings, genomic positions. If it has an order and a value, SignalForge can surface its multiscale structure.
 
-Domain knowledge lives exclusively in `signalforge/domains/`. Stages 1–5 are
-identical across all data sources. [docs/overview.md](docs/overview.md)
+Time is not required — event-ordered sequences work with `grain=1`, where each event is one bin and scales are measured in events rather than time.
 
----
+[docs/domain_guide.md](docs/domain_guide.md) — how to bring your own data
 
-## Bring your own data
+## Demonstrated results
 
-SignalForge ships with two domains: `eeg` (clinical EEG) and `intermagnet`
-(geomagnetic observatory). To add your own, write a single Python file in
-`signalforge/domains/`.
+SignalForge detected a clinical epileptic seizure at **13.96σ** on CHB-MIT EEG data — no training data, no labels, no EEG-specific code. The same pipeline processes INTERMAGNET geomagnetic observatory data unchanged.
 
-Specify the windows meaningful for your data and a grain — either declared
-directly when the cadence is known, or estimated from the data via
-[`grain_from_orders`](docs/binjamin.md). Pass both to `from_windows` and the
-lattice is determined. Everything downstream runs without modification.
+[docs/empirical_results.md](docs/empirical_results.md) — full results and reproducibility
 
-- [docs/domain_guide.md](docs/domain_guide.md) — how to write a domain
-- [docs/data_guide.md](docs/data_guide.md) — downloading data, running examples
-- [CONTRIBUTING.md](CONTRIBUTING.md) — submitting a domain or pipeline change
+## Documentation
 
----
-
-## How it compares to wavelets and STFT
-
-Wavelet analysis uses a dyadic scale hierarchy — windows at powers of 2. This
-is one chain along one prime axis. STFT uses a single fixed window chosen by
-the analyst. SignalForge uses all prime axes simultaneously, derived from the
-horizon rather than chosen. The result is a strictly larger, more complete
-measurement space with guaranteed cross-recording comparability.
-
-[docs/comparison.md](docs/comparison.md)
-
----
-
-## Contents
-
-- [docs/empirical_results.md](docs/empirical_results.md) — EEG and geomagnetic results, reproducibility
-- [docs/sampling_domain.md](docs/sampling_domain.md) — why divisors, the lattice, computational efficiency
-- [docs/structural_invariance.md](docs/structural_invariance.md) — why features are directly comparable
-- [docs/scale_space.md](docs/scale_space.md) — the surface, gradients, anomaly geometry, and where this is going
-- [docs/comparison.md](docs/comparison.md) — STFT, wavelets, EMD, and this
-- [docs/overview.md](docs/overview.md) — pipeline detail, the mathematics, the name
-- [docs/domain_guide.md](docs/domain_guide.md) — writing a domain
-- [docs/binjamin.md](docs/binjamin.md) — automatic grain selection
-- [docs/design_grain_snapping.md](docs/design_grain_snapping.md) — grain, horizon as derived value, from_windows design
-- [docs/data_guide.md](docs/data_guide.md) — data access and preprocessing
-- [docs/operators_guide.md](docs/operators_guide.md) — pipeline operators
-
----
+| Doc | What it covers |
+|-----|----------------|
+| [Sampling domain](docs/sampling_domain.md) | The lattice, horizon, grain, why divisors |
+| [Scale space](docs/scale_space.md) | Surfaces, coordinates, the geometry of scale |
+| [Structural invariance](docs/structural_invariance.md) | Why surfaces are directly comparable |
+| [Comparison](docs/comparison.md) | STFT, wavelets, EMD vs SignalForge |
+| [Pipeline overview](docs/overview.md) | Stages, architecture, the graph API |
+| [Domain guide](docs/domain_guide.md) | Bring your own data |
+| [Data guide](docs/data_guide.md) | Downloading datasets, running examples |
+| [Operators](docs/operators_guide.md) | Transform operators and derived channels |
+| [Grain estimation](docs/binjamin.md) | Automatic grain selection |
+| [Grain & horizon design](docs/design_grain_snapping.md) | Internal design decisions |
+| [EEG discovery](docs/discovery_eeg_seizure_detection.md) | The seizure detection case study |
+| [Empirical results](docs/empirical_results.md) | Cross-domain validation |
 
 ## License
 
@@ -189,18 +189,6 @@ Commercial use requires a license from Adelic — contact [shun.honda@adelic.org
 
 Converts to Apache 2.0 on 2029-03-22.
 
----
-
 ## Citation
 
-If you use SignalForge in published work, a citation entry will be available
-once the arXiv preprint is posted.
-
-If you use the CHB-MIT EEG data, please cite:
-
-> Shoeb AH, Guttag JV. Application of machine learning to epileptic seizure
-> detection. In: *Proceedings of the 27th International Conference on Machine
-> Learning (ICML)*. 2010.
-
-Raw data: CHB-MIT Scalp EEG Database v1.0.0
-https://physionet.org/content/chbmit/1.0.0/
+If you use SignalForge in published work, a citation entry will be available once the arXiv preprint is posted.
