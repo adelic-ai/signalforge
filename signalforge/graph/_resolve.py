@@ -2,13 +2,14 @@
 signalforge.graph._resolve
 
 Constraint collection and SamplingPlan derivation from a graph.
+
+resolve() can derive grain from records automatically using grain_from_orders(),
+and horizon from windows using lcm. Explicit overrides always take precedence.
 """
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
-
-from ._types import parse_duration
+from typing import Any, Dict, List, Optional, Sequence
 
 
 def collect_constraints(nodes: list) -> Dict[str, Any]:
@@ -44,49 +45,79 @@ def collect_constraints(nodes: list) -> Dict[str, Any]:
     return result
 
 
-def derive_plan(constraints: Dict[str, Any]) -> Any:
+def derive_grain_from_records(records: Any, method: str = "freedman_diaconis") -> int:
     """
-    Derive a SamplingPlan from collected constraints.
+    Estimate grain from CanonicalRecords using inter-event statistics.
 
-    If windows and grain are both present, constructs a plan from those.
-    If only grain is present, uses a default horizon.
-    Falls back to a minimal default plan if no constraints are given.
+    Uses grain_from_orders() from the lattice module.
     """
-    from ..lattice.sampling import SamplingPlan
+    from ..lattice.sampling import grain_from_orders
+    orders = [r.primary_order for r in records]
+    return grain_from_orders(orders, method=method)
+
+
+def derive_plan(
+    constraints: Dict[str, Any],
+    records: Any = None,
+) -> Any:
+    """
+    Derive a SamplingPlan from collected constraints and optionally from data.
+
+    Priority:
+      1. Explicit overrides in constraints (grain, windows, horizon)
+      2. Grain estimated from records if not specified
+      3. Horizon derived from windows via lcm (per paper: H = lcm(W ∪ {g}))
+      4. Defaults (horizon=360, grain=1) if nothing is specified
+
+    Returns
+    -------
+    SamplingPlan
+    """
+    from ..lattice.sampling import SamplingPlan, suggest_cbin
     from ..lattice.coordinates import smallest_divisor_gte, lattice_members
 
-    grain = constraints.get("grain", 1)
+    grain = constraints.get("grain")
     windows = constraints.get("windows")
     horizon = constraints.get("horizon")
 
+    # Derive grain from data if not explicitly set
+    if grain is None and records is not None:
+        grain = derive_grain_from_records(records)
+    if grain is None:
+        grain = 1
+
+    # Case 1: explicit horizon
     if horizon is not None:
-        # Explicit horizon — use it, derive windows from lattice if not given
         cbin = smallest_divisor_gte(horizon, grain)
         if windows:
-            # Validate that requested windows are valid divisors
             valid = set(lattice_members(horizon, cbin))
-            selected = sorted(w for w in valid if w in set(windows) or w == horizon)
+            requested = set(windows)
+            selected = sorted(w for w in valid if w in requested or w == horizon)
             if not selected:
                 selected = sorted(valid)
         else:
-            # All lattice members as windows
             valid = set(lattice_members(horizon, cbin))
             selected = sorted(valid)
         return SamplingPlan(horizon, grain, windows=selected)
 
+    # Case 2: windows given, derive horizon as lcm(W ∪ {grain})
     if windows:
-        # Derive horizon from windows as lcm
         from math import lcm
         from functools import reduce
         all_vals = windows + [grain]
         horizon = reduce(lcm, all_vals)
         cbin = smallest_divisor_gte(horizon, grain)
         valid = set(lattice_members(horizon, cbin))
-        # Include requested windows plus any lattice members between them
-        selected = sorted(w for w in valid if w in set(windows) or w <= max(windows))
+        requested = set(windows)
+        # Active domain: Div(H) ∩ [cbin, max(W)]
+        max_w = max(windows)
+        selected = sorted(
+            w for w in valid
+            if (w in requested or w <= max_w) and w >= cbin
+        )
         return SamplingPlan(horizon, grain, windows=selected)
 
-    # No constraints — default plan (360, grain=1)
+    # Case 3: no windows, no horizon — use default
     horizon = 360
     cbin = smallest_divisor_gte(horizon, grain)
     valid = set(lattice_members(horizon, cbin))

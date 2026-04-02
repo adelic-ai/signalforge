@@ -179,12 +179,17 @@ class GraphPipeline:
             raise RuntimeError("Pipeline has not been resolved yet.")
         return self._plan
 
-    def resolve(self, **overrides: Any) -> "GraphPipeline":
+    def resolve(self, records: Any = None, **overrides: Any) -> "GraphPipeline":
         """
         Walk the graph, collect constraints, derive SamplingPlan.
 
+        If records are provided and no grain is specified, grain is
+        estimated from the data using inter-event statistics.
+
         Parameters
         ----------
+        records : list[CanonicalRecord], optional
+            Data for grain estimation. If not given, uses defaults.
         **overrides
             Explicit SamplingPlan parameters that override derived values.
             E.g. resolve(horizon=360, grain=1).
@@ -194,7 +199,7 @@ class GraphPipeline:
         from ._resolve import collect_constraints, derive_plan
         constraints = collect_constraints(self._nodes)
         constraints.update(overrides)
-        self._plan = derive_plan(constraints)
+        self._plan = derive_plan(constraints, records=records)
         self._resolved = True
         return self
 
@@ -212,7 +217,7 @@ class GraphPipeline:
         Artifact or tuple of Artifacts
         """
         if not self._resolved:
-            self.resolve()
+            self.resolve(records=records)
 
         for node in self._nodes:
             if node.is_built:
