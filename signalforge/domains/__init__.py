@@ -1,25 +1,28 @@
 """
 signalforge.domains
 
-Domain-specific SamplingPlan factories.
+Domain-specific ingest functions.
 
 Each domain module implements:
 
-    sampling_plan(max_window: int, data_minbin: int) -> SamplingPlan
+    ingest(path: str) -> list[CanonicalRecord]
 
-using expert knowledge of that domain's natural periodicities and
-meaningful analysis scales. The returned SamplingPlan is a standard
-lattice artifact — domain knowledge lives only in the window selection.
+Ingest transforms raw source data into domain-agnostic CanonicalRecords.
+All domain knowledge stops here. The graph derives sampling geometry
+from the data and user declarations — domains do not define plans.
 
 Shipped domains
 ---------------
-intermagnet  — geomagnetic observatory data (INTERMAGNET standard)
+eeg         — clinical EEG (CHB-MIT format)
+intermagnet — geomagnetic observatory (INTERMAGNET standard)
+equities    — equity price data (yfinance format)
+timeseries  — generic two-column CSV (date, value)
 
 Adding a domain
 ---------------
-Create a module in this package. Implement sampling_plan(). No
-registration or plugin machinery required — import directly.
+Create a module in this package. Implement ingest(). No registration
+or plugin machinery required — import directly.
 
-    from signalforge.domains import intermagnet
-    plan = intermagnet.sampling_plan(86400, 60)
+    from signalforge.domains import timeseries
+    records = timeseries.ingest("data.csv")
 """
