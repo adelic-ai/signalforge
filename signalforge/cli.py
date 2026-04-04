@@ -564,15 +564,44 @@ def cmd_surface(args: argparse.Namespace) -> int:
     print(f"  {'─' * 50}")
     print(f"  {total:.2f}s")
 
-    # Suggestions
-    if not args.hm:
-        print()
-        cmd = f"sf surface {csv_path}"
-        if args.max_window:
-            cmd += f" --max-window {args.max_window}"
-        print(f"  Add -hm for heatmap:  {cmd} -hm")
-    if not args.baseline:
-        print(f"  Try a baseline:       sf surface {csv_path} -hm --baseline ewma --residual z")
+    # Save to workspace if available
+    name = getattr(args, "name", None)
+    if ws and name:
+        exp_dir = ws / "output" / name
+        exp_dir.mkdir(parents=True, exist_ok=True)
+        # Save surface data
+        for s in surfaces:
+            for agg_name, arr in s.data.items():
+                np.save(exp_dir / f"{s.channel}_{agg_name}.npy", arr)
+        # Save plan info
+        import json
+        meta = {
+            "channel": [s.channel for s in surfaces],
+            "horizon": plan.horizon,
+            "grain": plan.grain,
+            "cbin": plan.cbin,
+            "windows": list(plan.windows),
+            "baseline": args.baseline,
+            "residual": args.residual,
+            "csv": str(csv_path),
+        }
+        with open(exp_dir / "meta.json", "w") as f:
+            json.dump(meta, f, indent=2)
+        print(f"  saved     {exp_dir}/")
+
+    # Suggestions (suppressed by "suggestions": false in sf.json)
+    show_hints = ws_config.get("suggestions", True) if ws_config else True
+    if show_hints:
+        if not args.hm:
+            print()
+            cmd = f"sf surface {csv_path}"
+            if args.max_window:
+                cmd += f" --max-window {args.max_window}"
+            print(f"  Add -hm for heatmap:  {cmd} -hm")
+        if not args.baseline:
+            print(f"  Try a baseline:       sf surface {csv_path} -hm --baseline ewma --residual z")
+        if ws and not name:
+            print(f"  Save this run:        add --name <label>")
     print()
 
     # Heatmap
@@ -612,8 +641,13 @@ def cmd_surface(args: argparse.Namespace) -> int:
         elif args.baseline:
             subtitle = f"baseline: {args.baseline}"
 
+        # If named experiment, auto-save heatmap there too
+        save_target = args.save
+        if not save_target and name and ws:
+            save_target = str(ws / "output" / name / "heatmap.png")
+
         _render_heatmap(surfaces, plan, csv_path.name, dates,
-                        subtitle=subtitle, save_path=args.save)
+                        subtitle=subtitle, save_path=save_target)
 
     return 0
 
@@ -769,7 +803,6 @@ def cmd_init(args: argparse.Namespace) -> int:
             return 1
         config["csv"] = str(csv_path.resolve())
 
-        # Auto-detect and summarize
         records = _auto_ingest(csv_path)
         if records:
             channels = sorted({r.channel for r in records})
@@ -789,17 +822,101 @@ def cmd_init(args: argparse.Namespace) -> int:
 
     _save_workspace(ws, config)
 
-    print(f"  workspace : {ws}/")
-    print(f"  cache     : {ws}/cache/")
-    print(f"  output    : {ws}/output/")
+    print()
+    print(f"  SignalForge  workspace")
+    print(f"  {'─' * 40}")
+    print(f"  created   {ws}/")
+    print(f"  cache     {ws}/cache/")
+    print(f"  output    {ws}/output/")
     if csv_path:
-        print(f"  data      : {config['csv']}")
+        print(f"  data      {csv_path.name}")
         if "summary" in config:
             s = config["summary"]
-            print(f"  records   : {s['records']:,}  channels={s['channels']}")
-            print(f"  est grain : {s['estimated_grain']}")
+            print(f"  records   {s['records']:,}")
+            print(f"  channels  {', '.join(s['channels'])}")
+            print(f"  grain     {s['estimated_grain']}  (estimated)")
+    print(f"  {'─' * 40}")
     print()
     print(f"  cd {ws} && sf surface -hm")
+    print()
+    return 0
+
+
+def cmd_status(args: argparse.Namespace) -> int:
+    """Show workspace status."""
+    ws = _find_workspace()
+    if ws is None:
+        print("  No workspace found. Run: sf init <name> --csv <file>")
+        return 1
+
+    config = _load_workspace(ws)
+
+    print()
+    print(f"  SignalForge  {config.get('name', ws.name)}")
+    print(f"  {'─' * 40}")
+    print(f"  workspace {ws}")
+
+    # Data
+    csv = config.get("csv")
+    if csv:
+        csv_path = Path(csv)
+        exists = "ok" if csv_path.exists() else "MISSING"
+        print(f"  data      {csv_path.name}  ({exists})")
+    else:
+        print(f"  data      (none)")
+
+    summary = config.get("summary", {})
+    if summary:
+        print(f"  records   {summary.get('records', '?'):,}")
+        channels = summary.get("channels", [])
+        print(f"  channels  {', '.join(channels)}")
+        print(f"  grain     {summary.get('estimated_grain', '?')}")
+
+    # Defaults
+    mw = config.get("max_window")
+    gr = config.get("grain")
+    if mw or gr:
+        parts = []
+        if mw:
+            parts.append(f"max-window={mw}")
+        if gr:
+            parts.append(f"grain={gr}")
+        print(f"  defaults  {', '.join(parts)}")
+
+    # Cache
+    cache_dir = ws / "cache"
+    if cache_dir.exists():
+        cached = list(cache_dir.glob("*.npz"))
+        if cached:
+            print(f"  cached    {len(cached)} surface(s)")
+            for c in sorted(cached)[:5]:
+                print(f"            {c.stem}")
+            if len(cached) > 5:
+                print(f"            ... and {len(cached) - 5} more")
+        else:
+            print(f"  cached    (empty)")
+
+    # Output / experiments
+    output_dir = ws / "output"
+    if output_dir.exists():
+        experiments = [d for d in sorted(output_dir.iterdir()) if d.is_dir()]
+        if experiments:
+            print(f"  runs      {len(experiments)}")
+            for e in experiments[:8]:
+                files = list(e.iterdir())
+                print(f"            {e.name}/  ({len(files)} files)")
+            if len(experiments) > 8:
+                print(f"            ... and {len(experiments) - 8} more")
+
+    print(f"  {'─' * 40}")
+    print()
+
+    # Suggestions
+    if not csv:
+        print(f"  No data linked. Re-init with: sf init {ws.name} --csv <file>")
+    else:
+        print(f"  sf surface -hm")
+    print()
     return 0
 
 
@@ -955,6 +1072,9 @@ def main(argv: list[str] | None = None) -> int:
                         help="Default max analysis window")
     p_init.add_argument("--grain", type=int, default=None, help="Default grain")
 
+    # status
+    p_status = sub.add_parser("status", help="Show workspace status")
+
     # inspect
     p_insp = sub.add_parser("inspect", help="Show docs for a method or operator")
     p_insp.add_argument("name", help="Method name (e.g. ewma, median, ratio, z)")
@@ -991,6 +1111,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="End date for zoom (e.g. 2009-12-31)")
     p_surf.add_argument("--save", default=None,
                         help="Save heatmap to file instead of displaying")
+    p_surf.add_argument("--name", default=None,
+                        help="Save this run as a named experiment in the workspace")
 
     # neighborhood
     p_nb = sub.add_parser("neighborhood", help="Show the p-adic arithmetic viewing box")
@@ -1007,6 +1129,7 @@ def main(argv: list[str] | None = None) -> int:
         "run":          cmd_run,
         "plan":         cmd_plan,
         "init":         cmd_init,
+        "status":       cmd_status,
         "inspect":      cmd_inspect,
         "load":         cmd_load,
         "surface":      cmd_surface,
