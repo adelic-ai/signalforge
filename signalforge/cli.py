@@ -290,6 +290,27 @@ def _auto_ingest(csv_path: Path) -> list:
     return []
 
 
+def _fmt_basis(basis: dict) -> str:
+    """Format prime basis as readable factorization: 2^3 x 3^2 x 5"""
+    if not basis:
+        return "1"
+    parts = []
+    for p in sorted(basis):
+        e = basis[p]
+        parts.append(f"{p}^{e}" if e > 1 else str(p))
+    return " x ".join(parts)
+
+
+def _fmt_windows(windows: tuple, max_show: int = 8) -> str:
+    """Format window list, collapsing middle if too long."""
+    if len(windows) <= max_show:
+        return ", ".join(str(w) for w in windows)
+    half = max_show // 2
+    head = ", ".join(str(w) for w in windows[:half])
+    tail = ", ".join(str(w) for w in windows[-half:])
+    return f"{head}, ... , {tail}  ({len(windows)} total)"
+
+
 def cmd_load(args: argparse.Namespace) -> int:
     """Show a summary of a CSV file."""
     csv_path = Path(args.csv)
@@ -315,18 +336,38 @@ def cmd_load(args: argparse.Namespace) -> int:
     orders = [r.primary_order for r in records]
     min_o, max_o = min(orders), max(orders)
 
-    # Estimate grain
     from .lattice.sampling import grain_from_orders
     grain = grain_from_orders(orders)
 
-    print(f"  file      : {csv_path.name}")
-    print(f"  records   : {len(records):,}")
-    print(f"  channels  : {channels}")
+    # Compute a default plan to show what the lattice looks like
+    from .lattice.sampling import SamplingPlan
+    span = max_o - min_o
+    horizon = max(span, 360)
+    try:
+        plan = SamplingPlan(horizon, grain)
+    except Exception:
+        plan = None
+
+    print()
+    print(f"  SignalForge  {csv_path.name}")
+    print(f"  {'─' * 40}")
+    print(f"  records   {len(records):,}")
+    print(f"  channels  {', '.join(channels)}")
     if keys_all:
-        print(f"  keys      : {sorted(keys_all)}")
-    print(f"  range     : {min_o:,} → {max_o:,}  (span: {max_o - min_o:,})")
-    print(f"  est grain : {grain}")
-    print(f"  ({elapsed:.2f}s)")
+        print(f"  keys      {', '.join(sorted(keys_all))}")
+    print(f"  span      {min_o:,} .. {max_o:,}  ({max_o - min_o:,})")
+    print(f"  grain     {grain}  (estimated)")
+    if plan:
+        print(f"  basis     {_fmt_basis(plan.prime_basis)}")
+        print(f"  scales    {len(plan.windows)}  [{plan.windows[0]} .. {plan.windows[-1]}]")
+    print(f"  {'─' * 40}")
+    print(f"  {elapsed:.2f}s")
+    print()
+    print(f"  Next:")
+    print(f"    sf surface {csv_path} -hm")
+    if plan and len(plan.windows) > 12:
+        print(f"    sf surface {csv_path} -hm --max-window {plan.windows[-1]}")
+    print()
     return 0
 
 
@@ -407,10 +448,6 @@ def cmd_surface(args: argparse.Namespace) -> int:
         zoom_label = f"  zoom      : bin {s} → {e} ({len(records):,} records)"
 
     channels = sorted({r.channel for r in records})
-    print(f"  file      : {csv_path.name}")
-    print(f"  records   : {len(records):,}  channels={channels}  ({t_ingest:.2f}s)")
-    if zoom_label:
-        print(zoom_label)
 
     # Build graph — signal path: Input → Measure (no explicit Bin)
     from .graph import Input, Measure, Baseline, Residual, Pipeline
@@ -450,38 +487,49 @@ def cmd_surface(args: argparse.Namespace) -> int:
     pipe.resolve(records=records, **resolve_kwargs)
     plan = pipe.plan
 
-    print(f"  horizon   : {plan.horizon:,}  grain={plan.grain}  cbin={plan.cbin}")
-    print(f"  windows   : {plan.windows}")
-    print(f"  basis     : {plan.prime_basis}")
-
     # Build
     t0 = time.perf_counter()
     result = pipe.build(records)
     surfaces = result.value
     t_build = time.perf_counter() - t0
 
-    print(f"  surfaces  : {len(surfaces)}  ({t_build:.2f}s)")
+    # --- Output ---
+    print()
+    print(f"  SignalForge  {csv_path.name}")
+    print(f"  {'─' * 50}")
+    print(f"  records   {len(records):,}  ({t_ingest:.2f}s)")
+    print(f"  channels  {', '.join(channels)}")
+    if zoom_label:
+        print(zoom_label)
+    print(f"  horizon   {plan.horizon:,}   basis {_fmt_basis(plan.prime_basis)}")
+    print(f"  grain     {plan.grain}   cbin {plan.cbin}")
+    print(f"  scales    {_fmt_windows(plan.windows)}")
+    print(f"  {'─' * 50}")
+
     for s in surfaces:
-        finite = np.isfinite(list(s.data.values())[0])
-        print(f"    {s.channel:12s}  shape={s.shape}  coverage={finite.mean():.1%}")
+        first_arr = next(iter(s.data.values()))
+        finite = np.isfinite(first_arr)
+        n_s, n_t = s.shape
+        print(f"  {s.channel}  {n_s} scales x {n_t} bins  {finite.mean():.0%} coverage  ({t_build:.2f}s)")
 
     # Anomaly summary
-    # Pick the first available value array from the surface
     print()
-    label = "peak |z| per scale"
     if args.baseline and args.residual:
-        label = f"{args.residual} residual vs {args.baseline} baseline"
+        label = f"{args.residual} vs {args.baseline}"
     elif args.baseline:
-        label = f"{args.baseline} baseline"
-    print(f"  Anomaly summary ({label}):")
+        label = args.baseline
+    else:
+        label = "z-score"
+    print(f"  Anomaly  ({label})")
+    print(f"  {'─' * 50}")
+
     for s in surfaces:
-        # Use "mean" if available, else first value array
         arr = s.data.get("mean")
         if arr is None:
             arr = next(iter(s.data.values()), None)
         if arr is None:
             continue
-        print(f"    {s.channel}")
+
         scale_peaks = []
         for i, w in enumerate(plan.windows):
             row = arr[i]
@@ -495,14 +543,37 @@ def cmd_surface(args: argparse.Namespace) -> int:
             z = (finite - mu) / sigma
             peak_idx = int(np.argmax(np.abs(z)))
             peak = float(np.max(np.abs(z)))
-            scale_peaks.append((peak, w, peak_idx))
+            # Map peak_idx back to time position
+            time_pos = peak_idx  # bin position relative to start
+            scale_peaks.append((peak, w, time_pos))
+
         scale_peaks.sort(reverse=True)
-        for peak, w, idx in scale_peaks[:8]:
-            bar = "█" * min(int(peak), 30)
-            print(f"      scale={w:>6}  peak |z| = {peak:>6.2f}σ  {bar}")
+
+        # Show top anomalies with location
+        for peak, w, tpos in scale_peaks[:6]:
+            bar_len = min(int(peak * 2), 30)
+            bar = "█" * bar_len
+            print(f"    {w:>6}  {peak:>5.1f}σ  {bar}")
+
+        # Where is the strongest anomaly?
+        if scale_peaks:
+            top = scale_peaks[0]
+            print(f"  peak at bin {top[2]}, scale {top[1]}")
 
     total = time.perf_counter() - t_total
-    print(f"\n  total: {total:.2f}s")
+    print(f"  {'─' * 50}")
+    print(f"  {total:.2f}s")
+
+    # Suggestions
+    if not args.hm:
+        print()
+        cmd = f"sf surface {csv_path}"
+        if args.max_window:
+            cmd += f" --max-window {args.max_window}"
+        print(f"  Add -hm for heatmap:  {cmd} -hm")
+    if not args.baseline:
+        print(f"  Try a baseline:       sf surface {csv_path} -hm --baseline ewma --residual z")
+    print()
 
     # Heatmap
     if args.hm or args.save:
