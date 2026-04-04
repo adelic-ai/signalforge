@@ -985,117 +985,198 @@ def cmd_status(args: argparse.Namespace) -> int:
 # ---------------------------------------------------------------------------
 
 _INSPECT_ENTRIES = {
+    # --- Baselines ---
     "ewma": {
+        "category": "baseline",
         "name": "Exponentially Weighted Moving Average",
-        "formula": "s_t = α · x_t + (1 - α) · s_{t-1}",
-        "params": "α (alpha): smoothing factor in (0, 1]. Higher = more responsive.",
-        "description": (
+        "formula": "s_t = alpha * x_t + (1 - alpha) * s_{t-1}",
+        "params": "alpha: smoothing factor in (0, 1]. Higher = more responsive.",
+        "description":
             "Tracks a drifting baseline by weighting recent values more heavily.\n"
-            "  The effective memory is ~1/α observations. At α=0.1, the baseline\n"
-            "  reflects roughly the last 10 points; at α=0.01, the last 100."
-        ),
-        "use_when": (
-            "The underlying process has a slowly changing mean — trending markets,\n"
-            "  gradual load shifts, seasonal drift. Not ideal for periodic baselines\n"
-            "  (use periodic or median for those)."
-        ),
+            "  Effective memory is ~1/alpha observations. At alpha=0.1, the baseline\n"
+            "  reflects roughly the last 10 points; at alpha=0.01, the last 100.",
+        "use_when":
+            "Slowly changing mean: trending markets, gradual load shifts, seasonal drift.\n"
+            "  Not ideal for periodic baselines (use median for those).",
         "cli": "sf surface data.csv -hm --baseline ewma --alpha 0.1",
     },
     "median": {
+        "category": "baseline",
         "name": "Rolling Median Filter",
         "formula": "s_t = median(x_{t-w/2}, ..., x_{t+w/2})",
         "params": "window: number of observations in the centered window.",
-        "description": (
-            "Robust to spikes and outliers — a single extreme value doesn't move\n"
-            "  the baseline. Produces a smooth estimate of the 'typical' value."
-        ),
-        "use_when": (
-            "You expect sharp transient spikes that shouldn't contaminate the\n"
-            "  baseline. Good for bursty event data, noisy sensors, or any signal\n"
-            "  where outliers are common and the underlying level is stable."
-        ),
+        "description":
+            "Robust to spikes and outliers. A single extreme value doesn't move\n"
+            "  the baseline. Produces a smooth estimate of the 'typical' value.",
+        "use_when":
+            "Sharp transient spikes that shouldn't contaminate the baseline.\n"
+            "  Good for bursty event data, noisy sensors, outlier-heavy signals.",
         "cli": "sf surface data.csv -hm --baseline median --window 20",
     },
     "rolling_mean": {
+        "category": "baseline",
         "name": "Rolling Mean",
         "formula": "s_t = mean(x_{t-w+1}, ..., x_t)",
         "params": "window: number of observations in the trailing window.",
-        "description": (
+        "description":
             "Simple trailing average. Every point in the window contributes equally.\n"
-            "  Responds to level shifts after ~window observations."
-        ),
-        "use_when": (
-            "A straightforward smoothing baseline when you don't need outlier\n"
-            "  robustness (use median) or exponential decay (use EWMA)."
-        ),
+            "  Responds to level shifts after ~window observations.",
+        "use_when":
+            "Straightforward smoothing when you don't need outlier robustness\n"
+            "  (use median) or exponential decay (use ewma).",
         "cli": "sf surface data.csv -hm --baseline rolling_mean --window 20",
     },
+    # --- Residuals ---
     "difference": {
+        "category": "residual",
         "name": "Difference Residual",
         "formula": "r_t = x_t - baseline_t",
-        "params": "None (applied via --residual difference)",
-        "description": (
+        "params": "Applied via --residual difference",
+        "description":
             "Absolute deviation from baseline. Preserves units.\n"
-            "  A residual of 10 means 10 units above baseline."
-        ),
-        "use_when": (
-            "The absolute magnitude of deviation matters — e.g., event counts\n"
-            "  where '50 extra logins' is meaningful regardless of the base rate."
-        ),
+            "  A residual of 10 means 10 units above baseline.",
+        "use_when":
+            "Absolute magnitude matters: event counts where '50 extra logins'\n"
+            "  is meaningful regardless of the base rate.",
         "cli": "sf surface data.csv -hm --baseline ewma --residual difference",
     },
     "ratio": {
+        "category": "residual",
         "name": "Ratio Residual",
         "formula": "r_t = x_t / baseline_t",
-        "params": "None (applied via --residual ratio)",
-        "description": (
+        "params": "Applied via --residual ratio",
+        "description":
             "Multiplicative deviation. A ratio of 2.0 means double the baseline.\n"
-            "  Scale-invariant: a 2x spike means the same whether the base is 10 or 10,000."
-        ),
-        "use_when": (
-            "The proportional deviation matters more than absolute — common for\n"
-            "  count data, throughput, or any metric where the baseline varies\n"
-            "  across entities or time periods."
-        ),
+            "  Scale-invariant: 2x spike means the same at base 10 or 10,000.",
+        "use_when":
+            "Proportional deviation matters more than absolute. Common for count\n"
+            "  data, throughput, or metrics where the baseline varies widely.",
         "cli": "sf surface data.csv -hm --baseline ewma --residual ratio",
     },
     "z": {
+        "category": "residual",
         "name": "Z-Score Residual",
-        "formula": "r_t = (x_t - baseline_t) / σ_baseline",
-        "params": "None (applied via --residual z)",
-        "description": (
+        "formula": "r_t = (x_t - baseline_t) / std(baseline)",
+        "params": "Applied via --residual z",
+        "description":
             "Deviation normalized by the baseline's standard deviation.\n"
-            "  Measures 'how unusual' relative to the baseline's own variability."
-        ),
-        "use_when": (
-            "You want a unitless anomaly score that accounts for how variable\n"
-            "  the signal normally is. A z of 3 means the same thing whether\n"
-            "  the signal is VIX or Kerberos TGT counts."
-        ),
+            "  Measures 'how unusual' relative to the baseline's own variability.",
+        "use_when":
+            "Unitless anomaly score that accounts for normal variability.\n"
+            "  A z of 3 means the same whether the signal is VIX or Kerberos TGTs.",
         "cli": "sf surface data.csv -hm --baseline ewma --residual z",
+    },
+    # --- Concepts ---
+    "horizon": {
+        "category": "concept",
+        "name": "Horizon",
+        "formula": "H = lcm(W union {g})",
+        "params": "Derived from windows and grain, or set explicitly with --max-window.",
+        "description":
+            "The outer boundary of the coordinate space. All valid windows divide it.\n"
+            "  May be larger than the data — that's fine. It's a normalization factor\n"
+            "  that ensures all windows share the same lattice structure.",
+        "use_when":
+            "You want to understand why certain window sizes are available and others\n"
+            "  aren't. The horizon's prime factorization determines the lattice.",
+        "cli": "sf plan equities",
+    },
+    "grain": {
+        "category": "concept",
+        "name": "Grain",
+        "formula": "g = estimated from inter-event intervals",
+        "params": "Set explicitly with --grain, or auto-derived from data.",
+        "description":
+            "Finest resolution the data supports. Measured from the actual spacing\n"
+            "  between events. Below grain, there's no data to analyze.\n"
+            "  cbin (computational bin) is the smallest divisor of horizon >= grain.",
+        "use_when":
+            "You want to understand the resolution floor. sf load shows the estimated\n"
+            "  grain. Override with --grain if you know your data's true cadence.",
+        "cli": "sf load data.csv",
+    },
+    "surface": {
+        "category": "concept",
+        "name": "Surface",
+        "formula": "S(scale, time) = agg(signal[t:t+window]) for each window in plan",
+        "params": "Shape is (n_scales x n_time_bins).",
+        "description":
+            "A 2D measurement: time on one axis, scale on the other. Each cell is\n"
+            "  the aggregated signal within that window at that position.\n"
+            "  Same plan = same grid = surfaces from different signals are comparable.\n"
+            "  A Surface is also a LatticeSignal — you can measure surfaces of surfaces.",
+        "use_when":
+            "Always. The surface is SignalForge's primary output. Everything else\n"
+            "  (baselines, residuals, features) operates on surfaces.",
+        "cli": "sf surface data.csv -hm",
+    },
+    "lattice": {
+        "category": "concept",
+        "name": "Lattice",
+        "formula": "n = p1^a1 * p2^a2 * ... * pk^ak",
+        "params": "Every positive integer has a unique prime factorization.",
+        "description":
+            "The divisibility lattice of the integers. Every window that divides the\n"
+            "  horizon is a point on this lattice. The prime factorization of the\n"
+            "  horizon determines how many scales exist and how they relate.\n"
+            "  Richer factorization = more scales = finer multiscale analysis.",
+        "use_when":
+            "You want to understand why SignalForge chooses certain window sizes.\n"
+            "  sf neighborhood <n> shows the lattice around any integer.",
+        "cli": "sf neighborhood 360",
     },
 }
 
 
 def cmd_inspect(args: argparse.Namespace) -> int:
-    """Show documentation for a baseline or residual method."""
-    name = args.name.lower()
+    """Show documentation for a method, operator, or concept."""
+    name = getattr(args, "name", None)
+
+    # No argument: show everything
+    if name is None:
+        print()
+        print(f"  SignalForge  inspect")
+        print(f"  {'─' * 40}")
+
+        categories = {}
+        for key, entry in _INSPECT_ENTRIES.items():
+            cat = entry.get("category", "other")
+            categories.setdefault(cat, []).append((key, entry))
+
+        cat_labels = {"baseline": "Baselines", "residual": "Residuals", "concept": "Concepts"}
+        for cat in ["baseline", "residual", "concept"]:
+            if cat not in categories:
+                continue
+            print(f"\n  {cat_labels.get(cat, cat)}")
+            for key, entry in categories[cat]:
+                print(f"    {key:<15s} {entry['name']}")
+
+        print(f"\n  {'─' * 40}")
+        print(f"  sf inspect <name> for details")
+        print()
+        return 0
+
+    name = name.lower()
     entry = _INSPECT_ENTRIES.get(name)
 
     if entry is None:
-        print(f"Unknown: {name!r}")
-        print(f"Available: {', '.join(sorted(_INSPECT_ENTRIES))}")
+        print(f"  Unknown: {name!r}")
+        print(f"  Available: {', '.join(sorted(_INSPECT_ENTRIES))}")
         return 1
 
-    print(f"\n  {entry['name']}")
-    print(f"  {'=' * len(entry['name'])}")
-    print(f"\n  Formula:  {entry['formula']}")
-    print(f"  Params:   {entry['params']}")
-    print(f"\n  {entry['description']}")
-    print(f"\n  Use when:")
-    print(f"  {entry['use_when']}")
-    print(f"\n  Example:")
-    print(f"  {entry['cli']}")
+    cat = entry.get("category", "")
+    print()
+    print(f"  {entry['name']}  ({cat})")
+    print(f"  {'─' * 50}")
+    print(f"  {entry['formula']}")
+    print(f"  {entry['params']}")
+    print()
+    print(f"  {entry['description']}")
+    print()
+    print(f"  When:  {entry['use_when']}")
+    print()
+    print(f"  Example:")
+    print(f"    {entry['cli']}")
     print()
     return 0
 
@@ -1136,8 +1217,9 @@ def main(argv: list[str] | None = None) -> int:
     p_status = sub.add_parser("status", help="Show workspace status")
 
     # inspect
-    p_insp = sub.add_parser("inspect", help="Show docs for a method or operator")
-    p_insp.add_argument("name", help="Method name (e.g. ewma, median, ratio, z)")
+    p_insp = sub.add_parser("inspect", help="Show docs for a method, operator, or concept")
+    p_insp.add_argument("name", nargs="?", default=None,
+                        help="Name to inspect (e.g. ewma, z, lattice). Omit to list all.")
 
     # load
     p_load = sub.add_parser("load", help="Show a summary of a CSV file")
