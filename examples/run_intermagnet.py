@@ -27,7 +27,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 sys.path.insert(0, str(ROOT))
 
-from signalforge.pipeline.canonical import CanonicalRecord, OrderType
+from signalforge.signal import CanonicalRecord, OrderType
 from signalforge.pipeline.binned import materialize
 from signalforge.pipeline.surface import measure
 from signalforge.pipeline.feature import engineer

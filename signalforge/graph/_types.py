@@ -1,23 +1,13 @@
 """
 signalforge.graph._types
 
-Artifact types and utility functions for the computation graph.
+Re-exports from signalforge.signal for backward compatibility.
+Types are defined in signal/ — the graph moves them, doesn't own them.
 """
 
-from __future__ import annotations
+from ..signal._base import ArtifactType
 
-import enum
 import re
-
-
-class ArtifactType(enum.Enum):
-    """Tags what a graph node produces."""
-    RECORDS  = "records"    # list[CanonicalRecord]
-    BINNED   = "binned"     # list[BinnedRecord]
-    SURFACES = "surfaces"   # list[Surface]
-    TENSORS  = "tensors"    # list[FeatureTensor]
-    BUNDLE   = "bundle"     # FeatureBundle
-
 
 # Duration string → integer seconds
 _DURATION_RE = re.compile(r"^(\d+)\s*(s|m|h|d|w)$", re.IGNORECASE)

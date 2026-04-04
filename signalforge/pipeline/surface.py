@@ -1,25 +1,17 @@
 """
 signalforge.pipeline.surface
 
-Surface: Stage 3 (Measure) output.
+measure(): Stage 3 — BinnedRecords → Surfaces.
 
-Takes BinnedData and a SamplingPlan and produces a structured 2D array —
-time on one axis, scale on the other. Each cell holds an aggregated value
-derived from the bins within that window at that position.
-
-Because all windows and hops are multiples of cbin and derived from the same
-SamplingPlan, the grid is always the same shape for the same plan. Same plan
-→ same grid → surfaces from different sources are directly comparable.
-This structural invariance is what makes ML on surfaces meaningful.
+Takes BinnedData and a SamplingPlan and produces signalforge.signal.Surface
+objects. The Surface type lives in signalforge.signal — this module contains
+the measurement logic and aggregation profile registry.
 
 Aggregation profiles
 --------------------
 A profile is a named set of aggregation functions suited to a data type.
 Built-in profiles: event, continuous, ratio, anomaly, sparse.
 Custom profiles: register_profile("name", ["agg1", "agg2", ...])
-
-Surface stores raw aggregated values. Normalization is a rendering concern,
-never baked into the artifact.
 """
 
 from __future__ import annotations
@@ -30,6 +22,7 @@ from typing import Dict, Iterable, List, Optional, Tuple, Union
 import numpy as np
 
 from ..lattice.sampling import SamplingPlan
+from ..signal._surface import Surface as SignalSurface
 from .aggregation import AggFunc, get_aggregation
 from .binned import BinnedRecord
 
@@ -89,120 +82,9 @@ register_profile("sparse",     ["count", "max"])
 # gap_mean and gap_max require gap_before from BinnedData — forthcoming.
 
 
-# ---------------------------------------------------------------------------
-# Surface
-# ---------------------------------------------------------------------------
-
-
-class Surface:
-    """
-    A 2D measurement grid: time × scale.
-
-    Rows are scales (one per window in the SamplingPlan).
-    Columns are time positions (window start positions in bin_index units).
-    Each cell holds aggregated values from the bins within that window.
-
-    Immutable after construction.
-
-    Attributes
-    ----------
-    channel : str
-    keys : dict
-    metric : str
-    profile : str
-    time_axis : tuple[int, ...]
-        Window start positions in bin_index units.
-    scale_axis : tuple[int, ...]
-        Window sizes in cbin units. Row i covers scale_axis[i] bins.
-    values : dict[str, np.ndarray]
-        One (n_scales × n_time) float64 array per aggregation in the profile.
-        NaN where no bins fell within the window.
-    n_events : np.ndarray
-        (n_scales × n_time) int array. Total raw events per cell.
-    coverage : np.ndarray
-        (n_scales × n_time) float array. Fraction of bins occupied. [0, 1].
-    coordinates : tuple[dict, ...]
-        Prime exponent vector per scale row, from the SamplingPlan.
-    sampling_plan_id : str
-        Identifies the geometry used to construct this surface.
-    """
-
-    __slots__ = (
-        "channel",
-        "keys",
-        "metric",
-        "profile",
-        "time_axis",
-        "scale_axis",
-        "values",
-        "n_events",
-        "coverage",
-        "coordinates",
-        "sampling_plan_id",
-    )
-
-    def __init__(
-        self,
-        channel: str,
-        keys: dict,
-        metric: str,
-        profile: str,
-        time_axis: Tuple[int, ...],
-        scale_axis: Tuple[int, ...],
-        values: Dict[str, np.ndarray],
-        n_events: np.ndarray,
-        coverage: np.ndarray,
-        coordinates: Tuple[dict, ...],
-        sampling_plan_id: str,
-    ) -> None:
-        n_scales = len(scale_axis)
-        n_time = len(time_axis)
-        expected = (n_scales, n_time)
-
-        for agg_name, arr in values.items():
-            if arr.shape != expected:
-                raise ValueError(
-                    f"values[{agg_name!r}].shape {arr.shape} != {expected}"
-                )
-        if n_events.shape != expected:
-            raise ValueError(f"n_events.shape {n_events.shape} != {expected}")
-        if coverage.shape != expected:
-            raise ValueError(f"coverage.shape {coverage.shape} != {expected}")
-        if not np.all((coverage >= 0.0) & (coverage <= 1.0)):
-            raise ValueError("coverage values must be in [0.0, 1.0]")
-
-        object.__setattr__(self, "channel", channel)
-        object.__setattr__(self, "keys", keys)
-        object.__setattr__(self, "metric", metric)
-        object.__setattr__(self, "profile", profile)
-        object.__setattr__(self, "time_axis", time_axis)
-        object.__setattr__(self, "scale_axis", scale_axis)
-        object.__setattr__(self, "values", values)
-        object.__setattr__(self, "n_events", n_events)
-        object.__setattr__(self, "coverage", coverage)
-        object.__setattr__(self, "coordinates", coordinates)
-        object.__setattr__(self, "sampling_plan_id", sampling_plan_id)
-
-    def __setattr__(self, name: str, value: object) -> None:
-        raise AttributeError("Surface is immutable")
-
-    def __delattr__(self, name: str) -> None:
-        raise AttributeError("Surface is immutable")
-
-    @property
-    def shape(self) -> Tuple[int, int]:
-        """(n_scales, n_time)"""
-        return (len(self.scale_axis), len(self.time_axis))
-
-    def __repr__(self) -> str:
-        return (
-            f"Surface("
-            f"channel={self.channel!r}, "
-            f"metric={self.metric!r}, "
-            f"profile={self.profile!r}, "
-            f"shape={self.shape}, "
-            f"keys={self.keys})"
-        )
+# Surface type is now in signalforge.signal._surface
+# Re-export for any remaining references
+from ..signal._surface import Surface
 
 
 # ---------------------------------------------------------------------------
@@ -288,9 +170,7 @@ def measure(
     n_time = len(time_axis)
     n_scales = len(plan.windows)
 
-    sampling_plan_id = repr(plan)
-
-    surfaces: List[Surface] = []
+    surfaces: List[SignalSurface] = []
 
     for group_key, bin_map in groups.items():
         channel, keys_canon, metric = group_key
@@ -384,18 +264,18 @@ def measure(
 
         scale_axis = tuple(w // plan.cbin for w in plan.windows)
 
-        surfaces.append(Surface(
+        surfaces.append(SignalSurface(
+            time_axis=np.array(time_axis, dtype=np.int64),
+            scale_axis=scale_axis,
+            data=values_arrays,
             channel=channel,
+            plan=plan,
             keys=keys_dict,
             metric=metric,
             profile=profile_name,
-            time_axis=time_axis,
-            scale_axis=scale_axis,
-            values=values_arrays,
+            coordinates=plan.coordinates,
             n_events=n_events_arr,
             coverage=coverage_arr,
-            coordinates=plan.coordinates,
-            sampling_plan_id=sampling_plan_id,
         ))
 
     return surfaces

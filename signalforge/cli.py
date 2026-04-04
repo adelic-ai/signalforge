@@ -42,7 +42,7 @@ def cmd_demo(args: argparse.Namespace) -> int:
         return 1
 
     import pandas as pd
-    from .pipeline.canonical import CanonicalRecord, OrderType
+    from .signal import CanonicalRecord, OrderType
     from .pipeline.binned import materialize
     from .pipeline.surface import measure
     from .pipeline.feature import engineer
@@ -229,7 +229,7 @@ def cmd_neighborhood(args: argparse.Namespace) -> int:
 def _auto_ingest(csv_path: Path) -> list:
     """Auto-detect CSV format and ingest into CanonicalRecords."""
     import pandas as pd
-    from .pipeline.canonical import CanonicalRecord, OrderType
+    from .signal import CanonicalRecord, OrderType
 
     df = pd.read_csv(csv_path)
     cols = list(df.columns)
@@ -464,7 +464,7 @@ def cmd_surface(args: argparse.Namespace) -> int:
 
     print(f"  surfaces  : {len(surfaces)}  ({t_build:.2f}s)")
     for s in surfaces:
-        finite = np.isfinite(list(s.values.values())[0])
+        finite = np.isfinite(list(s.data.values())[0])
         print(f"    {s.channel:12s}  shape={s.shape}  coverage={finite.mean():.1%}")
 
     # Anomaly summary
@@ -478,9 +478,9 @@ def cmd_surface(args: argparse.Namespace) -> int:
     print(f"  Anomaly summary ({label}):")
     for s in surfaces:
         # Use "mean" if available, else first value array
-        arr = s.values.get("mean")
+        arr = s.data.get("mean")
         if arr is None:
-            arr = next(iter(s.values.values()), None)
+            arr = next(iter(s.data.values()), None)
         if arr is None:
             continue
         print(f"    {s.channel}")
@@ -560,9 +560,9 @@ def _render_heatmap(surfaces: list, plan, filename: str = "", dates=None,
 
     for s in surfaces:
         # Use "mean" if available, else first value array
-        arr = s.values.get("mean")
+        arr = s.data.get("mean")
         if arr is None:
-            arr = next(iter(s.values.values()), None)
+            arr = next(iter(s.data.values()), None)
         if arr is None:
             continue
 

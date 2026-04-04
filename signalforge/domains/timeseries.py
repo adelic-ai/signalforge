@@ -49,7 +49,7 @@ def ingest(path: str) -> list:
     second as a float. Rows with missing or non-numeric values are skipped.
     """
     import pandas as pd
-    from ..pipeline.canonical import CanonicalRecord, OrderType
+    from ..signal import CanonicalRecord, OrderType
 
     df = pd.read_csv(path)
     date_col, value_col = df.columns[0], df.columns[1]

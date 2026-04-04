@@ -163,7 +163,7 @@ def ingest(path: str) -> list:
         Path to CSV file produced by examples/yfinance_to_csv.py.
     """
     import pandas as pd
-    from ..pipeline.canonical import CanonicalRecord, OrderType
+    from ..signal import CanonicalRecord, OrderType
 
     df = pd.read_csv(path)
 

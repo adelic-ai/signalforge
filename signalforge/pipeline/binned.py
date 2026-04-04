@@ -37,7 +37,7 @@ import numpy as np
 
 from ..lattice.sampling import SamplingPlan
 from .aggregation import AggFunc, get_aggregation
-from .canonical import CanonicalRecord, OrderType
+from ..signal import CanonicalRecord, OrderType
 
 # Scope maps channel → set of metrics to materialize.
 # None means materialize everything.

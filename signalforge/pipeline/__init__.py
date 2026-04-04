@@ -15,6 +15,7 @@ used directly. The public API is signalforge.graph.
 
 from .canonical import CanonicalRecord, OrderType
 from .binned import BinnedRecord, materialize
-from .surface import Surface, measure, register_profile, get_profile
+from ..signal import Surface
+from .surface import measure, register_profile, get_profile
 from .feature import FeatureTensor, engineer
 from .bundle import FeatureBundle, SurfaceDataset, assemble

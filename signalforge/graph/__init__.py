@@ -16,10 +16,11 @@ Keras-style functional computation graph for composing pipeline stages.
     result = pipeline.build(records)
 """
 
-from ._core import Artifact, GraphPipeline, Node, Op
+from ._core import GraphPipeline, Node, Op
+from ..signal._base import Artifact, ArtifactType
 from ._ops import AssembleOp, BinOp, EngineerOp, InputOp, MeasureOp
 from ._multi_ops import BaselineOp, HilbertOp, ResidualOp, StackOp
-from ._types import ArtifactType, parse_duration
+from ._types import parse_duration
 
 
 # ---------------------------------------------------------------------------

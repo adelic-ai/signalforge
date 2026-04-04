@@ -125,7 +125,7 @@ def ingest(path: str, sfreq: int = _SFREQ) -> list:
     """
     import numpy as np
     import pandas as pd
-    from ..pipeline.canonical import CanonicalRecord, OrderType
+    from ..signal import CanonicalRecord, OrderType
 
     df = pd.read_csv(path)
     t_secs = df["t_sec"].to_numpy(dtype=np.float64)

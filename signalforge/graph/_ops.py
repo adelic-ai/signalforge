@@ -9,7 +9,8 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from ._core import Artifact, Op
-from ._types import ArtifactType, parse_duration
+from ..signal._base import ArtifactType
+from ._types import parse_duration
 
 
 class InputOp(Op):

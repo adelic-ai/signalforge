@@ -1,38 +1,22 @@
 """
 signalforge.graph._core
 
-Core graph machinery: Op, Node, Artifact, GraphPipeline.
+Core graph machinery: Op, Node, GraphPipeline.
 
 The computation graph is lazy — calling Op(...)(input_node) creates a Node
 but does not execute. resolve() derives the SamplingPlan from operator
 constraints. build() materializes artifacts in topological order.
+
+All types (Artifact, ArtifactType) come from signalforge.signal — the
+graph moves them, it doesn't define them.
 """
 
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from collections import deque
-from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
-from ._types import ArtifactType
-
-
-# ---------------------------------------------------------------------------
-# Artifact
-# ---------------------------------------------------------------------------
-
-@dataclass
-class Artifact:
-    """Wraps a pipeline object with metadata about how it was produced."""
-    type: ArtifactType
-    value: Any
-    producing_op: Optional["Op"] = None
-    plan: Any = None  # SamplingPlan, set after resolve
-    metadata: Dict[str, Any] = field(default_factory=dict)
-
-    def __repr__(self) -> str:
-        return f"Artifact({self.type.value})"
+from ..signal._base import Artifact, ArtifactType
 
 
 # ---------------------------------------------------------------------------
@@ -183,16 +167,12 @@ class GraphPipeline:
         """
         Walk the graph, collect constraints, derive SamplingPlan.
 
-        If records are provided and no grain is specified, grain is
-        estimated from the data using inter-event statistics.
-
         Parameters
         ----------
         records : list[CanonicalRecord], optional
-            Data for grain estimation. If not given, uses defaults.
+            Data for grain estimation.
         **overrides
             Explicit SamplingPlan parameters that override derived values.
-            E.g. resolve(horizon=360, grain=1).
 
         Returns self for chaining.
         """

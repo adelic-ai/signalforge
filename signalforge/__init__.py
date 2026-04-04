@@ -58,9 +58,8 @@ from .graph import (
 from .lattice import SamplingPlan, factorize, FlipFlop, horizon_for
 from .lattice.neighborhood import neighborhood, neighborhood_from_vector, Neighborhood
 
-# Types (still needed for domain ingest functions)
-from .pipeline.canonical import CanonicalRecord, OrderType
-from .pipeline.surface import Surface
+# Types — canonical source is signalforge.signal
+from .signal import CanonicalRecord, OrderType, Surface
 
 # Domains
 from . import domains

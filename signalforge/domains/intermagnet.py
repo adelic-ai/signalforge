@@ -149,7 +149,7 @@ def ingest(path: str) -> list:
         Path to CSV file.
     """
     import pandas as pd
-    from ..pipeline.canonical import CanonicalRecord, OrderType
+    from ..signal import CanonicalRecord, OrderType
 
     df = pd.read_csv(path)
     ts = pd.to_datetime(df["timestamp"], utc=True).astype("int64")

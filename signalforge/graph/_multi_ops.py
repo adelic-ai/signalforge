@@ -1,7 +1,7 @@
 """
 signalforge.graph._multi_ops
 
-Baseline, Residual, and Stack operators.
+Baseline, Residual, Hilbert, and Stack operators.
 
 These operate on Surface artifacts — they take surfaces in and produce
 surfaces out with the same shape but different values.
@@ -14,11 +14,11 @@ from typing import Any, Dict, List, Tuple
 import numpy as np
 
 from ._core import Artifact, Op
-from ._types import ArtifactType
+from ..signal._base import ArtifactType
 
 
 # ---------------------------------------------------------------------------
-# Baseline methods — operate on a single (n_scales × n_time) array
+# Baseline methods — operate on a single (n_scales x n_time) array
 # ---------------------------------------------------------------------------
 
 def _ewma(arr: np.ndarray, alpha: float = 0.1) -> np.ndarray:
@@ -89,9 +89,23 @@ _BASELINE_METHODS = {
 }
 
 
-# ---------------------------------------------------------------------------
-# BaselineOp
-# ---------------------------------------------------------------------------
+def _derive_surface(source, *, data, plan, profile=None, **overrides):
+    """Create a new Surface from an existing one, replacing data and optionally other fields."""
+    from ..signal import Surface
+    return Surface(
+        time_axis=overrides.get("time_axis", source.time_axis),
+        scale_axis=overrides.get("scale_axis", source.scale_axis),
+        data=data,
+        channel=overrides.get("channel", source.channel),
+        plan=plan,
+        keys=overrides.get("keys", source.keys),
+        metric=overrides.get("metric", source.metric),
+        profile=profile if profile is not None else source.profile,
+        coordinates=overrides.get("coordinates", source.coordinates),
+        n_events=overrides.get("n_events", source.n_events),
+        coverage=overrides.get("coverage", source.coverage),
+    )
+
 
 # ---------------------------------------------------------------------------
 # HilbertOp
@@ -112,17 +126,16 @@ class HilbertOp(Op):
 
     def execute(self, *inputs: Artifact, plan: Any = None) -> Artifact:
         from scipy.signal import hilbert
-        from ..pipeline.surface import Surface
 
         surfaces = inputs[0].value
         result_surfaces = []
 
         for s in surfaces:
-            new_values = dict(s.values)  # keep originals
+            new_data = dict(s.data)  # keep originals
 
             # Use "mean" if available, else first value array
-            source_key = "mean" if "mean" in s.values else next(iter(s.values))
-            arr = s.values[source_key]
+            source_key = "mean" if "mean" in s.data else next(iter(s.data))
+            arr = s.data[source_key]
 
             amplitude = np.full_like(arr, np.nan)
             phase = np.full_like(arr, np.nan)
@@ -148,23 +161,11 @@ class HilbertOp(Op):
                 phase[i] = np.where(finite_mask, ph, np.nan)
                 inst_freq[i] = np.where(finite_mask, ifreq, np.nan)
 
-            new_values["amplitude"] = amplitude
-            new_values["phase"] = phase
-            new_values["inst_freq"] = inst_freq
+            new_data["amplitude"] = amplitude
+            new_data["phase"] = phase
+            new_data["inst_freq"] = inst_freq
 
-            result_surfaces.append(Surface(
-                channel=s.channel,
-                keys=s.keys,
-                metric=s.metric,
-                profile=s.profile,
-                time_axis=s.time_axis,
-                scale_axis=s.scale_axis,
-                values=new_values,
-                n_events=s.n_events,
-                coverage=s.coverage,
-                coordinates=s.coordinates,
-                sampling_plan_id=s.sampling_plan_id,
-            ))
+            result_surfaces.append(_derive_surface(s, data=new_data, plan=plan))
 
         return Artifact(
             type=ArtifactType.SURFACES,
@@ -216,25 +217,14 @@ class BaselineOp(Op):
         elif method_name in ("median", "rolling_mean"):
             method_kwargs["window"] = self.params.get("window", 10)
 
-        from ..pipeline.surface import Surface
-
         result_surfaces = []
         for s in surfaces:
-            new_values = {}
-            for agg_name, arr in s.values.items():
-                new_values[agg_name] = method_fn(arr, **method_kwargs)
-            result_surfaces.append(Surface(
-                channel=s.channel,
-                keys=s.keys,
-                metric=s.metric,
+            new_data = {}
+            for agg_name, arr in s.data.items():
+                new_data[agg_name] = method_fn(arr, **method_kwargs)
+            result_surfaces.append(_derive_surface(
+                s, data=new_data, plan=plan,
                 profile=f"baseline_{method_name}",
-                time_axis=s.time_axis,
-                scale_axis=s.scale_axis,
-                values=new_values,
-                n_events=s.n_events,
-                coverage=s.coverage,
-                coordinates=s.coordinates,
-                sampling_plan_id=s.sampling_plan_id,
             ))
 
         return Artifact(
@@ -272,19 +262,17 @@ class ResidualOp(Op):
         baseline_surfaces = inputs[1].value
         mode = self.params.get("mode", "difference")
 
-        from ..pipeline.surface import Surface
-
         result_surfaces = []
         for ms, bs in zip(measured_surfaces, baseline_surfaces):
-            new_values = {}
-            for agg_name in ms.values:
-                m_arr = ms.values[agg_name]
-                b_arr = bs.values[agg_name]
+            new_data = {}
+            for agg_name in ms.data:
+                m_arr = ms.data[agg_name]
+                b_arr = bs.data[agg_name]
                 if mode == "difference":
-                    new_values[agg_name] = m_arr - b_arr
+                    new_data[agg_name] = m_arr - b_arr
                 elif mode == "ratio":
                     with np.errstate(divide='ignore', invalid='ignore'):
-                        new_values[agg_name] = np.where(
+                        new_data[agg_name] = np.where(
                             b_arr != 0, m_arr / b_arr, np.nan
                         )
                 elif mode == "z":
@@ -296,24 +284,15 @@ class ResidualOp(Op):
                         if len(finite) > 0 and np.std(finite) > 0:
                             sigma = np.std(finite)
                             z[i] = (m_arr[i] - b_arr[i]) / sigma
-                    new_values[agg_name] = z
+                    new_data[agg_name] = z
                 else:
                     raise ValueError(
                         f"Unknown residual mode {mode!r}. Use 'difference', 'ratio', or 'z'."
                     )
 
-            result_surfaces.append(Surface(
-                channel=ms.channel,
-                keys=ms.keys,
-                metric=ms.metric,
+            result_surfaces.append(_derive_surface(
+                ms, data=new_data, plan=plan,
                 profile=f"residual_{mode}",
-                time_axis=ms.time_axis,
-                scale_axis=ms.scale_axis,
-                values=new_values,
-                n_events=ms.n_events,
-                coverage=ms.coverage,
-                coordinates=ms.coordinates,
-                sampling_plan_id=ms.sampling_plan_id,
             ))
 
         return Artifact(
@@ -354,30 +333,19 @@ class StackOp(Op):
             if len(sl) != n:
                 raise ValueError("All Stack inputs must have the same number of surfaces.")
 
-        from ..pipeline.surface import Surface
-
         result_surfaces = []
         for ch_idx in range(n):
             base = all_surface_lists[0][ch_idx]
-            merged_values = {}
+            merged_data = {}
             for src_idx, sl in enumerate(all_surface_lists):
                 s = sl[ch_idx]
                 prefix = s.profile if s.profile else f"src{src_idx}"
-                for agg_name, arr in s.values.items():
-                    merged_values[f"{prefix}_{agg_name}"] = arr
+                for agg_name, arr in s.data.items():
+                    merged_data[f"{prefix}_{agg_name}"] = arr
 
-            result_surfaces.append(Surface(
-                channel=base.channel,
-                keys=base.keys,
-                metric=base.metric,
+            result_surfaces.append(_derive_surface(
+                base, data=merged_data, plan=plan,
                 profile="stacked",
-                time_axis=base.time_axis,
-                scale_axis=base.scale_axis,
-                values=merged_values,
-                n_events=base.n_events,
-                coverage=base.coverage,
-                coordinates=base.coordinates,
-                sampling_plan_id=base.sampling_plan_id,
             ))
 
         return Artifact(

@@ -287,7 +287,7 @@ def engineer(
 
     windows = plan.windows
 
-    for agg_name, raw in surface.values.items():
+    for agg_name, raw in surface.data.items():
         # Raw — carried through.
         values[agg_name] = raw.copy()
         feature_index[agg_name] = f"raw {agg_name} from surface"
@@ -343,7 +343,7 @@ def engineer(
         time_axis=surface.time_axis,
         scale_axis=surface.scale_axis,
         coordinates=surface.coordinates,
-        sampling_plan_id=surface.sampling_plan_id,
+        sampling_plan_id=getattr(surface, 'sampling_plan_id', repr(surface.plan)),
         n_events=surface.n_events.copy(),
         coverage=surface.coverage.copy(),
         values=values,

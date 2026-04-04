@@ -10,14 +10,12 @@ import math
 import numpy as np
 import pytest
 
+from signalforge.signal import CanonicalRecord, OrderType, Surface
 from signalforge.pipeline import (
-    CanonicalRecord,
-    OrderType,
     materialize,
     measure,
     engineer,
     assemble,
-    Surface,
     FeatureTensor,
     FeatureBundle,
 )
@@ -229,7 +227,7 @@ def test_measure_surface_has_profile_keys():
     surfaces = measure(binned, plan, profile="continuous")
     s = surfaces[0]
     # "continuous" profile: mean, geometric_mean, median, std
-    assert "mean" in s.values
+    assert "mean" in s.data
     assert s.profile == "continuous"
 
 
