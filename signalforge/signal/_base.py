@@ -27,6 +27,7 @@ from typing import Any, Dict, List, Optional, Union
 class ArtifactType(enum.Enum):
     """Tags what a graph node produces."""
     RECORDS  = "records"
+    SIGNALS  = "signals"
     BINNED   = "binned"
     SURFACES = "surfaces"
     TENSORS  = "tensors"

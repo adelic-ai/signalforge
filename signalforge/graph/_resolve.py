@@ -47,11 +47,19 @@ def collect_constraints(nodes: list) -> Dict[str, Any]:
 
 def derive_grain_from_records(records: Any, method: str = "freedman_diaconis") -> int:
     """
-    Estimate grain from CanonicalRecords using inter-event statistics.
+    Estimate grain from CanonicalRecords or LatticeSignals.
 
     Uses grain_from_orders() from the lattice module.
     """
     from ..lattice.sampling import grain_from_orders
+    from ..signal._signal import LatticeSignal
+    import numpy as np
+
+    # If records is a list of LatticeSignals, extract indices
+    if records and isinstance(records[0], LatticeSignal):
+        all_orders = np.concatenate([s.index for s in records])
+        return grain_from_orders(all_orders.tolist(), method=method)
+
     orders = [r.primary_order for r in records]
     return grain_from_orders(orders, method=method)
 

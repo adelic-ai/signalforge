@@ -412,13 +412,11 @@ def cmd_surface(args: argparse.Namespace) -> int:
     if zoom_label:
         print(zoom_label)
 
-    # Build graph
-    from .graph import Input, Bin, Measure, Baseline, Residual, Pipeline
+    # Build graph — signal path: Input → Measure (no explicit Bin)
+    from .graph import Input, Measure, Baseline, Residual, Pipeline
 
     x = Input()
-    agg = {ch: {"value": "mean"} for ch in channels}
-    b = Bin(agg_funcs=agg)(x)
-    m = Measure(profile="continuous")(b)
+    m = Measure()(x)
 
     # Default output is the measured surface
     output = m

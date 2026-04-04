@@ -19,6 +19,8 @@ from ._base import Artifact, ArtifactType, CanonicalRecord, KeyValue, Keys, Orde
 from ._signal import LatticeSignal
 from ._complex import ComplexSignal, RealSignal
 from ._surface import Surface
+from ._convert import records_to_signals
+from ._measure import measure_signal
 
 __all__ = [
     "LatticeSignal",
@@ -31,4 +33,6 @@ __all__ = [
     "KeyValue",
     "Keys",
     "OrderType",
+    "records_to_signals",
+    "measure_signal",
 ]
