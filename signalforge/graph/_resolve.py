@@ -3,8 +3,9 @@ signalforge.graph._resolve
 
 Constraint collection and SamplingPlan derivation from a graph.
 
-resolve() can derive grain from records automatically using grain_from_orders(),
-and horizon from windows using lcm. Explicit overrides always take precedence.
+Geometry derivation is delegated to binjamin.lattice() — the single
+canonical path. This module collects constraints from graph nodes
+and passes them to binjamin.
 """
 
 from __future__ import annotations
@@ -47,25 +48,25 @@ def collect_constraints(nodes: list) -> Dict[str, Any]:
 
 def derive_grain_from_records(records: Any, method: str = "freedman_diaconis") -> int:
     """
-    Estimate grain from CanonicalRecords or LatticeSignals.
+    Estimate data_grain from CanonicalRecords or LatticeSignals.
 
-    Uses grain_from_orders() from the lattice module.
+    Uses binjamin.grain_from_orders().
     """
-    from ..lattice.sampling import grain_from_orders
+    import binjamin as bj
     from ..signal._signal import LatticeSignal
     import numpy as np
 
     # Single LatticeSignal
     if isinstance(records, LatticeSignal):
-        return grain_from_orders(records.index.tolist(), method=method)
+        return bj.grain_from_orders(records.index.tolist(), method=method)
 
     # List of LatticeSignals
     if records and isinstance(records[0], LatticeSignal):
         all_orders = np.concatenate([s.index for s in records])
-        return grain_from_orders(all_orders.tolist(), method=method)
+        return bj.grain_from_orders(all_orders.tolist(), method=method)
 
     orders = [r.primary_order for r in records]
-    return grain_from_orders(orders, method=method)
+    return bj.grain_from_orders(orders, method=method)
 
 
 def derive_plan(
@@ -75,18 +76,20 @@ def derive_plan(
     """
     Derive a SamplingPlan from collected constraints and optionally from data.
 
+    Delegates geometry to binjamin.lattice() — single canonical path.
+
     Priority:
       1. Explicit overrides in constraints (grain, windows, horizon)
       2. Grain estimated from records if not specified
-      3. Horizon derived from windows via lcm (per paper: H = lcm(W ∪ {g}))
+      3. Geometry derived via binjamin.lattice()
       4. Defaults (horizon=360, grain=1) if nothing is specified
 
     Returns
     -------
     SamplingPlan
     """
-    from ..lattice.sampling import SamplingPlan, suggest_cbin
-    from ..lattice.coordinates import smallest_divisor_gte, lattice_members
+    import binjamin as bj
+    from ..lattice.sampling import SamplingPlan
 
     grain = constraints.get("grain")
     windows = constraints.get("windows")
@@ -95,51 +98,24 @@ def derive_plan(
     # Derive grain from data if not explicitly set
     if grain is None and records is not None:
         grain = derive_grain_from_records(records)
-    if grain is None and windows:
-        # Paper default: g = gcd(W), finest grain the window family permits
-        from math import gcd
-        from functools import reduce
-        grain = reduce(gcd, windows)
     if grain is None:
         grain = 1
 
-    # Case 1: explicit horizon
-    if horizon is not None:
-        if windows:
-            cbin = suggest_cbin(grain, windows)
-        else:
-            cbin = smallest_divisor_gte(horizon, grain)
-        if windows:
-            valid = set(lattice_members(horizon, cbin))
-            requested = set(windows)
-            selected = sorted(w for w in valid if w in requested or w == horizon)
-            if not selected:
-                selected = sorted(valid)
-        else:
-            valid = set(lattice_members(horizon, cbin))
-            selected = sorted(valid)
-        return SamplingPlan(horizon, grain, windows=selected)
-
-    # Case 2: windows given, derive horizon as lcm(W ∪ {grain})
+    # Case 1: windows given — use binjamin.lattice()
     if windows:
-        from math import lcm
-        from functools import reduce
-        cbin = suggest_cbin(grain, windows)
-        all_vals = windows + [cbin]
-        horizon = reduce(lcm, all_vals)
-        valid = set(lattice_members(horizon, cbin))
-        requested = set(windows)
-        # Active domain: Div(H) ∩ [cbin, max(W)]
-        max_w = max(windows)
-        selected = sorted(
-            w for w in valid
-            if (w in requested or w <= max_w) and w >= cbin
+        geo = bj.lattice(
+            windows=windows,
+            grain=grain,
+            horizon=horizon,
         )
-        return SamplingPlan(horizon, grain, windows=selected)
+        return SamplingPlan(
+            geo.horizon, grain,
+            windows=list(geo.windows),
+        )
 
-    # Case 3: no windows, no horizon — use default
-    horizon = 360
-    cbin = smallest_divisor_gte(horizon, grain)
-    valid = set(lattice_members(horizon, cbin))
-    selected = sorted(valid)
-    return SamplingPlan(horizon, grain, windows=selected)
+    # Case 2: horizon given, no windows — dense
+    if horizon is not None:
+        return SamplingPlan(horizon, grain)
+
+    # Case 3: nothing — default
+    return SamplingPlan(360, grain)
