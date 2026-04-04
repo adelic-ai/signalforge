@@ -410,7 +410,18 @@ class SamplingPlan:
                 f"grain {grain} > horizon {horizon}"
             )
 
-        cbin = smallest_divisor_gte(horizon, grain)
+        # Derive cbin: the finest resolution that divides all windows and H.
+        # grain | cbin | all windows | H.
+        # When windows are explicit, cbin = gcd(windows) snapped up to >= grain.
+        # When "dense", cbin = smallest divisor of H >= grain.
+        if isinstance(windows, str) and windows.lower() == "dense":
+            cbin = smallest_divisor_gte(horizon, grain)
+        else:
+            explicit_w = [int(w) for w in windows]
+            # gcd of windows is the natural analysis resolution
+            common = reduce(lambda a, b: gcd(a, b), explicit_w)
+            # Snap up to >= grain
+            cbin = smallest_divisor_gte(common, grain) if grain > 1 else common
         ratio = horizon // cbin
         prime_basis: Coordinate = factorize(ratio) if ratio > 1 else {}
         valid = lattice_members(horizon, cbin)

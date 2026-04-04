@@ -105,7 +105,10 @@ def derive_plan(
 
     # Case 1: explicit horizon
     if horizon is not None:
-        cbin = smallest_divisor_gte(horizon, grain)
+        if windows:
+            cbin = suggest_cbin(grain, windows)
+        else:
+            cbin = smallest_divisor_gte(horizon, grain)
         if windows:
             valid = set(lattice_members(horizon, cbin))
             requested = set(windows)
@@ -121,9 +124,9 @@ def derive_plan(
     if windows:
         from math import lcm
         from functools import reduce
-        all_vals = windows + [grain]
+        cbin = suggest_cbin(grain, windows)
+        all_vals = windows + [cbin]
         horizon = reduce(lcm, all_vals)
-        cbin = smallest_divisor_gte(horizon, grain)
         valid = set(lattice_members(horizon, cbin))
         requested = set(windows)
         # Active domain: Div(H) ∩ [cbin, max(W)]
