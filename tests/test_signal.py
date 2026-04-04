@@ -500,3 +500,75 @@ def test_graph_baseline_on_signals():
 
     assert len(surfaces) == 1
     assert isinstance(surfaces[0], Surface)
+
+
+# ---------------------------------------------------------------------------
+# Chaining API
+# ---------------------------------------------------------------------------
+
+
+def test_chain_basic():
+    """sf.load(records).measure().surfaces() works."""
+    import signalforge as sf
+    records = _make_records(200)
+    surfaces = sf.load(records).measure(windows=[10, 20]).surfaces()
+    assert len(surfaces) == 1
+    assert isinstance(surfaces[0], Surface)
+
+
+def test_chain_baseline_residual():
+    """Chain with baseline and residual."""
+    import signalforge as sf
+    records = _make_records(200)
+    surfaces = (
+        sf.load(records)
+        .measure(windows=[10, 20])
+        .baseline("ewma", alpha=0.1)
+        .residual("z")
+        .surfaces()
+    )
+    assert len(surfaces) == 1
+
+
+def test_chain_hilbert():
+    """Chain with Hilbert transform."""
+    import signalforge as sf
+    records = _make_records(200)
+    surfaces = (
+        sf.load(records)
+        .measure(windows=[10, 20])
+        .hilbert()
+        .surfaces()
+    )
+    assert len(surfaces) == 1
+    assert "amplitude" in surfaces[0].data
+    assert "phase" in surfaces[0].data
+
+
+def test_chain_from_signal():
+    """sf.from_signal(sig).measure().surfaces() works."""
+    import signalforge as sf
+    sig = RealSignal(np.arange(200), np.random.randn(200), channel="test")
+    surfaces = sf.from_signal(sig).measure(windows=[10, 20]).surfaces()
+    assert len(surfaces) == 1
+    assert surfaces[0].channel == "test"
+
+
+def test_chain_repr():
+    """Chain repr shows steps."""
+    import signalforge as sf
+    records = _make_records(10)
+    chain = sf.load(records).measure().baseline("ewma")
+    r = repr(chain)
+    assert "measure" in r
+    assert "baseline" in r
+
+
+def test_chain_immutable():
+    """Each step returns a new chain, original unchanged."""
+    import signalforge as sf
+    records = _make_records(100)
+    c1 = sf.load(records).measure(windows=[10])
+    c2 = c1.baseline("ewma")
+    assert len(c1._steps) == 1
+    assert len(c2._steps) == 2

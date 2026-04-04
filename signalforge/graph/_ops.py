@@ -46,6 +46,17 @@ class InputOp(Op):
 
         mode = self.params.get("mode", "signals")
 
+        # Detect if records are already LatticeSignals
+        from ..signal._signal import LatticeSignal
+        if isinstance(records, list) and records and isinstance(records[0], LatticeSignal):
+            return Artifact(
+                type=ArtifactType.SIGNALS,
+                value=records,
+                producing_op=self,
+                plan=plan,
+                metadata={"n_signals": len(records)},
+            )
+
         if mode == "signals":
             from ..signal import records_to_signals
             agg = self.params.get("agg", "mean")

@@ -5,20 +5,26 @@ SignalForge transforms any ordered sequence into structurally invariant
 multiscale surfaces. The measurement space is derived from the arithmetic
 of the signal's grain and window declarations — not designed, not chosen.
 
-The graph API is the primary interface. Compose operators into a DAG,
-resolve the geometry, run.
+Quick exploration (chaining API):
 
-    from signalforge.graph import Input, Bin, Measure, Baseline, Residual, Pipeline
-    from signalforge.domains import timeseries
+    import signalforge as sf
 
-    records = timeseries.ingest("data.csv")
+    surfaces = (
+        sf.load("data.csv")
+        .measure(windows=[10, 60, 360])
+        .baseline("ewma", alpha=0.1)
+        .residual("z")
+        .surfaces()
+    )
+
+Full composition (graph API):
+
+    from signalforge.graph import Input, Measure, Baseline, Residual, Pipeline
 
     x = Input()
-    b = Bin()(x)
-    m = Measure()(b)
+    m = Measure()(x)
     bl = Baseline("ewma", alpha=0.1)(m)
-    r = Residual("ratio")(m, bl)
-
+    r = Residual("z")(m, bl)
     pipe = Pipeline(x, r)
     result = pipe.run(records)
 
@@ -61,6 +67,11 @@ from .lattice.neighborhood import neighborhood, neighborhood_from_vector, Neighb
 # Types — canonical source is signalforge.signal
 from .signal import CanonicalRecord, OrderType, Surface
 
+# Chaining API
+from .chain import Chain
+load = Chain.load
+from_signal = Chain.from_signal
+
 # Domains
 from . import domains
 
@@ -95,6 +106,10 @@ __all__ = [
     "CanonicalRecord",
     "OrderType",
     "Surface",
+    # Chaining API
+    "Chain",
+    "load",
+    "from_signal",
     # Subpackages
     "domains",
     # Version

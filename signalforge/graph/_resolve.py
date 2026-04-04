@@ -55,7 +55,11 @@ def derive_grain_from_records(records: Any, method: str = "freedman_diaconis") -
     from ..signal._signal import LatticeSignal
     import numpy as np
 
-    # If records is a list of LatticeSignals, extract indices
+    # Single LatticeSignal
+    if isinstance(records, LatticeSignal):
+        return grain_from_orders(records.index.tolist(), method=method)
+
+    # List of LatticeSignals
     if records and isinstance(records[0], LatticeSignal):
         all_orders = np.concatenate([s.index for s in records])
         return grain_from_orders(all_orders.tolist(), method=method)
