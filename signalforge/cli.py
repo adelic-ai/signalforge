@@ -523,6 +523,7 @@ def cmd_surface(args: argparse.Namespace) -> int:
     print(f"  Anomaly  ({label})")
     print(f"  {'─' * 50}")
 
+    _zoom_suggestion = None
     for s in surfaces:
         arr = s.data.get("mean")
         if arr is None:
@@ -556,9 +557,68 @@ def cmd_surface(args: argparse.Namespace) -> int:
             print(f"    {w:>6}  {peak:>5.1f}σ  {bar}")
 
         # Where is the strongest anomaly?
+        # Build zoom suggestion around peak
+        _zoom_suggestion = None
         if scale_peaks:
-            top = scale_peaks[0]
-            print(f"  peak at bin {top[2]}, scale {top[1]}")
+            top_peak, top_scale, top_bin = scale_peaks[0]
+            # Try to resolve bin to date
+            _peak_date = None
+            _dates_zoomed = None
+            try:
+                import pandas as pd
+                _df = pd.read_csv(csv_path)
+                _first_col = _df[_df.columns[0]]
+                # Only parse as dates if the column isn't purely numeric
+                _is_numeric = pd.to_numeric(_first_col, errors="coerce").notna().all()
+                if _is_numeric:
+                    raise ValueError("numeric first column, skip date parsing")
+                _dates = pd.to_datetime(_first_col, errors="coerce")
+                if _dates.isna().all():
+                    raise ValueError("no valid dates")
+                _value_col = _df.columns[1] if len(_df.columns) == 2 else None
+                if _value_col:
+                    _mask = pd.to_numeric(_df[_value_col], errors="coerce").notna()
+                    _dates = _dates[_mask].reset_index(drop=True)
+                # Apply same zoom as records
+                if args.start_date or args.end_date:
+                    _s_idx = 0
+                    _e_idx = len(_dates)
+                    if args.start_date:
+                        _sd = pd.Timestamp(args.start_date)
+                        _s_idx = int((_dates >= _sd).idxmax()) if (_dates >= _sd).any() else 0
+                    if args.end_date:
+                        _ed = pd.Timestamp(args.end_date)
+                        _e_idx = int((_dates <= _ed)[::-1].idxmax()) + 1 if (_dates <= _ed).any() else len(_dates)
+                    _dates_zoomed = _dates.iloc[_s_idx:_e_idx].reset_index(drop=True)
+                elif args.start is not None or args.end is not None:
+                    _s = args.start or 0
+                    _e = args.end or len(_dates)
+                    _dates_zoomed = _dates.iloc[_s:_e].reset_index(drop=True)
+                else:
+                    _dates_zoomed = _dates
+                if top_bin < len(_dates_zoomed):
+                    _peak_date = _dates_zoomed.iloc[top_bin]
+            except Exception:
+                pass
+
+            if _peak_date is not None:
+                print(f"  peak at {_peak_date.strftime('%Y-%m-%d')}, scale {top_scale}")
+                # Zoom window: ~10% of data centered on peak
+                margin = max(len(records) // 10, top_scale * 2)
+                zoom_start = max(0, top_bin - margin)
+                zoom_end = min(len(records), top_bin + margin)
+                try:
+                    _zoom_start_date = _dates_zoomed.iloc[zoom_start].strftime('%Y-%m-%d')
+                    _zoom_end_date = _dates_zoomed.iloc[min(zoom_end, len(_dates_zoomed) - 1)].strftime('%Y-%m-%d')
+                    _zoom_suggestion = f"sf surface {csv_path} -hm --start-date {_zoom_start_date} --end-date {_zoom_end_date}"
+                except Exception:
+                    pass
+            else:
+                print(f"  peak at bin {top_bin}, scale {top_scale}")
+                margin = max(len(records) // 10, top_scale * 2)
+                zoom_start = max(0, top_bin - margin)
+                zoom_end = min(len(records), top_bin + margin)
+                _zoom_suggestion = f"sf surface {csv_path} -hm --start {zoom_start} --end {zoom_end}"
 
     total = time.perf_counter() - t_total
     print(f"  {'─' * 50}")
@@ -569,11 +629,9 @@ def cmd_surface(args: argparse.Namespace) -> int:
     if ws and name:
         exp_dir = ws / "output" / name
         exp_dir.mkdir(parents=True, exist_ok=True)
-        # Save surface data
         for s in surfaces:
             for agg_name, arr in s.data.items():
                 np.save(exp_dir / f"{s.channel}_{agg_name}.npy", arr)
-        # Save plan info
         import json
         meta = {
             "channel": [s.channel for s in surfaces],
@@ -600,6 +658,8 @@ def cmd_surface(args: argparse.Namespace) -> int:
             print(f"  Add -hm for heatmap:  {cmd} -hm")
         if not args.baseline:
             print(f"  Try a baseline:       sf surface {csv_path} -hm --baseline ewma --residual z")
+        if _zoom_suggestion and not (args.start_date or args.end_date or args.start is not None):
+            print(f"  Zoom into peak:       {_zoom_suggestion}")
         if ws and not name:
             print(f"  Save this run:        add --name <label>")
     print()
