@@ -11,7 +11,7 @@ SamplingPlan uses horizon=360, grain=1 (same lattice as equities-daily).
 
 from __future__ import annotations
 
-from ..lattice.coordinates import lattice_members, smallest_divisor_gte
+import binjamin as bj
 from ..lattice.sampling import SamplingPlan
 
 
@@ -24,8 +24,8 @@ def sampling_plan(
 
     Horizon of 360 = 2³ × 3² × 5, giving 24 divisors and clean windows.
     """
-    cbin = smallest_divisor_gte(horizon, grain)
-    valid = set(lattice_members(horizon, cbin))
+    cbin = bj.smallest_divisor_gte(horizon, grain)
+    valid = set(bj.lattice_members(horizon, cbin))
 
     anchors = {1, 5, 10, 20, 60, 180, horizon}
     fine_cutoff = 20

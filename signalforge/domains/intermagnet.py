@@ -27,7 +27,7 @@ INTERMAGNET data formats and cadences:
 
 from __future__ import annotations
 
-from ..lattice.coordinates import lattice_members, smallest_divisor_gte
+import binjamin as bj
 from ..lattice.sampling import SamplingPlan
 
 # Standard INTERMAGNET cadences in seconds.
@@ -71,8 +71,8 @@ def sampling_plan(
     >>> plan.windows
     (60, 120, 180, 360, 720, 1440, 3600, 7200, 14400, 21600, 43200, 86400)
     """
-    cbin = smallest_divisor_gte(horizon, grain)
-    valid = lattice_members(horizon, cbin)
+    cbin = bj.smallest_divisor_gte(horizon, grain)
+    valid = bj.lattice_members(horizon, cbin)
 
     # Anchor windows at the standard INTERMAGNET products that fall within
     # the horizon, then fill in lattice members between them for multiscale
@@ -111,8 +111,8 @@ def sampling_plan_yearly(
     grain : int
         Finest bin in seconds. Default: 86400 (one day).
     """
-    cbin = smallest_divisor_gte(horizon, grain)
-    valid = lattice_members(horizon, cbin)
+    cbin = bj.smallest_divisor_gte(horizon, grain)
+    valid = bj.lattice_members(horizon, cbin)
 
     # Anchor at geophysically meaningful day-count windows, fill sub-monthly lattice.
     _ONE_WEEK  = 7  * _ONE_DAY

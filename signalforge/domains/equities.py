@@ -32,7 +32,7 @@ NYSE trading hours: https://www.nyse.com/markets/hours-calendars
 
 from __future__ import annotations
 
-from ..lattice.coordinates import lattice_members, smallest_divisor_gte
+import binjamin as bj
 from ..lattice.sampling import SamplingPlan
 
 # Intraday constants (minutes)
@@ -81,8 +81,8 @@ def sampling_plan(
     >>> plan.windows
     (1, 2, 3, 4, 5, 6, 9, 10, 12, 15, 18, 20, 24, 30, 36, 40, 45, 60, 72, 90, 120, 180, 360)
     """
-    cbin = smallest_divisor_gte(horizon, grain)
-    valid = set(lattice_members(horizon, cbin))
+    cbin = bj.smallest_divisor_gte(horizon, grain)
+    valid = set(bj.lattice_members(horizon, cbin))
 
     anchors = {_ONE_BAR, _FIVE_BARS, _FIFTEEN, _THIRTY, _ONE_HOUR, horizon}
     fine_cutoff = _ONE_HOUR
@@ -127,8 +127,8 @@ def sampling_plan_daily(
     >>> plan.prime_basis
     {2: 3, 3: 2, 5: 1}
     """
-    cbin = smallest_divisor_gte(horizon, grain)
-    valid = set(lattice_members(horizon, cbin))
+    cbin = bj.smallest_divisor_gte(horizon, grain)
+    valid = set(bj.lattice_members(horizon, cbin))
 
     anchors = {_ONE_BAR, _ONE_WEEK, _TWO_WEEKS, _ONE_MONTH, _QUARTER, _HALF_YEAR, horizon}
     fine_cutoff = _ONE_MONTH

@@ -35,7 +35,7 @@ CHB-MIT Scalp EEG Database:
 
 from __future__ import annotations
 
-from ..lattice.coordinates import lattice_members, smallest_divisor_gte
+import binjamin as bj
 from ..lattice.sampling import SamplingPlan
 
 # 256 Hz — CHB-MIT and standard clinical EEG
@@ -91,8 +91,8 @@ def sampling_plan(
     >>> plan.windows[:5]
     (256, 512, 1024, 2048, 4096)
     """
-    cbin = smallest_divisor_gte(horizon, grain)
-    valid = set(lattice_members(horizon, cbin))
+    cbin = bj.smallest_divisor_gte(horizon, grain)
+    valid = set(bj.lattice_members(horizon, cbin))
 
     # Anchor at clinical epoch lengths, include all sub-1-minute lattice members.
     anchors = {_EPOCH_1S, _EPOCH_4S, _EPOCH_16S, _EPOCH_30S, _EPOCH_1MIN, _EPOCH_5MIN, horizon}
