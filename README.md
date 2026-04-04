@@ -1,7 +1,18 @@
 # SignalForge
 
-Multiscale signal analysis on a [normalized scale space](docs/sampling_domain.md).
+Multiscale signal analysis on a [normalized scale space](docs/concepts.md).
 Give it any ordered sequence and explore its structure across scales — no labels, no training, no domain-specific code.
+
+## Table of Contents
+
+- [Install](#install)
+- [Quick Start](#quick-start)
+- [Explore Your Data](#explore-your-data)
+- [Python API](#python-api)
+- [What Makes This Different](#what-makes-this-different)
+- [Demonstrated Results](#demonstrated-results)
+- [Documentation](#documentation)
+- [License](#license)
 
 ## Install
 
@@ -17,169 +28,188 @@ cd signalforge
 uv sync
 ```
 
-## Explore your data
-
-SignalForge works on CSV data — from a simple two-column time series to multi-channel, multi-entity datasets. Each channel gets its own surface; channels can be combined to derive new ones. Start with something simple:
+## Quick Start
 
 ```bash
-# Grab VIX volatility data (2005–2012)
+# Download VIX volatility data (2005-2012)
 curl -o vix.csv "https://fred.stlouisfed.org/graph/fredgraph.csv?id=VIXCLS&cosd=2005-01-01&coed=2012-12-31"
 
-# What's in it?
+# See the structure
+sf surface vix.csv -hm --max-window 360
+```
+
+![VIX 2005-2012 heatmap](docs/img/heatmap_vix_v2.png)
+
+The 2008 financial crisis appears as a vertical band of red — visible across every analysis scale simultaneously. No configuration, no parameters to tune. SignalForge [derives the measurement space](docs/concepts.md#lattice) from your data.
+
+## Explore Your Data
+
+### Load and inspect
+
+```bash
 sf load vix.csv
 ```
 
 ```
-  file      : vix.csv
-  records   : 2,013
-  channels  : ['value']
-  range     : 0 → 2,085  (span: 2,085)
-  est grain : 2
+  SignalForge  vix.csv
+  ────────────────────────────────────────
+  records   2,013
+  channels  value
+  span      0 .. 2,085  (2,085)
+  grain     2  (estimated)
+  basis     2^2 x 3^2 x 5
+  scales    18  [2 .. 360]
+  ────────────────────────────────────────
+
+  Next:
+    sf surface vix.csv -hm
 ```
 
-### Build a surface
+### Add a baseline
 
-A surface is a 2D grid — time on one axis, analysis scale on the other. One command:
+What's anomalous relative to a [moving average](docs/cli.md#baselines)?
 
 ```bash
-sf surface vix.csv -hm --max-window 360
+sf surface vix.csv -hm --max-window 360 --baseline ewma --residual z
 ```
 
-This produces a [multiscale heatmap](docs/scale_space.md) showing z-score deviations across all scales. The 2008 financial crisis appears as a vertical band of red — visible across every scale simultaneously.
-
-![VIX 2005–2012 heatmap](docs/img/heatmap_vix.png)
-
-`--max-window 360` means "analyze at scales up to 360 bins." The bin size is [estimated from the data](docs/binjamin.md), and the full set of valid analysis scales is [derived from the bins and your window choice](docs/sampling_domain.md) — every scale nests cleanly into the others with no boundary artifacts.
-
-### Try different baselines
-
-What's the deviation *relative to*? That's the baseline. Swap it:
-
-```bash
-sf surface vix.csv -hm --baseline ewma --alpha 0.1
-sf surface vix.csv -hm --baseline median --window 20
-```
-
-Don't know what EWMA does? Ask:
-
-```bash
-sf inspect ewma
-```
-
-```
-  Exponentially Weighted Moving Average
-  =====================================
-
-  Formula:  s_t = α · x_t + (1 - α) · s_{t-1}
-  Params:   α (alpha): smoothing factor in (0, 1]. Higher = more responsive.
-  ...
-```
-
-Available methods: `ewma`, `median`, `rolling_mean`. See `sf inspect <name>` for any of them.
-
-### Score the residual
-
-Remove the baseline and look at what's left:
-
-```bash
-sf surface vix.csv -hm --baseline ewma --residual ratio
-sf surface vix.csv -hm --baseline median --residual z
-```
-
-Residual modes: `difference` (absolute), `ratio` (multiplicative), `z` (normalized by baseline variability). See `sf inspect ratio`, `sf inspect z`.
+The residual shows how many standard deviations each point is from the baseline, at every scale. `sf inspect ewma` explains the method, its formula, and when to use it.
 
 ### Zoom in
 
-Spotted something interesting? Zoom:
+Spotted something? The CLI suggests a zoom command centered on the peak anomaly:
 
 ```bash
-sf surface vix.csv -hm --start-date 2008-01-01 --end-date 2009-12-31
-sf surface vix.csv -hm --start 800 --end 1200
+sf surface vix.csv -hm --start-date 2007-06-01 --end-date 2009-06-01
 ```
 
-The surface is recomputed over the zoomed region — the lattice geometry applies fresh to the subset.
+Zoomed regions get [finer resolution automatically](docs/cli.md#zoom) — more scales, smaller grain. Coarse-to-fine exploration is the natural workflow.
+
+### Learn the system
+
+```bash
+sf inspect
+```
+
+```
+  Baselines
+    ewma            Exponentially Weighted Moving Average
+    median          Rolling Median Filter
+    rolling_mean    Rolling Mean
+
+  Residuals
+    difference      Difference Residual
+    ratio           Ratio Residual
+    z               Z-Score Residual
+
+  Concepts
+    horizon         Horizon
+    grain           Grain
+    surface         Surface
+    lattice         Lattice
+```
+
+`sf inspect <name>` shows the formula, parameters, when to use it, and an example command. The CLI [teaches the system by letting you use it](docs/cli.md#inspect).
 
 ### Set up a workspace
 
-When you're doing serious exploration, initialize a workspace:
+For sustained exploration, [initialize a workspace](docs/cli.md#workspace):
 
 ```bash
-sf init my_analysis --csv vix.csv --max-window 360
-cd my_analysis
-sf surface -hm
-sf surface -hm --baseline ewma --residual ratio --save output/ratio.png
+sf init my_project --csv vix.csv --max-window 360
+cd my_project
+sf surface -hm                                        # picks up workspace config
+sf surface -hm --baseline ewma --residual z --name crisis_ewma   # saves the run
+sf status                                              # see what you've done
 ```
 
-The workspace stores your config, so you don't repeat flags. Outputs go to `output/`. You can version your experiments with git.
+## Python API
 
-### View the lattice geometry
-
-```bash
-sf plan equities-daily
-```
-
-Shows the [sampling plan](docs/sampling_domain.md) — every window, hop, and [p-adic coordinate](docs/scale_space.md) in the lattice. This is the measurement space your surfaces live in.
-
-## Compose pipelines in Python
-
-For more control, compose pipelines programmatically using the [graph API](docs/overview.md):
+### Chaining — quick exploration
 
 ```python
-from signalforge.graph import Input, Bin, Measure, Baseline, Residual, Pipeline
-from signalforge.domains import timeseries
+import signalforge as sf
 
-records = timeseries.ingest("vix.csv")
-
-x = Input()                              # data bound at run time
-b = Bin()(x)                             # default: agg="mean". also: "count", "max"
-m = Measure()(b)                         # default: profile="continuous"
-bl = Baseline("ewma", alpha=0.1)(m)      # also: "median", "rolling_mean"
-r = Residual("ratio")(m, bl)             # also: "difference", "z"
-
-pipe = Pipeline(x, r)
-result = pipe.run(records)
+surfaces = (
+    sf.load("vix.csv")
+    .measure(windows=[10, 60, 360])
+    .baseline("ewma", alpha=0.1)
+    .residual("z")
+    .surfaces()
+)
 ```
 
-Pipelines are lazy DAGs — define the graph, run it. Branch and merge freely: two baselines, two residuals, [stack](docs/operators_guide.md) them into one surface.
+Each step returns a new chain. Nothing executes until `.surfaces()` or `.run()`. See the [Python API guide](docs/python-api.md) for details.
 
-## What makes this different
+### DAG — full composition
 
-Standard multiscale analysis (STFT, wavelets) requires the analyst to choose window sizes. SignalForge [derives the measurement space](docs/sampling_domain.md) from your declared windows and grain. The valid scales are the divisors of the horizon — a structure from number theory that guarantees artifact-free tiling, perfect nesting, and [structural invariance](docs/structural_invariance.md) across recordings.
+When you need branching and merging — multiple baselines, Hilbert transform, stacked features for ML:
 
-Two signals with the same sampling plan produce surfaces that are [directly comparable](docs/structural_invariance.md) — no post-hoc normalization needed. This is what makes ML on surfaces meaningful: features at each scale occupy the same structural position in the lattice.
+```python
+from signalforge.graph import Input, Measure, Baseline, Residual, Hilbert, Stack, Pipeline
+
+x = Input()
+m = Measure()(x)
+
+bl = Baseline(method="ewma", alpha=0.1)(m)
+resid = Residual(mode="z")(m, bl)
+hilbert = Hilbert()(m)
+
+features = Stack()([m, resid, hilbert])
+
+pipe = Pipeline(x, features)
+result = pipe.run(records, windows=[10, 60, 360])
+```
+
+The [graph API](docs/python-api.md#dag-composition) composes operators into a lazy DAG. Use the chaining API to figure out what works, then lock it into a DAG for production or ML pipelines.
+
+### Signals and surfaces
+
+Everything in SignalForge is a [LatticeSignal](docs/concepts.md#signals) — including surfaces. A surface IS a signal, so you can measure surfaces of surfaces, compute baselines of baselines, or feed any intermediate back through the pipeline.
+
+```python
+from signalforge.signal import RealSignal, ComplexSignal
+
+sig = RealSignal(index, values, channel="my_signal")
+surface = sf.from_signal(sig).measure(windows=[10, 30, 90]).surfaces()[0]
+```
+
+Values are complex-native (`complex128`). Real signals are the common case (`imag=0`). The [Hilbert transform](docs/python-api.md#hilbert) promotes a real signal to its analytic (complex) form — amplitude + phase at every point.
+
+## What Makes This Different
+
+Standard multiscale analysis (STFT, wavelets) requires the analyst to choose window sizes. SignalForge [derives the measurement space](docs/concepts.md#lattice) from the arithmetic of your declared windows and grain. The valid scales are the divisors of the horizon — a structure from number theory that guarantees:
+
+- **Artifact-free tiling** — windows nest perfectly, no boundary effects
+- **Structural invariance** — same plan = same grid. Surfaces from different signals are [directly comparable](docs/concepts.md#structural-invariance)
+- **Scale coherence** — every scale is a divisor of every larger scale. The lattice IS the multiscale structure
+
+Two signals with the same sampling plan produce identically shaped surfaces. This is what makes ML on surfaces meaningful — features at each scale occupy the same structural position.
 
 For a detailed comparison with wavelets, STFT, and EMD: [docs/comparison.md](docs/comparison.md)
 
-## What counts as a signal
+## Demonstrated Results
 
-Anything ordered. Time-stamped sensor data, sequential event logs, daily market prices, clinical recordings, genomic positions. If it has an order and a value, SignalForge can surface its multiscale structure.
+### EEG seizure detection
 
-Time is not required — event-ordered sequences work with `grain=1`, where each event is one bin and scales are measured in events rather than time.
+![EEG seizure heatmap](docs/img/heatmap_eeg_seizure.png)
 
-[docs/domain_guide.md](docs/domain_guide.md) — how to bring your own data
+SignalForge detected a clinical epileptic seizure at **13.96σ** on [CHB-MIT EEG](https://physionet.org/content/chbmit/1.0.0/) data — the windowed mean during the seizure deviated nearly 14 standard deviations from the scale baseline. No training data, no labels, no EEG-specific code.
 
-## Demonstrated results
+The same pipeline processes VIX market data, [INTERMAGNET](https://intermagnet.org/data_download.html) geomagnetic observatory data, and generic CSV time series unchanged.
 
-SignalForge detected a clinical epileptic seizure at **13.96σ** on [CHB-MIT EEG](https://physionet.org/content/chbmit/1.0.0/) data — the windowed mean during the seizure deviated nearly 14 standard deviations from the scale baseline. No training data, no labels, no EEG-specific code. The same pipeline processes [INTERMAGNET](https://intermagnet.org/data_download.html) geomagnetic observatory data unchanged.
-
-[docs/empirical_results.md](docs/empirical_results.md) — full results and reproducibility
+See [docs/examples.md](docs/examples.md) for full walkthroughs with each dataset.
 
 ## Documentation
 
 | Doc | What it covers |
 |-----|----------------|
-| [Sampling domain](docs/sampling_domain.md) | The lattice, horizon, grain, why divisors |
-| [Scale space](docs/scale_space.md) | Surfaces, coordinates, the geometry of scale |
-| [Structural invariance](docs/structural_invariance.md) | Why surfaces are directly comparable |
+| [Concepts](docs/concepts.md) | Lattice, horizon, grain, surface, signals, structural invariance |
+| [CLI Guide](docs/cli.md) | All commands: load, surface, inspect, init, status, zoom |
+| [Python API](docs/python-api.md) | Chaining API, DAG composition, Hilbert, signals |
+| [Examples](docs/examples.md) | VIX, EEG, INTERMAGNET walkthroughs |
 | [Comparison](docs/comparison.md) | STFT, wavelets, EMD vs SignalForge |
-| [Pipeline overview](docs/overview.md) | Stages, architecture, the graph API |
-| [Domain guide](docs/domain_guide.md) | Bring your own data |
-| [Data guide](docs/data_guide.md) | Downloading datasets, running examples |
-| [Operators](docs/operators_guide.md) | Transform operators and derived channels |
-| [Grain estimation](docs/binjamin.md) | Automatic grain selection |
-| [Grain & horizon design](docs/design_grain_snapping.md) | Internal design decisions |
-| [EEG discovery](docs/discovery_eeg_seizure_detection.md) | The seizure detection case study |
-| [Empirical results](docs/empirical_results.md) | Cross-domain validation |
+| [Architecture](docs/architecture.md) | Signal module, graph, pipeline internals |
 
 ## License
 
