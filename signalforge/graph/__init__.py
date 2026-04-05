@@ -19,7 +19,7 @@ Keras-style functional computation graph for composing pipeline stages.
 from ._core import GraphPipeline, Node, Op
 from ..signal._base import Artifact, ArtifactType
 from ._ops import AssembleOp, BinOp, EngineerOp, InputOp, MeasureOp
-from ._multi_ops import BaselineOp, HilbertOp, ResidualOp, StackOp
+from ._multi_ops import BaselineOp, GradientOp, HilbertOp, ResidualOp, StackOp
 from ._types import parse_duration
 
 
@@ -82,6 +82,15 @@ def Stack(**kwargs) -> StackOp:
     return StackOp(**kwargs)
 
 
+def Gradient(**kwargs) -> GradientOp:
+    """Compute the discrete gradient on the lattice.
+
+    Produces grad_t (temporal), grad_p2, grad_p3, ... (per prime axis),
+    and grad_scale_mag (magnitude across all prime axes).
+    """
+    return GradientOp(**kwargs)
+
+
 Pipeline = GraphPipeline
 
 __all__ = [
@@ -93,6 +102,7 @@ __all__ = [
     "Baseline",
     "Residual",
     "Hilbert",
+    "Gradient",
     "Stack",
     "Pipeline",
     "Artifact",

@@ -114,6 +114,10 @@ class Chain:
         """Apply Hilbert transform — adds amplitude, phase, inst_freq."""
         return self._copy(_steps=self._steps + [("hilbert", kwargs)])
 
+    def gradient(self, **kwargs) -> "Chain":
+        """Compute discrete gradient on the lattice — grad_t, grad_p2, grad_p3, ..."""
+        return self._copy(_steps=self._steps + [("gradient", kwargs)])
+
     def stack(self, *others: "Chain") -> "Chain":
         """Stack surfaces from multiple chains along the feature axis.
 
@@ -135,7 +139,7 @@ class Chain:
         """
         from .graph import (
             Input, Measure, Baseline, Residual,
-            Hilbert, Stack, Pipeline,
+            Hilbert, Gradient, Stack, Pipeline,
         )
 
         records = self._records
@@ -171,6 +175,10 @@ class Chain:
                 if current is None:
                     raise ValueError(".hilbert() requires .measure() first")
                 current = Hilbert(**kwargs)(current)
+            elif step_name == "gradient":
+                if current is None:
+                    raise ValueError(".gradient() requires .measure() first")
+                current = Gradient(**kwargs)(current)
             elif step_name == "stack":
                 # Execute other chains to get their surfaces
                 raise NotImplementedError("stack() in chaining not yet implemented — use graph API")

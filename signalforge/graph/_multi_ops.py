@@ -355,3 +355,95 @@ class StackOp(Op):
             plan=plan,
             metadata={"n_sources": len(inputs)},
         )
+
+
+# ---------------------------------------------------------------------------
+# GradientOp
+# ---------------------------------------------------------------------------
+
+class GradientOp(Op):
+    """
+    Compute the discrete gradient of a Surface on the lattice.
+
+    Produces a new Surface with one data array per gradient component:
+    - 'grad_t': temporal gradient (finite difference along time axis)
+    - 'grad_p2': prime-2 scale gradient (difference when dividing window by 2)
+    - 'grad_p3': prime-3 scale gradient
+    - ... one per prime in the lattice basis
+
+    Each prime-axis gradient Δ_p F(t, d) = F(t, d/p) - F(t, d) measures
+    the change when refining by one step on that prime axis. This is a
+    log-derivative: each step scales the window multiplicatively by p.
+
+    Input: SURFACES. Output: SURFACES (same shape, gradient data arrays).
+    """
+
+    input_types = (ArtifactType.SURFACES,)
+    output_type = ArtifactType.SURFACES
+
+    def execute(self, *inputs: Artifact, plan: Any = None) -> Artifact:
+        import binjamin as bj
+
+        surfaces = inputs[0].value
+        result_surfaces = []
+
+        for s in surfaces:
+            # Use "mean" if available, else first value array
+            source_key = "mean" if "mean" in s.data else next(iter(s.data))
+            arr = s.data[source_key]
+            n_scales, n_time = arr.shape
+
+            new_data = {}
+
+            # Temporal gradient: forward difference along time
+            grad_t = np.full_like(arr, np.nan)
+            grad_t[:, :-1] = arr[:, 1:] - arr[:, :-1]
+            new_data["grad_t"] = grad_t
+
+            # Scale gradients: one per prime in the basis
+            # Build window list and find adjacency per prime
+            windows = list(s.scale_axis)
+            window_to_row = {w: i for i, w in enumerate(windows)}
+
+            # Get prime basis from plan
+            basis = s.plan.prime_basis if hasattr(s, 'plan') and s.plan else {}
+            if not basis and plan:
+                basis = plan.prime_basis
+
+            primes = sorted(basis.keys())
+
+            for p in primes:
+                grad_p = np.full_like(arr, np.nan)
+
+                for i, w in enumerate(windows):
+                    # w/p is one step finer on prime-p axis
+                    if w % p == 0:
+                        w_finer = w // p
+                        if w_finer in window_to_row:
+                            j = window_to_row[w_finer]
+                            # Δ_p F = F(finer) - F(coarser)
+                            grad_p[i, :] = arr[j, :] - arr[i, :]
+
+                new_data[f"grad_p{p}"] = grad_p
+
+            # Also include gradient magnitude across all prime axes
+            prime_grads = [new_data[f"grad_p{p}"] for p in primes if f"grad_p{p}" in new_data]
+            if prime_grads:
+                mag_sq = np.zeros_like(arr)
+                for g in prime_grads:
+                    finite = np.where(np.isfinite(g), g, 0)
+                    mag_sq += finite ** 2
+                new_data["grad_scale_mag"] = np.sqrt(mag_sq)
+
+            result_surfaces.append(_derive_surface(
+                s, data=new_data, plan=plan,
+                profile="gradient",
+            ))
+
+        return Artifact(
+            type=ArtifactType.SURFACES,
+            value=result_surfaces,
+            producing_op=self,
+            plan=plan,
+            metadata={"primes": primes if primes else []},
+        )
