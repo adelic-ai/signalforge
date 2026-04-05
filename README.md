@@ -178,16 +178,14 @@ Values are complex-native (`complex128`). Real signals are the common case (`ima
 
 ### Custom aggregations
 
-Each surface cell is a window reduced to a number — by default a mean. SignalForge ships with 20+ aggregations (mean, std, percentiles, spectral energy, dominant frequency, ...) and you can register your own:
+Each surface cell is a window reduced to a number — by default a mean. SignalForge ships with 20+ aggregations (mean, std, percentiles, spectral energy, dominant frequency, Shannon entropy, ...) and you can register your own:
 
 ```python
 from signalforge.pipeline.aggregation import register_aggregation
 
-@register_aggregation("entropy")
-def entropy(values):
-    p = np.histogram(values, bins=10, density=True)[0]
-    p = p[p > 0]
-    return float(-np.sum(p * np.log2(p)))
+@register_aggregation("iqr")
+def iqr(values):
+    return float(np.percentile(values, 75) - np.percentile(values, 25))
 ```
 
 Any function that takes an array and returns a float works. See [docs/python-api.md](docs/python-api.md#aggregations) for the full list.

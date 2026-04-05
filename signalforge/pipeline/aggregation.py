@@ -217,3 +217,18 @@ def _dominant_freq(v: np.ndarray) -> float:
         return 0.0
     peak_bin = int(np.argmax(spectrum[1:])) + 1  # skip DC
     return float(peak_bin / len(v))
+
+
+@register_aggregation("entropy")
+def _entropy(v: np.ndarray) -> float:
+    """
+    Shannon entropy of the value distribution within the window.
+
+    Measures complexity: low entropy = predictable (values concentrated),
+    high entropy = chaotic (values spread across the range). Uses 10 bins
+    for the histogram. Returns bits (log base 2).
+    """
+    counts, _ = np.histogram(v, bins=min(10, len(v)))
+    p = counts / counts.sum()
+    p = p[p > 0]
+    return float(-np.sum(p * np.log2(p)))

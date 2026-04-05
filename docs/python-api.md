@@ -284,5 +284,20 @@ Aggregation functions reduce a window of values to a single number. Used in the 
 | `count` | — | Number of events |
 | `spectral_energy` | `sf inspect spectral_energy` | Total oscillatory content (FFT) |
 | `dominant_freq` | `sf inspect dominant_freq` | Strongest rhythm (FFT peak) |
+| `entropy` | `sf inspect entropy` | Shannon entropy — complexity/predictability |
+
+Also available: `median`, `min`, `max`, `sum`, `range`, `var`, `first`, `last`, `mode`, `ewma`, `geometric_mean`, `p25`, `p75`, `p90`, `p95`, `p99`. See `sf inspect` for the full list.
 
 The spectral aggregations are effectively STFT on the lattice — FFT per window at each scale, with artifact-free nesting across scales. See [comparison.md](comparison.md) for how this relates to standard STFT.
+
+### Custom aggregations
+
+Any function that takes an array and returns a float:
+
+```python
+from signalforge.pipeline.aggregation import register_aggregation
+
+@register_aggregation("iqr")
+def iqr(values):
+    return float(np.percentile(values, 75) - np.percentile(values, 25))
+```

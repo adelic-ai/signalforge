@@ -1095,6 +1095,21 @@ _INSPECT_ENTRIES = {
             "  Useful for detecting frequency shifts: chirps, mode changes, clock drift.",
         "cli": "sf surface data.csv -hm  (then use dominant_freq in Python API)",
     },
+    "entropy": {
+        "category": "aggregation",
+        "name": "Shannon Entropy",
+        "formula": "-sum(p * log2(p)) over histogram bins",
+        "params": "No parameters. Uses 10 histogram bins.",
+        "description":
+            "Measures complexity of the value distribution within the window.\n"
+            "  Low entropy = predictable (values concentrated in few bins).\n"
+            "  High entropy = chaotic (values spread across the range). Returns bits.",
+        "use_when":
+            "You want to know how complex or predictable the signal is at each\n"
+            "  scale. Regime changes often show as entropy shifts — stable periods\n"
+            "  have low entropy, turbulent periods have high.",
+        "cli": "sf surface data.csv -hm  (then use entropy in Python API)",
+    },
     # --- Concepts ---
     "horizon": {
         "category": "concept",
