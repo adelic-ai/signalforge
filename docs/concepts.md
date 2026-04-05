@@ -5,7 +5,7 @@ SignalForge transforms any ordered sequence into structurally invariant multisca
 ## Table of Contents
 
 - [Signals](#signals)
-- [Grain](#grain)
+- [Grain and cbin](#grain-and-cbin)
 - [Lattice](#lattice)
 - [Horizon](#horizon)
 - [Surface](#surface)
