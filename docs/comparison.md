@@ -81,11 +81,15 @@ sense SignalForge requires.
 | Boundary artifacts | Possible | Possible | N/A | None within lattice; recording boundaries handled as in any windowed method |
 | Computation | O(H log H) per scale | O(H) | O(H²) typical | O(H · τ(H)), nearly linear |
 
-The scales in SignalForge are not chosen. Given windows and a grain, the horizon
-is derived as `lcm(windows + [grain])`, and the valid windows are exactly the
-divisors of that horizon. The lattice structure is a consequence of unique prime
-factorization. The analyst declares the windows and grain; the arithmetic
-determines the measurement space.
+The scales in SignalForge are not chosen. The analyst declares windows; grain is
+estimated from the data (or declared from domain knowledge); cbin is derived as
+`gcd(windows)` — the coarsest resolution that divides every window. The horizon
+`H = lcm(windows + [cbin])` follows, and the valid scales are exactly `Div(H)` —
+the divisors of the horizon. This set forms a lattice because it is closed under
+gcd and lcm. The prime factorization of H then gives each scale a canonical
+coordinate — but the lattice structure comes from choosing to work in Div(H),
+not from factorization itself. Factorization provides the coordinate system;
+divisibility provides the structure.
 
 ---
 
