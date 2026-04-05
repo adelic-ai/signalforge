@@ -128,6 +128,29 @@ plan = intermagnet.sampling_plan()
 
 ---
 
+## GRACE/GRACE-FO Satellite Gravity
+
+Monthly gravity anomalies from NASA's GRACE and GRACE-FO missions, 2002-2026. Equivalent water height in cm.
+
+### Get the data
+
+Download from [NASA PO.DAAC](https://podaac.jpl.nasa.gov/dataset/TELLUS_GRAC-GRFO_MASCON_CRI_GRID_RL06.3_V4) (free EarthData account required). The netCDF file contains a global 0.5° grid with 253 monthly time steps.
+
+### Python
+
+```python
+import signalforge as sf
+
+# Regional time series already extracted in data/grace_regions.csv
+surfaces = sf.load("data/grace_regions.csv").measure().surfaces()
+```
+
+**What it shows:** Three regions on the same lattice reveal fundamentally different multiscale structure. Greenland shows persistent ice mass loss accelerating over 24 years. Antarctica shows subtler change. The Amazon shows seasonal wet/dry oscillation with the 2023 drought visible as a deep anomaly at coarse scales.
+
+![GRACE regional heatmaps](img/heatmap_grace_regions.png)
+
+---
+
 ## Generic Time Series
 
 Any two-column CSV (date/index + value) works with no configuration.
