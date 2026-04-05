@@ -101,7 +101,14 @@ def derive_plan(
     if grain is None:
         grain = 1
 
-    # Case 1: windows given — use binjamin.lattice()
+    # Case 1: single window = max-window intent → treat as horizon, dense lattice
+    if windows and len(windows) == 1:
+        H = windows[0]
+        if horizon is not None:
+            H = max(H, horizon)
+        return SamplingPlan(H, grain)
+
+    # Case 2: multiple windows given — use binjamin.lattice()
     if windows:
         geo = bj.lattice(
             windows=windows,
@@ -113,9 +120,9 @@ def derive_plan(
             windows=list(geo.windows),
         )
 
-    # Case 2: horizon given, no windows — dense
+    # Case 3: horizon given, no windows — dense
     if horizon is not None:
         return SamplingPlan(horizon, grain)
 
-    # Case 3: nothing — default
+    # Case 4: nothing — default
     return SamplingPlan(360, grain)
