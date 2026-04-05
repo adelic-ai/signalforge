@@ -39,7 +39,7 @@ Three related concepts control resolution:
 
 **grain** — the finest admissible analysis resolution. Must be >= data_grain. This is the floor — you can't analyze finer than the data supports. For event-ordered data, grain = 1 is the obvious default.
 
-**cbin** — the materialized computational bin. This is the resolution the analysis actually runs at. It must divide all windows and the horizon. Derived as `gcd(windows)` by default — the finest resolution the window family permits.
+**cbin** — the materialized computational bin. This is the resolution the analysis actually runs at. It must divide all windows and the horizon. Derived as `gcd(windows)` by default — the coarsest resolution that divides every window cleanly. A finer cbin can be chosen for higher resolution at more compute cost.
 
 The chain: `data_grain <= grain <= cbin`
 
