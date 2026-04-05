@@ -34,7 +34,7 @@ from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
-from .coordinates import Coordinate, factorize, to_int
+from binjamin import Coordinate, factorize, to_int
 
 
 class Neighborhood:

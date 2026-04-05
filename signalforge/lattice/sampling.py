@@ -31,14 +31,13 @@ from functools import reduce
 from math import gcd
 from typing import Sequence, Tuple, Union
 
-import binjamin as bj
-
-from .coordinates import (
+from binjamin import (
     Coordinate,
     factorize,
     lattice_members,
     smallest_divisor_gte,
 )
+import binjamin as bj
 
 WindowSpec = Union[str, Sequence[int]]
 
@@ -79,7 +78,7 @@ def suggest_cbin(grain: int, windows: Sequence[int]) -> int:
     if not windows:
         raise ValueError("windows must be non-empty")
     common = reduce(lambda a, b: gcd(a, b), windows)
-    from .coordinates import divisors
+    from binjamin import divisors
     for d in divisors(common):
         if d >= grain:
             return d

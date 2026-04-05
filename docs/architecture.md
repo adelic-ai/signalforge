@@ -16,20 +16,22 @@ Internal structure for contributors and anyone reading the source.
 ## Module Layout
 
 ```
+binjamin (external)  # Lattice geometry — factorize, divisors, LatticeGeometry
 signalforge/
-  lattice/          # Core math — coordinates, sampling plan, neighborhood
-  signal/           # Type foundation — LatticeSignal, ComplexSignal, Surface, Artifact
-  graph/            # Computation graph — Op, Node, Pipeline, resolve
-  pipeline/         # Stage implementations — binned, surface, feature, bundle
-  domains/          # Domain adapters — ingest functions per data type
-  chain.py          # Fluent chaining API
-  cli.py            # CLI commands
+  lattice/           # SF wrappers — SamplingPlan, FlipFlop, Neighborhood
+  signal/            # Type foundation — LatticeSignal, ComplexSignal, Surface, Artifact
+  graph/             # Computation graph — Op, Node, Pipeline, resolve
+  pipeline/          # Stage implementations — binned, surface, feature, bundle
+  domains/           # Domain adapters — ingest functions per data type
+  chain.py           # Fluent chaining API
+  cli.py             # CLI commands
 ```
 
 ## Dependency Direction
 
 ```
-lattice/    <- depends on nothing
+binjamin    <- depends on nothing (standalone)
+lattice/    <- depends on binjamin
 signal/     <- depends on lattice/
 graph/      <- depends on signal/, lattice/
 pipeline/   <- depends on signal/, lattice/
@@ -109,15 +111,15 @@ The pipeline module is called by graph ops — not used directly by end users. T
 
 ## Lattice Module
 
-`signalforge/lattice/` is the mathematical core. Pure number theory, no signal processing.
+`signalforge/lattice/` provides SF-specific wrappers around [binjamin](https://github.com/adelic-ai/binjamin), which owns the lattice geometry math.
 
 ```
 lattice/
-  coordinates.py  # factorize(), divisors(), lattice_members(), vec_add/sub/le/min/max
-  sampling.py     # SamplingPlan, grain_from_orders(), suggest_cbin()
-  neighborhood.py # Neighborhood — the p-adic viewing box
-  flipflop.py     # FlipFlop — seed-based lattice navigator
+  coordinates.py  # Re-exports from binjamin (factorize, divisors, vec_*, etc.)
+  sampling.py     # SamplingPlan — wraps binjamin.LatticeGeometry + adds hops
+  neighborhood.py # Neighborhood — the p-adic viewing box (SF-specific)
+  flipflop.py     # FlipFlop — seed-based lattice navigator (SF-specific)
   __init__.py     # Public API
 ```
 
-This module has zero dependencies outside the standard library (plus numpy for grain estimation). It could be extracted as a standalone package.
+**Boundary:** binjamin owns all lattice geometry derivation (factorization, divisors, lattice members, coordinate vectors, grain/cbin/horizon computation). SignalForge consumes that geometry and adds signal-specific layers (hops, profiles, validation). No geometry is derived in SF — all paths go through `binjamin.lattice()`.

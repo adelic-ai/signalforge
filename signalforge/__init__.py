@@ -60,8 +60,8 @@ from .graph import (
     Op,
 )
 
-# Lattice
-from .lattice import SamplingPlan, factorize, FlipFlop, horizon_for
+# Lattice (SF-specific wrappers; for lattice math use binjamin directly)
+from .lattice import SamplingPlan, FlipFlop, horizon_for
 from .lattice.neighborhood import neighborhood, neighborhood_from_vector, Neighborhood
 
 # Types — canonical source is signalforge.signal
@@ -95,7 +95,6 @@ __all__ = [
     "Op",
     # Lattice
     "SamplingPlan",
-    "factorize",
     "FlipFlop",
     "horizon_for",
     # Neighborhood

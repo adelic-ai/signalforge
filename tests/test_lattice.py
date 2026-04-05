@@ -4,7 +4,8 @@ Tests for signalforge.lattice — coordinates, FlipFlop, SamplingPlan, Neighborh
 
 import pytest
 
-from signalforge.lattice import factorize, vec_add, to_int, FlipFlop, SamplingPlan
+from binjamin import factorize, vec_add, to_int
+from signalforge.lattice import FlipFlop, SamplingPlan
 from signalforge.lattice.neighborhood import neighborhood
 
 
