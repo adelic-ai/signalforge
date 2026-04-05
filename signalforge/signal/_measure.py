@@ -7,9 +7,8 @@ Takes a signal (indexed by integers, carrying values) and produces a
 Surface by binning and windowed aggregation. This is the signal-centric
 entry point — no CanonicalRecords or BinnedRecords needed.
 
-For the full pipeline with profiles and aggregation functions, use
-signalforge.pipeline.surface.measure(). This function provides the
-direct signal → surface path.
+Vectorized: binning uses np.add.at, windowed aggregation uses prefix sums.
+Both steps are O(N) with no Python loops over data.
 """
 
 from __future__ import annotations
@@ -33,6 +32,8 @@ def measure_signal(
     Bins the signal's values by floor(index / cbin), then slides
     windows across the binned data to produce a 2D (scale x time) grid.
 
+    Fully vectorized — no Python loops over data points.
+
     Parameters
     ----------
     signal : LatticeSignal
@@ -40,7 +41,7 @@ def measure_signal(
     plan : SamplingPlan
         Defines windows, hops, and cbin.
     agg : str
-        Aggregation within each bin: "mean" (default), "sum", "max", "min".
+        Aggregation within each bin: "mean" (default), "sum".
 
     Returns
     -------
@@ -51,69 +52,48 @@ def measure_signal(
     cbin = plan.cbin
 
     is_complex = np.issubdtype(vals.dtype, np.complexfloating)
+    dtype = np.complex128 if is_complex else np.float64
 
-    # --- Step 1: Bin ---
+    if agg not in ("mean", "sum"):
+        raise ValueError(f"Unknown agg {agg!r}. Use: 'mean', 'sum'")
+
+    # --- Step 1: Bin (vectorized) ---
     bin_indices = idx // cbin
     min_bin = int(bin_indices.min())
     max_bin = int(bin_indices.max())
     n_time = max_bin - min_bin + 1
 
-    if is_complex:
-        dense = np.full(n_time, np.nan + 0j, dtype=np.complex128)
-    else:
-        dense = np.full(n_time, np.nan, dtype=np.float64)
+    # Relative bin positions
+    rel_bins = (bin_indices - min_bin).astype(np.intp)
+
+    # Accumulate values and counts into dense arrays
+    dense_sum = np.zeros(n_time, dtype=dtype)
     dense_count = np.zeros(n_time, dtype=np.intp)
 
-    # Accumulate into bins
-    _AGG = {
-        "mean": "mean",
-        "sum": "sum",
-        "max": "max",
-        "min": "min",
-    }
-    if agg not in _AGG:
-        raise ValueError(f"Unknown agg {agg!r}. Use: {sorted(_AGG)}")
+    np.add.at(dense_sum, rel_bins, vals)
+    np.add.at(dense_count, rel_bins, 1)
 
-    # Group values by bin
-    from collections import defaultdict
-    bins: Dict[int, list] = defaultdict(list)
-    for i in range(len(idx)):
-        b = int(bin_indices[i]) - min_bin
-        bins[b].append(vals[i])
+    # Compute dense binned values
+    if agg == "mean":
+        with np.errstate(divide='ignore', invalid='ignore'):
+            dense = np.where(dense_count > 0, dense_sum / dense_count, np.nan)
+    else:  # sum
+        dense = np.where(dense_count > 0, dense_sum, np.nan)
 
-    for b, bvals in bins.items():
-        arr = np.array(bvals)
-        dense_count[b] = len(bvals)
-        if agg == "mean":
-            dense[b] = np.mean(arr)
-        elif agg == "sum":
-            dense[b] = np.sum(arr)
-        elif agg == "max":
-            if is_complex:
-                dense[b] = arr[np.argmax(np.abs(arr))]
-            else:
-                dense[b] = np.max(arr)
-        elif agg == "min":
-            if is_complex:
-                dense[b] = arr[np.argmin(np.abs(arr))]
-            else:
-                dense[b] = np.min(arr)
-
-    # --- Step 2: Windowed measurement ---
+    # --- Step 2: Windowed measurement (prefix sums) ---
     time_axis = np.arange(min_bin, max_bin + 1, dtype=np.int64)
     n_scales = len(plan.windows)
 
-    if is_complex:
-        values_arr = np.full((n_scales, n_time), np.nan + 0j, dtype=np.complex128)
-    else:
-        values_arr = np.full((n_scales, n_time), np.nan, dtype=np.float64)
+    values_arr = np.full((n_scales, n_time), np.nan, dtype=dtype)
     n_events_arr = np.zeros((n_scales, n_time), dtype=np.intp)
     coverage_arr = np.zeros((n_scales, n_time), dtype=np.float64)
 
-    # Prefix sums for fast windowed aggregation
-    valid_mask = np.isfinite(dense.real if is_complex else dense).astype(np.float64)
-    cs_val = np.concatenate([[0 + 0j if is_complex else 0.0],
-                              np.where(valid_mask.astype(bool), dense, 0).cumsum()])
+    # Prefix sums for O(1) windowed aggregation
+    valid_mask = (dense_count > 0).astype(np.float64)
+    zero = np.array([0 + 0j]) if is_complex else np.array([0.0])
+    dense_for_sum = np.where(valid_mask.astype(bool), dense, 0)
+
+    cs_val = np.concatenate([zero, dense_for_sum.cumsum()])
     cs_cnt = np.concatenate([[0.0], valid_mask.cumsum()])
     cs_ne = np.concatenate([[0], dense_count.cumsum()])
 
@@ -134,7 +114,7 @@ def measure_signal(
             with np.errstate(divide='ignore', invalid='ignore'):
                 result = np.where(cnt_w > 0, s_val / cnt_w, np.nan)
             values_arr[scale_idx, starts] = result
-        elif agg == "sum":
+        else:  # sum
             values_arr[scale_idx, starts] = np.where(cnt_w > 0, s_val, np.nan)
 
     scale_axis = tuple(w // cbin for w in plan.windows)
