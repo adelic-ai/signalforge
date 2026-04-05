@@ -7,6 +7,7 @@ SignalForge is domain-agnostic. These examples demonstrate the same pipeline on 
 - [VIX Volatility Index](#vix-volatility-index)
 - [EEG Seizure Detection](#eeg-seizure-detection)
 - [INTERMAGNET Geomagnetic Data](#intermagnet-geomagnetic-data)
+- [GRACE/GRACE-FO Satellite Gravity](#gracegrace-fo-satellite-gravity)
 - [Generic Time Series](#generic-time-series)
 - [Bringing Your Own Data](#bringing-your-own-data)
 
