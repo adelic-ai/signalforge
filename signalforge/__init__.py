@@ -75,7 +75,7 @@ from_signal = Chain.from_signal
 # Domains
 from . import domains
 
-__version__ = "0.3.0"
+__version__ = "0.3.2"
 
 __all__ = [
     # Graph API
