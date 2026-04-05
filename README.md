@@ -176,6 +176,22 @@ surface = sf.from_signal(sig).measure(windows=[10, 30, 90]).surfaces()[0]
 
 Values are complex-native (`complex128`). Real signals are the common case (`imag=0`). The [Hilbert transform](docs/python-api.md#hilbert) promotes a real signal to its analytic (complex) form — amplitude + phase at every point.
 
+### Custom aggregations
+
+Each surface cell is a window reduced to a number — by default a mean. SignalForge ships with 20+ aggregations (mean, std, percentiles, spectral energy, dominant frequency, ...) and you can register your own:
+
+```python
+from signalforge.pipeline.aggregation import register_aggregation
+
+@register_aggregation("entropy")
+def entropy(values):
+    p = np.histogram(values, bins=10, density=True)[0]
+    p = p[p > 0]
+    return float(-np.sum(p * np.log2(p)))
+```
+
+Any function that takes an array and returns a float works. See [docs/python-api.md](docs/python-api.md#aggregations) for the full list.
+
 ## What Makes This Different
 
 Standard multiscale analysis (STFT, wavelets) requires the analyst to choose window sizes. SignalForge [derives the measurement space](docs/concepts.md#lattice) from the arithmetic of your declared windows and grain. The valid scales are the divisors of the horizon — a structure from number theory that guarantees:
