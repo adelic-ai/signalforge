@@ -85,11 +85,11 @@ The scales in SignalForge are not chosen. The analyst declares windows; grain is
 estimated from the data (or declared from domain knowledge); cbin is derived as
 `gcd(windows)` — the coarsest resolution that divides every window. The horizon
 `H = lcm(windows + [cbin])` follows, and the valid scales are exactly `Div(H)` —
-the divisors of the horizon. This set forms a lattice because it is closed under
-gcd and lcm. The prime factorization of H then gives each scale a canonical
-coordinate — but the lattice structure comes from choosing to work in Div(H),
-not from factorization itself. Factorization provides the coordinate system;
-divisibility provides the structure.
+the divisors of the horizon. This set forms a lattice because it is closed under gcd and lcm — Div(H) is the
+scale space. Its structure as a product of prime chains gives each scale a
+canonical coordinate: the prime exponents. The lattice structure comes from
+choosing to work in Div(H); the coordinates come from the factorization of H
+revealing that Div(H) is already a product of independent axes.
 
 ---
 
