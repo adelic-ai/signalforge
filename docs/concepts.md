@@ -35,7 +35,7 @@ A `Surface` is also a `LatticeSignal` — so you can measure surfaces of surface
 
 The grain is the finest resolution the data supports — measured from the actual spacing between events.
 
-When the cadence is known, declare it directly: `grain=60` for minute-level data. When it's not, SignalForge estimates it from the data using inter-event statistics ([binjamin](binjamin.md)):
+When the cadence is known, declare it directly: `grain=60` for minute-level data. When it's not, SignalForge estimates it from the data using inter-event statistics ([binjamin](https://github.com/adelic-ai/binjamin)):
 
 ```python
 from signalforge.lattice.sampling import grain_from_orders

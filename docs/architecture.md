@@ -115,7 +115,6 @@ The pipeline module is called by graph ops — not used directly by end users. T
 
 ```
 lattice/
-  coordinates.py  # Re-exports from binjamin (factorize, divisors, vec_*, etc.)
   sampling.py     # SamplingPlan — wraps binjamin.LatticeGeometry + adds hops
   neighborhood.py # Neighborhood — the p-adic viewing box (SF-specific)
   flipflop.py     # FlipFlop — seed-based lattice navigator (SF-specific)
