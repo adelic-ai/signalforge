@@ -272,3 +272,17 @@ complex_surface = sf.from_signal(sig).measure(windows=[5, 10, 20]).surfaces()
 | Difference | `sf inspect difference` | `x - baseline` |
 | Ratio | `sf inspect ratio` | `x / baseline` |
 | Z-score | `sf inspect z` | `(x - baseline) / std(baseline)` |
+
+### Aggregations
+
+Aggregation functions reduce a window of values to a single number. Used in the legacy pipeline path and available for custom profiles.
+
+| Aggregation | `sf inspect` | What it measures |
+|-------------|-------------|------------------|
+| `mean` | — | Average value |
+| `std` | — | Standard deviation |
+| `count` | — | Number of events |
+| `spectral_energy` | `sf inspect spectral_energy` | Total oscillatory content (FFT) |
+| `dominant_freq` | `sf inspect dominant_freq` | Strongest rhythm (FFT peak) |
+
+The spectral aggregations are effectively STFT on the lattice — FFT per window at each scale, with artifact-free nesting across scales. See [comparison.md](comparison.md) for how this relates to standard STFT.

@@ -28,6 +28,13 @@ sizes. If you run two STFTs at `W=256` and `W=512`, the results live in
 different spaces with no mathematical connection between them. There is no
 lattice, no nesting, no shared coordinate system.
 
+**Connection to SignalForge**: STFT is structurally the same operation as a
+SignalForge surface — slide a window, compute something inside it. The
+difference is that STFT uses one fixed window while SF uses all windows in
+the lattice simultaneously. SF's `spectral_energy` aggregation computes
+`sum(|FFT|²)` per window, making it effectively a multi-window STFT with
+artifact-free nesting across scales. See `sf inspect spectral_energy`.
+
 ---
 
 ## Wavelet Transform
