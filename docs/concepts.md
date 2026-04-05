@@ -31,20 +31,33 @@ A `Surface` is also a `LatticeSignal` — so you can measure surfaces of surface
 
 ---
 
-## Grain
+## Grain and cbin
 
-The grain is the finest resolution the data supports — measured from the actual spacing between events.
+Three related concepts control resolution:
 
-When the cadence is known, declare it directly: `grain=60` for minute-level data. When it's not, SignalForge estimates it from the data using inter-event statistics ([binjamin](https://github.com/adelic-ai/binjamin)):
+**data_grain** — the raw cadence of the data. For event-ordered sequences (log entries, EEG samples), this is trivially 1 — each event is one unit. For time-ordered data with irregular spacing, it's estimated from inter-event intervals using [binjamin](https://github.com/adelic-ai/binjamin).
+
+**grain** — the finest admissible analysis resolution. Must be >= data_grain. This is the floor — you can't analyze finer than the data supports. For event-ordered data, grain = 1 is the obvious default.
+
+**cbin** — the materialized computational bin. This is the resolution the analysis actually runs at. It must divide all windows and the horizon. Derived as `gcd(windows)` by default — the finest resolution the window family permits.
+
+The chain: `data_grain <= grain <= cbin`
+
+When `grain < cbin`, zoom is possible — you can re-analyze a subset at finer resolution with a smaller window family. When `grain = cbin`, you're fully refined.
 
 ```python
-from signalforge.lattice.sampling import grain_from_orders
-grain = grain_from_orders(orders)  # Freedman-Diaconis default
+import binjamin as bj
+
+# cbin derived automatically from windows
+geo = bj.lattice([10, 30, 60, 360])
+geo.cbin   # 10 — gcd(windows)
+geo.grain  # 1 — zoom potential
+
+# EEG: event-ordered, grain trivially 1, cbin from windows
+geo = bj.lattice([256, 1024, 4096], grain=1)
+geo.cbin   # 256 — analysis at 1-second bins
+geo.grain  # 1 — could zoom to sample level
 ```
-
-Below grain, there's no data to analyze. Above grain, the lattice provides every valid analysis scale.
-
-The grain is not a human time unit. Behavior has its own natural grain: brute-force authentication at 200ms cadence, TGT renewal at ticket lifetime intervals, EEG at 256 Hz. SignalForge derives grain from the data, not from the clock.
 
 `sf load data.csv` shows the estimated grain. Override with `--grain` if you know your data's true cadence.
 
@@ -69,13 +82,15 @@ A window of size `w` tiles a signal of length `H` cleanly if and only if `w` div
 
 Nesting follows from the same arithmetic: if `d1` divides `d2`, then every `d2`-window is partitioned exactly by `d2/d1` consecutive `d1`-windows. The divisibility relation on windows IS the nesting relation on the signal.
 
+The **active domain** is the subset of lattice members between cbin and max(windows): `Div(H) ∩ [cbin, max(W)]`. These are the scales the analysis actually computes. The lattice below cbin exists but isn't materialized (that's where zoom goes).
+
 `sf neighborhood 360` shows the lattice around any integer. `sf inspect lattice` explains the concept.
 
 ---
 
 ## Horizon
 
-The horizon `H = lcm(windows + [grain])` is the outer boundary of the coordinate space. All valid windows divide it. It may be larger than the data — that's fine and intentional.
+The horizon `H = lcm(windows + [cbin])` is the outer boundary of the coordinate space. All valid windows divide it. It may be larger than the data — that's fine and intentional.
 
 The purpose is precision. By deriving `H` from the grain and windows, the grain is exact by construction — no rounding, no snapping, no forced error. The grain you specify is the grain the lattice uses.
 
