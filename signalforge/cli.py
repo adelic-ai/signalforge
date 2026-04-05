@@ -1066,6 +1066,35 @@ _INSPECT_ENTRIES = {
             "  A z of 3 means the same whether the signal is VIX or Kerberos TGTs.",
         "cli": "sf surface data.csv -hm --baseline ewma --residual z",
     },
+    # --- Aggregations ---
+    "spectral_energy": {
+        "category": "aggregation",
+        "name": "Spectral Energy",
+        "formula": "sum(|FFT(v)|^2) / len(v)",
+        "params": "No parameters. DC component removed before FFT.",
+        "description":
+            "Total oscillatory content in the window. Equivalent to the mean\n"
+            "  squared value by Parseval's theorem, computed in the frequency domain.\n"
+            "  This is what STFT measures — but applied per window on the lattice.",
+        "use_when":
+            "You want to know how much oscillatory energy is in each window\n"
+            "  at each scale, not just the average level. Useful for signals with\n"
+            "  periodic structure: EEG, vibration, network traffic patterns.",
+        "cli": "sf surface data.csv -hm --baseline ewma --residual z  (then use spectral_energy in Python API)",
+    },
+    "dominant_freq": {
+        "category": "aggregation",
+        "name": "Dominant Frequency",
+        "formula": "argmax(|FFT(v)|) / len(v)",
+        "params": "No parameters. Returns frequency as fraction of sampling rate [0, 0.5].",
+        "description":
+            "The strongest rhythm in the window. Normalized to [0, 0.5] where\n"
+            "  0.5 is the Nyquist frequency. Higher = faster oscillation.",
+        "use_when":
+            "You want to know WHICH frequency dominates each window at each scale.\n"
+            "  Useful for detecting frequency shifts: chirps, mode changes, clock drift.",
+        "cli": "sf surface data.csv -hm  (then use dominant_freq in Python API)",
+    },
     # --- Concepts ---
     "horizon": {
         "category": "concept",
@@ -1143,8 +1172,8 @@ def cmd_inspect(args: argparse.Namespace) -> int:
             cat = entry.get("category", "other")
             categories.setdefault(cat, []).append((key, entry))
 
-        cat_labels = {"baseline": "Baselines", "residual": "Residuals", "concept": "Concepts"}
-        for cat in ["baseline", "residual", "concept"]:
+        cat_labels = {"baseline": "Baselines", "residual": "Residuals", "aggregation": "Aggregations", "concept": "Concepts"}
+        for cat in ["baseline", "residual", "aggregation", "concept"]:
             if cat not in categories:
                 continue
             print(f"\n  {cat_labels.get(cat, cat)}")

@@ -182,3 +182,34 @@ def _ewma(v: np.ndarray) -> float:
     for x in v[1:]:
         result = 0.3 * float(x) + 0.7 * result
     return result
+
+
+@register_aggregation("spectral_energy")
+def _spectral_energy(v: np.ndarray) -> float:
+    """
+    Total spectral energy: sum(|FFT(v)|²) / len(v).
+
+    Measures the total oscillatory content in the window. Equivalent to
+    the mean squared value (Parseval's theorem), but computed in the
+    frequency domain. Higher values = more energy = more activity.
+    """
+    spectrum = np.fft.rfft(v - np.mean(v))  # remove DC component
+    return float(np.sum(np.abs(spectrum) ** 2) / len(v))
+
+
+@register_aggregation("dominant_freq")
+def _dominant_freq(v: np.ndarray) -> float:
+    """
+    Dominant frequency: argmax(|FFT(v)|) / len(v).
+
+    The frequency with the most energy in the window, normalized to [0, 0.5]
+    (fraction of the sampling rate). Higher = faster oscillation.
+    Returns 0 for constant or very short windows.
+    """
+    if len(v) < 4:
+        return 0.0
+    spectrum = np.abs(np.fft.rfft(v - np.mean(v)))
+    if spectrum.max() == 0:
+        return 0.0
+    peak_bin = int(np.argmax(spectrum[1:])) + 1  # skip DC
+    return float(peak_bin / len(v))
