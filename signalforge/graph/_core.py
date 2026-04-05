@@ -19,6 +19,69 @@ from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 from ..signal._base import Artifact, ArtifactType
 
 
+def _validate_artifact(artifact: Artifact, op: "Op") -> None:
+    """Validate an artifact after an op produces it.
+
+    Checks:
+    - Artifact has a type
+    - Value is not None
+    - For SURFACES: value is a list, each element has .data and .shape
+    - For SIGNALS: value is a list of LatticeSignals
+    - Shapes are consistent within a list
+
+    Raises ValueError with a clear message on failure.
+    """
+    op_name = op.__class__.__name__
+
+    if artifact.value is None:
+        raise ValueError(f"{op_name} produced None value")
+
+    if artifact.type == ArtifactType.SURFACES:
+        if not isinstance(artifact.value, (list, tuple)):
+            raise ValueError(
+                f"{op_name} should produce a list of surfaces, "
+                f"got {type(artifact.value).__name__}"
+            )
+        for i, s in enumerate(artifact.value):
+            if not hasattr(s, 'data') or not hasattr(s, 'shape'):
+                raise ValueError(
+                    f"{op_name} surface {i}: missing .data or .shape"
+                )
+            if not s.data:
+                raise ValueError(
+                    f"{op_name} surface {i} ({s.channel}): empty data dict"
+                )
+            for name, arr in s.data.items():
+                if arr.shape != s.shape:
+                    raise ValueError(
+                        f"{op_name} surface {i} ({s.channel}): "
+                        f"data[{name!r}].shape {arr.shape} != surface.shape {s.shape}"
+                    )
+
+    elif artifact.type == ArtifactType.SIGNALS:
+        if not isinstance(artifact.value, (list, tuple)):
+            raise ValueError(
+                f"{op_name} should produce a list of signals, "
+                f"got {type(artifact.value).__name__}"
+            )
+        if len(artifact.value) == 0:
+            raise ValueError(f"{op_name} produced empty signal list")
+
+    elif artifact.type == ArtifactType.RECORDS:
+        if not isinstance(artifact.value, (list, tuple)):
+            raise ValueError(
+                f"{op_name} should produce a list of records, "
+                f"got {type(artifact.value).__name__}"
+            )
+
+    elif artifact.type == ArtifactType.BINNED:
+        if not isinstance(artifact.value, (list, tuple)):
+            raise ValueError(
+                f"{op_name} should produce a list of binned records, "
+                f"got {type(artifact.value).__name__}"
+            )
+
+
 # ---------------------------------------------------------------------------
 # Node
 # ---------------------------------------------------------------------------
@@ -216,6 +279,10 @@ class GraphPipeline:
             artifact.id = _artifact_id(
                 artifact.type, artifact.plan, artifact.producing_op, artifact.parent_ids
             )
+
+            # Validate output
+            _validate_artifact(artifact, node.op)
+
             node._artifact = artifact
 
         self._built = True
