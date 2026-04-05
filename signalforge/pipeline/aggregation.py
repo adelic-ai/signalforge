@@ -189,11 +189,13 @@ def _spectral_energy(v: np.ndarray) -> float:
     """
     Total spectral energy: sum(|FFT(v)|²) / len(v).
 
-    Measures the total oscillatory content in the window. Equivalent to
-    the mean squared value (Parseval's theorem), but computed in the
-    frequency domain. Higher values = more energy = more activity.
+    Measures the total oscillatory content in the window. Hann window
+    applied to suppress spectral leakage from boundary discontinuities.
+    DC component removed before FFT. Higher values = more energy.
     """
-    spectrum = np.fft.rfft(v - np.mean(v))  # remove DC component
+    centered = v - np.mean(v)
+    windowed = centered * np.hanning(len(v))
+    spectrum = np.fft.rfft(windowed)
     return float(np.sum(np.abs(spectrum) ** 2) / len(v))
 
 
@@ -203,12 +205,14 @@ def _dominant_freq(v: np.ndarray) -> float:
     Dominant frequency: argmax(|FFT(v)|) / len(v).
 
     The frequency with the most energy in the window, normalized to [0, 0.5]
-    (fraction of the sampling rate). Higher = faster oscillation.
-    Returns 0 for constant or very short windows.
+    (fraction of the sampling rate). Hann window applied. Higher = faster
+    oscillation. Returns 0 for constant or very short windows.
     """
     if len(v) < 4:
         return 0.0
-    spectrum = np.abs(np.fft.rfft(v - np.mean(v)))
+    centered = v - np.mean(v)
+    windowed = centered * np.hanning(len(v))
+    spectrum = np.abs(np.fft.rfft(windowed))
     if spectrum.max() == 0:
         return 0.0
     peak_bin = int(np.argmax(spectrum[1:])) + 1  # skip DC
