@@ -38,6 +38,50 @@ class ArtifactType(enum.Enum):
 # Artifact
 # ---------------------------------------------------------------------------
 
+def _artifact_id(
+    artifact_type: ArtifactType,
+    plan: Any,
+    producing_op: Any,
+    parent_ids: tuple = (),
+) -> str:
+    """Compute a deterministic identity hash for an artifact.
+
+    The hash captures: artifact type, sampling plan, producing op class
+    and parameters, and parent artifact IDs (lineage). This means two
+    artifacts with the same inputs, same plan, and same transform chain
+    produce the same ID — enabling caching, reproducibility checks, and
+    ML lineage tracking.
+    """
+    import hashlib
+    import json
+
+    parts = [artifact_type.value]
+
+    # Plan identity
+    if plan is not None:
+        parts.append(f"H={getattr(plan, 'horizon', '?')}")
+        parts.append(f"g={getattr(plan, 'grain', '?')}")
+        parts.append(f"cb={getattr(plan, 'cbin', '?')}")
+        w = getattr(plan, 'windows', ())
+        parts.append(f"W={w}")
+
+    # Op identity
+    if producing_op is not None:
+        parts.append(producing_op.__class__.__name__)
+        try:
+            params = json.dumps(producing_op.params, sort_keys=True, default=str)
+            parts.append(params)
+        except (AttributeError, TypeError):
+            pass
+
+    # Lineage
+    for pid in parent_ids:
+        parts.append(pid)
+
+    raw = "|".join(str(p) for p in parts)
+    return hashlib.sha256(raw.encode()).hexdigest()[:16]
+
+
 @dataclass
 class Artifact:
     """Wraps a pipeline product with metadata about how it was produced.
@@ -45,15 +89,27 @@ class Artifact:
     This is the currency of the graph — every node consumes and produces
     Artifacts. The type tag enables validation; the metadata enables
     inspection and lineage tracking.
+
+    The `id` field is a deterministic hash of (type, plan, op, parents).
+    Two artifacts with the same inputs, plan, and transform chain have
+    the same ID. Use for caching, reproducibility, and ML lineage.
     """
     type: ArtifactType
     value: Any
-    producing_op: Optional[Any] = None  # Op, but avoids circular import
-    plan: Optional[Any] = None          # SamplingPlan
+    producing_op: Optional[Any] = None
+    plan: Optional[Any] = None
     metadata: Dict[str, Any] = field(default_factory=dict)
+    parent_ids: tuple = ()
+    id: str = ""
+
+    def __post_init__(self):
+        if not self.id:
+            self.id = _artifact_id(
+                self.type, self.plan, self.producing_op, self.parent_ids
+            )
 
     def __repr__(self) -> str:
-        return f"Artifact({self.type.value})"
+        return f"Artifact({self.type.value}, id={self.id[:8]})"
 
 
 # ---------------------------------------------------------------------------

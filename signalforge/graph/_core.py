@@ -205,10 +205,18 @@ class GraphPipeline:
 
             if not node.parents:
                 # Input node — inject records
-                node._artifact = node.op.execute(records=records, plan=self._plan)
+                artifact = node.op.execute(records=records, plan=self._plan)
+                artifact.parent_ids = ()
             else:
                 parent_artifacts = tuple(p.artifact for p in node.parents)
-                node._artifact = node.op.execute(*parent_artifacts, plan=self._plan)
+                artifact = node.op.execute(*parent_artifacts, plan=self._plan)
+                artifact.parent_ids = tuple(p.artifact.id for p in node.parents)
+            # Recompute ID with parent lineage
+            from ..signal._base import _artifact_id
+            artifact.id = _artifact_id(
+                artifact.type, artifact.plan, artifact.producing_op, artifact.parent_ids
+            )
+            node._artifact = artifact
 
         self._built = True
 
