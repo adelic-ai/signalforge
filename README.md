@@ -222,6 +222,7 @@ See [docs/examples.md](https://github.com/adelic-ai/signalforge/blob/main/docs/e
 | [CLI Guide](https://github.com/adelic-ai/signalforge/blob/main/docs/cli.md) | All commands: load, surface, inspect, init, status, zoom |
 | [Python API](https://github.com/adelic-ai/signalforge/blob/main/docs/python-api.md) | Chaining API, DAG composition, Hilbert, signals |
 | [Examples](https://github.com/adelic-ai/signalforge/blob/main/docs/examples.md) | VIX, EEG, INTERMAGNET walkthroughs |
+| [Data Guide](https://github.com/adelic-ai/signalforge/blob/main/docs/data-guide.md) | Bring your data: CSV, events, keys, grain, large data |
 | [Comparison](https://github.com/adelic-ai/signalforge/blob/main/docs/comparison.md) | STFT, wavelets, EMD vs SignalForge |
 | [Architecture](https://github.com/adelic-ai/signalforge/blob/main/docs/architecture.md) | Signal module, graph, pipeline internals |
 
