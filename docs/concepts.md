@@ -98,14 +98,19 @@ SignalForge does not choose the measurement space. It derives it from the window
 
 Every positive integer has a unique prime factorization: `360 = 2^3 x 3^2 x 5`. The divisors of 360 form a **lattice** under divisibility — a structure where every pair of windows has a greatest common divisor (finest shared scale) and least common multiple (coarsest shared scale).
 
-By the Fundamental Theorem of Arithmetic, this lattice decomposes as a product of independent chains, one per prime:
+By the Fundamental Theorem of Arithmetic, this lattice decomposes as a Cartesian product of independent chains, one per prime dividing H. Each divisor d of 360 has a unique coordinate:
 
 ```
-Div(360) = {0,1,2,3} x {0,1,2} x {0,1}
-             prime 2    prime 3   prime 5
+(v₂(d), v₃(d), v₅(d))   where v₂ ∈ [0..3], v₃ ∈ [0..2], v₅ ∈ [0..1]
 ```
 
-Each prime is an independent scale axis. Moving one step along the prime-2 axis doubles the window; moving along the prime-3 axis triples it. The full lattice exhausts every combination.
+Here vₚ(d) is the exponent of prime p in the factorization of d. For example:
+- 360 = 2³ × 3² × 5 → (3, 2, 1)
+- 60 = 2² × 3 × 5 → (2, 1, 1)
+- 12 = 2² × 3 → (2, 1, 0)
+- 1 → (0, 0, 0)
+
+Each prime is an independent scale axis. Moving one step along the prime-2 axis (incrementing v₂ by 1) doubles the window; moving along the prime-3 axis triples it. The full lattice exhausts every combination of exponents.
 
 A window of size `w` tiles a signal of length `H` cleanly if and only if `w` divides `H`. Any other window size leaves a partial bin — an artifact. The divisors of `H` are the complete set of artifact-free window sizes.
 
