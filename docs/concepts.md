@@ -37,13 +37,42 @@ Three related concepts control resolution:
 
 **data_grain** — the raw cadence of the data. For event-ordered sequences (log entries, EEG samples), this is trivially 1 — each event is one unit. For time-ordered data with irregular spacing, it's estimated from inter-event intervals using [binjamin](https://github.com/adelic-ai/binjamin).
 
-**grain** — the finest admissible analysis resolution. Must be >= data_grain. This is the floor — you can't analyze finer than the data supports. For event-ordered data, grain = 1 is the obvious default.
+Binjamin offers multiple estimation methods. The default is **Freedman-Diaconis** — robust, no distributional assumption, based on the interquartile range. It's the right choice when you don't know the data's distribution, which is the common case for first exploration. Other methods are available when you know more:
 
-**cbin** — the materialized computational bin. This is the resolution the analysis actually runs at. It must divide all windows and the horizon. Derived as `gcd(windows)` by default — the coarsest resolution that divides every window cleanly. A finer cbin can be chosen for higher resolution at more compute cost.
+| Method | When to use |
+|---|---|
+| `freedman_diaconis` | Default. Unknown distribution, outliers possible. |
+| `gcd_interval` | Perfectly regular spacing (fixed-rate sensors). Exact but brittle. |
+| `scott` | Near-normal distribution. |
+| `knuth` | Maximum likelihood, optimal for uniform bins. |
 
-The chain: `data_grain <= grain <= cbin`
+See `bj.grain_from_orders(orders, method="...")` and the [binjamin docs](https://github.com/adelic-ai/binjamin) for the full list.
 
-When `grain < cbin`, zoom is possible — you can re-analyze a subset at finer resolution with a smaller window family. When `grain = cbin`, you're fully refined.
+**grain** — the finest admissible analysis resolution. Must be >= data_grain. This is the floor — you can't analyze finer than the data supports. For event-ordered data, grain = 1 is the obvious default. Grain is a lower bound imposed by the data.
+
+**cbin** — the materialized computational bin. This is the resolution the analysis actually runs at. Derived as `gcd(windows)` by default — the coarsest resolution that divides every window cleanly. A finer cbin can be chosen for higher resolution at more compute cost. cbin is an upper bound imposed by the window family.
+
+The two meet from opposite directions: grain from below (data constraint), cbin from above (window constraint).
+
+### The divisibility chain
+
+The core invariant: `data_grain <= grain <= cbin`, and cbin divides all hops, windows, and the horizon:
+
+```
+data_grain <= grain <= cbin | hops | windows | H
+```
+
+Specifically:
+- `cbin` divides every window: `cbin | w` for all `w` in W
+- `cbin` divides every hop: `cbin | hop(w)` for all `w`
+- Each hop divides its own window: `hop(w) | w`
+- Every window divides the horizon: `w | H`
+- `cbin` divides the horizon: `cbin | H`
+- `H = lcm(W ∪ {cbin})` — the horizon is the minimal number that all of these divide
+
+This chain is enforced by [binjamin](https://github.com/adelic-ai/binjamin) in a single derivation path. There is no valid lattice without it.
+
+When `grain < cbin`, zoom is possible — you can re-analyze a subset at finer resolution with a smaller window family whose `gcd` is closer to grain. When `grain = cbin`, you're fully refined.
 
 ```python
 import binjamin as bj
