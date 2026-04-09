@@ -5,6 +5,7 @@ SignalForge's CLI is designed for exploration. Each command leads naturally to t
 ## Table of Contents
 
 - [Commands](#commands)
+- [schema](#schema)
 - [load](#load)
 - [surface](#surface)
 - [Baselines](#baselines)
@@ -22,6 +23,7 @@ SignalForge's CLI is designed for exploration. Each command leads naturally to t
 
 | Command | Purpose |
 |---------|---------|
+| `sf schema <csv>` | Infer and edit a data schema |
 | `sf load <csv>` | Inspect a data file |
 | `sf surface <csv>` | Build and display a surface |
 | `sf inspect [name]` | Learn about methods and concepts |
@@ -30,6 +32,43 @@ SignalForge's CLI is designed for exploration. Each command leads naturally to t
 | `sf neighborhood <n>` | View the p-adic lattice around an integer |
 | `sf plan <domain>` | Show a sampling plan |
 | `sf demo` | Run the built-in EEG demo |
+
+---
+
+## schema
+
+Infer, inspect, and save a data schema. For multi-column data where auto-detection isn't enough.
+
+```bash
+sf schema data.csv
+```
+
+Shows the inferred axis types. Correct anything wrong:
+
+```bash
+sf schema data.csv --set ticket_hash=relational
+sf schema data.csv --group-by machine user
+sf schema data.csv --channel event_code
+sf schema data.csv --save mydata.schema.json
+```
+
+Then use it:
+
+```bash
+sf surface data.csv --schema mydata.schema.json -hm
+```
+
+The schema file is reusable — same format, different data, same schema.
+
+**Flags:**
+
+| Flag | Purpose |
+|------|---------|
+| `--set col=type` | Override an axis type (ordered, categorical, numeric, relational) |
+| `--group-by col1 col2` | Set grouping keys for per-entity surfaces |
+| `--channel col` | Set the channel axis |
+| `--save path` | Save schema to JSON |
+| `--load path` | Load existing schema instead of inferring |
 
 ---
 
@@ -45,18 +84,17 @@ sf load data.csv
   SignalForge  data.csv
   ────────────────────────────────────────
   records   2,013
-  channels  value
+  channels  VIXCLS
   span      0 .. 2,085  (2,085)
   grain     2  (estimated)
-  basis     2^2 x 3^2 x 5
-  scales    18  [2 .. 360]
+  scales    4  [3 .. 2085]
   ────────────────────────────────────────
 
   Next:
     sf surface data.csv -hm
 ```
 
-Shows: record count, channels, data range, estimated [grain](concepts.md#grain), prime basis of the default [lattice](concepts.md#lattice), and how many scales are available. Suggests the next command.
+Shows: record count, channels, data range, estimated resolution, and how many scales are available. Suggests the next command. Add `--schema` to load via a saved schema.
 
 ---
 

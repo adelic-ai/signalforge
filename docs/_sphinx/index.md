@@ -1,22 +1,14 @@
 # SignalForge
 
-Multiscale signal analysis on the p-adic divisibility lattice.
+See the structure in any data, across every scale, instantly.
 
 ```{toctree}
 :maxdepth: 2
 :caption: Getting Started
 
 ../quickstart
-../data-guide
+../your-data
 ../cli
-```
-
-```{toctree}
-:maxdepth: 2
-:caption: Core Concepts
-
-../concepts
-../comparison
 ```
 
 ```{toctree}
@@ -25,6 +17,14 @@ Multiscale signal analysis on the p-adic divisibility lattice.
 
 ../python-api
 ../examples
+```
+
+```{toctree}
+:maxdepth: 2
+:caption: Understanding
+
+../concepts
+../comparison
 ```
 
 ```{toctree}

@@ -39,6 +39,29 @@ surfaces = (
     .hilbert()
     .surfaces()
 )
+
+# With gradient (discrete differential geometry on the lattice)
+surfaces = (
+    sf.load("data.csv")
+    .measure(windows=[10, 60, 360])
+    .gradient()
+    .surfaces()
+)
+# surfaces[0].data keys: grad_t, grad_p2, grad_p3, grad_scale_mag
+
+# Multi-aggregation
+surfaces = (
+    sf.load("data.csv")
+    .measure(windows=[10, 60, 360], agg=["mean", "std", "median", "entropy"])
+    .surfaces()
+)
+
+# Via schema
+surfaces = (
+    sf.load_schema("data.csv", "my.schema.json")
+    .measure(windows=[10, 60, 360])
+    .surfaces()
+)
 ```
 
 Each method returns a new `Chain` — the original is never mutated. Nothing executes until `.run()` or `.surfaces()`.
@@ -47,12 +70,14 @@ Each method returns a new `Chain` — the original is never mutated. Nothing exe
 
 | Method | Purpose |
 |--------|---------|
-| `sf.load(path_or_records)` | Start from CSV or CanonicalRecords |
+| `sf.load(path_or_records)` | Start from CSV or records |
+| `sf.load_schema(path, schema)` | Start via a Schema (JSON or object) |
 | `sf.from_signal(signal)` | Start from a LatticeSignal directly |
-| `.measure(**kwargs)` | Build surfaces. `windows=` sets analysis scales |
+| `.measure(**kwargs)` | Build surfaces. `windows=`, `agg=` |
 | `.baseline(method, **kwargs)` | Apply baseline: `"ewma"`, `"median"`, `"rolling_mean"` |
 | `.residual(mode)` | Compute residual: `"z"`, `"ratio"`, `"difference"` |
 | `.hilbert()` | Hilbert transform: adds amplitude, phase, inst_freq |
+| `.gradient()` | Discrete gradient: grad_t, grad_p2, grad_p3, grad_scale_mag |
 | `.run(**resolve_kwargs)` | Execute, return Artifact |
 | `.surfaces(**resolve_kwargs)` | Execute, return list of Surface |
 | `.heatmap(**resolve_kwargs)` | Execute and display heatmap |
