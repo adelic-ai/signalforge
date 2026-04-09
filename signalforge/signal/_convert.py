@@ -3,9 +3,10 @@ signalforge.signal._convert
 
 Conversion between record-based and signal-based representations.
 
-records_to_signals: list[CanonicalRecord] → list[RealSignal]
+records_to_signals: list[CanonicalRecord | Record] → list[RealSignal]
     Groups records by (channel, keys) and produces one RealSignal per group.
     Each signal has integer index (primary_order) and float values.
+    Accepts both CanonicalRecord (legacy) and Record (typed axes).
 
 This is the bridge between ingest (which produces records) and the
 signal-centric pipeline (which operates on LatticeSignals).
@@ -14,12 +15,13 @@ signal-centric pipeline (which operates on LatticeSignals).
 from __future__ import annotations
 
 from collections import defaultdict
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
 from ._base import CanonicalRecord
 from ._complex import RealSignal
+from ._record import Record
 
 
 def _canonical_keys(keys: dict) -> tuple:
@@ -32,18 +34,18 @@ def _canonical_keys(keys: dict) -> tuple:
 
 
 def records_to_signals(
-    records: List[CanonicalRecord],
+    records: List[Union[CanonicalRecord, Record]],
     agg: str = "mean",
 ) -> List[RealSignal]:
-    """Convert CanonicalRecords into RealSignals, one per (channel, keys) group.
+    """Convert records into RealSignals, one per (channel, keys) group.
 
+    Accepts both CanonicalRecord (legacy) and Record (typed axes).
     Records with the same primary_order within a group are aggregated
-    using the specified function. The result is a dense signal indexed
-    by primary_order.
+    using the specified function.
 
     Parameters
     ----------
-    records : list of CanonicalRecord
+    records : list of CanonicalRecord or Record
         Input records. Need not be sorted.
     agg : str
         Aggregation for multiple values at the same index.
@@ -70,7 +72,7 @@ def records_to_signals(
         raise ValueError(f"Unknown agg {agg!r}. Use: {sorted(_AGG_FUNCS)}")
 
     # Group by (channel, canonical_keys)
-    groups: Dict[Tuple, List[CanonicalRecord]] = defaultdict(list)
+    groups: Dict[Tuple, list] = defaultdict(list)
     for r in records:
         key = (r.channel, _canonical_keys(r.keys))
         groups[key].append(r)
