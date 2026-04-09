@@ -1,18 +1,6 @@
 # SignalForge
 
-Multiscale signal analysis on a [normalized scale space](https://github.com/adelic-ai/signalforge/blob/main/docs/concepts.md).
-Give it any ordered sequence and explore its structure across scales — no labels, no training, no domain-specific code.
-
-## Table of Contents
-
-- [Install](#install)
-- [Quick Start](#quick-start)
-- [Explore Your Data](#explore-your-data)
-- [Python API](#python-api)
-- [What Makes This Different](#what-makes-this-different)
-- [Demonstrated Results](#demonstrated-results)
-- [Documentation](#documentation)
-- [License](#license)
+See the structure in any data, across every scale, instantly.
 
 ## Install
 
@@ -20,118 +8,47 @@ Give it any ordered sequence and explore its structure across scales — no labe
 pip install adelic-signalforge
 ```
 
-Or from source:
-
-```bash
-git clone https://github.com/adelic-ai/signalforge
-cd signalforge
-uv sync
-```
-
 ## Quick Start
 
 ```bash
-# Download VIX volatility data (2005-2012)
+# Download sample data (VIX volatility index, 2005-2012)
 curl -o vix.csv "https://fred.stlouisfed.org/graph/fredgraph.csv?id=VIXCLS&cosd=2005-01-01&coed=2012-12-31"
 
 # See the structure
 sf surface vix.csv -hm --max-window 360
 ```
 
-![VIX 2005-2012 heatmap](https://raw.githubusercontent.com/adelic-ai/signalforge/main/docs/img/heatmap_vix_v2.png)
+![VIX heatmap](https://raw.githubusercontent.com/adelic-ai/signalforge/main/docs/img/heatmap_vix_v2.png)
 
-The 2008 financial crisis appears as a vertical band of red — visible across every analysis scale simultaneously. No configuration, no parameters to tune. SignalForge [derives the measurement space](https://github.com/adelic-ai/signalforge/blob/main/docs/concepts.md#lattice) from your data.
+The 2008 financial crisis — visible across every scale at once.
 
-## Explore Your Data
-
-### Load and inspect
+## Your data
 
 ```bash
-sf load vix.csv
+sf schema mydata.csv                    # infer the structure
+sf surface mydata.csv --schema my.schema.json -hm   # see it
 ```
 
-```
-  SignalForge  vix.csv
-  ────────────────────────────────────────
-  records   2,013
-  channels  value
-  span      0 .. 2,085  (2,085)
-  grain     2  (estimated)
-  basis     2^2 x 3^2 x 5
-  scales    18  [2 .. 360]
-  ────────────────────────────────────────
+Any CSV works. Multi-column, multi-channel, per-entity — [sf schema](https://github.com/adelic-ai/signalforge/blob/main/docs/your-data.md) figures it out.
 
-  Next:
-    sf surface vix.csv -hm
-```
-
-### Add a baseline
-
-What's anomalous relative to a [moving average](https://github.com/adelic-ai/signalforge/blob/main/docs/cli.md#baselines)?
+## Explore
 
 ```bash
-sf surface vix.csv -hm --max-window 360 --baseline ewma --residual z
+sf surface data.csv -hm --baseline ewma --residual z    # what's anomalous?
+sf surface data.csv -hm --start-date 2008-01 --end-date 2009-06  # zoom in
+sf inspect ewma                                          # how does this work?
+sf inspect                                               # what's available?
 ```
 
-The residual shows how many standard deviations each point is from the baseline, at every scale. `sf inspect ewma` explains the method, its formula, and when to use it.
-
-### Zoom in
-
-Spotted something? The CLI suggests a zoom command centered on the peak anomaly:
-
-```bash
-sf surface vix.csv -hm --start-date 2007-06-01 --end-date 2009-06-01
-```
-
-Zoomed regions get [finer resolution automatically](https://github.com/adelic-ai/signalforge/blob/main/docs/cli.md#zoom) — more scales, smaller grain. Coarse-to-fine exploration is the natural workflow.
-
-### Learn the system
-
-```bash
-sf inspect
-```
-
-```
-  Baselines
-    ewma            Exponentially Weighted Moving Average
-    median          Rolling Median Filter
-    rolling_mean    Rolling Mean
-
-  Residuals
-    difference      Difference Residual
-    ratio           Ratio Residual
-    z               Z-Score Residual
-
-  Concepts
-    horizon         Horizon
-    grain           Grain
-    surface         Surface
-    lattice         Lattice
-```
-
-`sf inspect <name>` shows the formula, parameters, when to use it, and an example command. The CLI [teaches the system by letting you use it](https://github.com/adelic-ai/signalforge/blob/main/docs/cli.md#inspect).
-
-### Set up a workspace
-
-For sustained exploration, [initialize a workspace](https://github.com/adelic-ai/signalforge/blob/main/docs/cli.md#workspace):
-
-```bash
-sf init my_project --csv vix.csv --max-window 360
-cd my_project
-sf surface -hm                                        # picks up workspace config
-sf surface -hm --baseline ewma --residual z --name crisis_ewma   # saves the run
-sf status                                              # see what you've done
-```
+The CLI suggests what to try next. Every output leads somewhere.
 
 ## Python API
-
-### Chaining — quick exploration
 
 ```python
 import signalforge as sf
 
 surfaces = (
-    sf.load("vix.csv")
+    sf.load("data.csv")
     .measure(windows=[10, 60, 360])
     .baseline("ewma", alpha=0.1)
     .residual("z")
@@ -139,46 +56,23 @@ surfaces = (
 )
 ```
 
-Each step returns a new chain. Nothing executes until `.surfaces()` or `.run()`. See the [Python API guide](https://github.com/adelic-ai/signalforge/blob/main/docs/python-api.md) for details.
-
-### DAG — full composition
-
-When you need branching and merging — multiple baselines, Hilbert transform, stacked features for ML:
+For branching and merging — multiple baselines, stacked features:
 
 ```python
-from signalforge.graph import Input, Measure, Baseline, Residual, Hilbert, Stack, Pipeline
+from signalforge.graph import Input, Measure, Baseline, Residual, Stack, Pipeline
 
 x = Input()
 m = Measure()(x)
-
-bl = Baseline(method="ewma", alpha=0.1)(m)
-resid = Residual(mode="z")(m, bl)
-hilbert = Hilbert()(m)
-
-features = Stack()([m, resid, hilbert])
-
+bl = Baseline("ewma", alpha=0.1)(m)
+r = Residual("z")(m, bl)
+features = Stack()([m, r])
 pipe = Pipeline(x, features)
 result = pipe.run(records, windows=[10, 60, 360])
 ```
 
-The [graph API](https://github.com/adelic-ai/signalforge/blob/main/docs/python-api.md#dag-composition) composes operators into a lazy DAG. Use the chaining API to figure out what works, then lock it into a DAG for production or ML pipelines.
+## Custom aggregations
 
-### Signals and surfaces
-
-Everything in SignalForge is a [LatticeSignal](https://github.com/adelic-ai/signalforge/blob/main/docs/concepts.md#signals) — including surfaces. A surface IS a signal, so you can measure surfaces of surfaces, compute baselines of baselines, or feed any intermediate back through the pipeline.
-
-```python
-from signalforge.signal import RealSignal, ComplexSignal
-
-sig = RealSignal(index, values, channel="my_signal")
-surface = sf.from_signal(sig).measure(windows=[10, 30, 90]).surfaces()[0]
-```
-
-Values are complex-native (`complex128`). Real signals are the common case (`imag=0`). The [Hilbert transform](https://github.com/adelic-ai/signalforge/blob/main/docs/python-api.md#hilbert) promotes a real signal to its analytic (complex) form — amplitude + phase at every point.
-
-### Custom aggregations
-
-Each surface cell is a window reduced to a number — by default a mean. SignalForge ships with 20+ aggregations (mean, std, percentiles, spectral energy, dominant frequency, Shannon entropy, ...) and you can register your own:
+Each surface cell reduces a window to a number. SF ships with 20+ aggregations and you can add your own:
 
 ```python
 from signalforge.pipeline.aggregation import register_aggregation
@@ -188,57 +82,28 @@ def iqr(values):
     return float(np.percentile(values, 75) - np.percentile(values, 25))
 ```
 
-Any function that takes an array and returns a float works. See [docs/python-api.md](https://github.com/adelic-ai/signalforge/blob/main/docs/python-api.md#aggregations) for the full list.
+## Across domains
 
-## What Makes This Different
-
-Standard multiscale analysis (STFT, wavelets) requires the analyst to choose window sizes. SignalForge [derives the measurement space](https://github.com/adelic-ai/signalforge/blob/main/docs/concepts.md#lattice) from the arithmetic of your declared windows and grain. The valid scales are the divisors of the horizon — a structure from number theory that guarantees:
-
-- **Artifact-free tiling** — windows nest perfectly, no boundary effects
-- **Structural invariance** — same plan = same grid. Surfaces from different signals are [directly comparable](https://github.com/adelic-ai/signalforge/blob/main/docs/concepts.md#structural-invariance)
-- **Scale coherence** — every scale is a divisor of every larger scale. The lattice IS the multiscale structure
-
-Two signals with the same sampling plan produce identically shaped surfaces. This is what makes ML on surfaces meaningful — features at each scale occupy the same structural position.
-
-For a detailed comparison with wavelets, STFT, and EMD: [docs/comparison.md](https://github.com/adelic-ai/signalforge/blob/main/docs/comparison.md)
-
-## Demonstrated Results
-
-### EEG per-channel phase coherence
+The same pipeline processes financial data, EEG brain recordings, satellite gravity measurements, and generic time series — unchanged.
 
 ![EEG phase coherence](https://raw.githubusercontent.com/adelic-ai/signalforge/main/docs/img/heatmap_eeg_phase_coherence.png)
 
-Four EEG channels from [CHB-MIT](https://physionet.org/content/chbmit/1.0.0/) (left/right frontal + temporal), each surfaced on the same lattice, then Hilbert-transformed to extract phase. The top two panels show amplitude (z-score) — the seizure at ~50 min is a red band across all scales. The bottom two panels show **phase difference** between left and right hemispheres — the seizure disrupts the phase relationship, visible as a color shift in the twilight colormap.
-
-Amplitude tells you something got louder. Phase tells you the hemispheres **desynchronized**. That's clinically meaningful — and you can only see it with complex-valued analysis. No training data, no labels, no EEG-specific code.
-
-### Cross-domain: same pipeline, different data
-
-The same framework processes [VIX market data](https://github.com/adelic-ai/signalforge/blob/main/docs/img/heatmap_vix_v2.png) (2008 crisis detection), [GRACE satellite gravity](https://github.com/adelic-ai/signalforge/blob/main/docs/img/heatmap_grace_regions.png) (Greenland ice loss), [INTERMAGNET](https://intermagnet.org/data_download.html) geomagnetic observatory data, and generic CSV time series unchanged.
-
-See [docs/examples.md](https://github.com/adelic-ai/signalforge/blob/main/docs/examples.md) for full walkthroughs with each dataset.
+EEG seizure detection: the top panels show amplitude, the bottom panels show phase relationships between brain hemispheres. The seizure disrupts both — but the phase change is only visible with complex-valued analysis.
 
 ## Documentation
 
-| Doc | What it covers |
-|-----|----------------|
-| [Concepts](https://github.com/adelic-ai/signalforge/blob/main/docs/concepts.md) | Lattice, horizon, grain, surface, signals, structural invariance |
-| [CLI Guide](https://github.com/adelic-ai/signalforge/blob/main/docs/cli.md) | All commands: load, surface, inspect, init, status, zoom |
-| [Python API](https://github.com/adelic-ai/signalforge/blob/main/docs/python-api.md) | Chaining API, DAG composition, Hilbert, signals |
-| [Examples](https://github.com/adelic-ai/signalforge/blob/main/docs/examples.md) | VIX, EEG, INTERMAGNET walkthroughs |
-| [Data Guide](https://github.com/adelic-ai/signalforge/blob/main/docs/data-guide.md) | Bring your data: CSV, events, keys, grain, large data |
-| [Comparison](https://github.com/adelic-ai/signalforge/blob/main/docs/comparison.md) | STFT, wavelets, EMD vs SignalForge |
-| [Architecture](https://github.com/adelic-ai/signalforge/blob/main/docs/architecture.md) | Signal module, graph, pipeline internals |
+| | |
+|---|---|
+| [Quick Start](https://github.com/adelic-ai/signalforge/blob/main/docs/quickstart.md) | Zero to heatmap |
+| [Your Data](https://github.com/adelic-ai/signalforge/blob/main/docs/your-data.md) | Bring your own data |
+| [CLI](https://github.com/adelic-ai/signalforge/blob/main/docs/cli.md) | All commands |
+| [Python API](https://github.com/adelic-ai/signalforge/blob/main/docs/python-api.md) | Chaining and DAG |
+| [Examples](https://github.com/adelic-ai/signalforge/blob/main/docs/examples.md) | VIX, EEG, GRACE, INTERMAGNET |
+| [Concepts](https://github.com/adelic-ai/signalforge/blob/main/docs/concepts.md) | How it works |
+| [Comparison](https://github.com/adelic-ai/signalforge/blob/main/docs/comparison.md) | vs STFT, wavelets, EMD |
 
 ## License
 
 Business Source License 1.1. See [LICENSE](LICENSE).
 
-Free for non-commercial use (research, personal projects, evaluation).
-Commercial use requires a license from Adelic — contact [shun.honda@adelic.org](mailto:shun.honda@adelic.org).
-
-Converts to Apache 2.0 on 2029-03-22.
-
-## Citation
-
-If you use SignalForge in published work, a citation entry will be available once the arXiv preprint is posted.
+Free for non-commercial use. Commercial use requires a license from Adelic — contact [shun.honda@adelic.org](mailto:shun.honda@adelic.org). Converts to Apache 2.0 on 2029-03-22.

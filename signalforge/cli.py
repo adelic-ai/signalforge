@@ -350,7 +350,6 @@ def cmd_load(args: argparse.Namespace) -> int:
     print(f"  span      {min_o:,} .. {max_o:,}  ({max_o - min_o:,})")
     print(f"  grain     {grain}  (estimated)")
     if plan:
-        print(f"  basis     {_fmt_basis(plan.prime_basis)}")
         print(f"  scales    {len(plan.windows)}  [{plan.windows[0]} .. {plan.windows[-1]}]")
     print(f"  {'─' * 40}")
     print(f"  {elapsed:.2f}s")
@@ -555,9 +554,10 @@ def cmd_surface(args: argparse.Namespace) -> int:
     print(f"  channels  {', '.join(channels)}")
     if zoom_label:
         print(zoom_label)
-    print(f"  horizon   {plan.horizon:,}   basis {_fmt_basis(plan.prime_basis)}")
-    print(f"  grain     {plan.grain}   cbin {plan.cbin}")
     print(f"  scales    {_fmt_windows(plan.windows)}")
+    print(f"  cbin      {plan.cbin}")
+    if plan.grain != plan.cbin:
+        print(f"  grain     {plan.grain}  (zoom available)")
     print(f"  {'─' * 50}")
 
     for s in surfaces:
