@@ -204,13 +204,17 @@ For a detailed comparison with wavelets, STFT, and EMD: [docs/comparison.md](htt
 
 ## Demonstrated Results
 
-### EEG seizure detection
+### EEG per-channel phase coherence
 
-![EEG seizure heatmap](https://raw.githubusercontent.com/adelic-ai/signalforge/main/docs/img/heatmap_eeg_seizure.png)
+![EEG phase coherence](https://raw.githubusercontent.com/adelic-ai/signalforge/main/docs/img/heatmap_eeg_phase_coherence.png)
 
-SignalForge detected a clinical epileptic seizure at **13.96σ** on [CHB-MIT EEG](https://physionet.org/content/chbmit/1.0.0/) data — the windowed mean during the seizure deviated nearly 14 standard deviations from the scale baseline. No training data, no labels, no EEG-specific code.
+Four EEG channels from [CHB-MIT](https://physionet.org/content/chbmit/1.0.0/) (left/right frontal + temporal), each surfaced on the same lattice, then Hilbert-transformed to extract phase. The top two panels show amplitude (z-score) — the seizure at ~50 min is a red band across all scales. The bottom two panels show **phase difference** between left and right hemispheres — the seizure disrupts the phase relationship, visible as a color shift in the twilight colormap.
 
-The same pipeline processes VIX market data, [INTERMAGNET](https://intermagnet.org/data_download.html) geomagnetic observatory data, and generic CSV time series unchanged.
+Amplitude tells you something got louder. Phase tells you the hemispheres **desynchronized**. That's clinically meaningful — and you can only see it with complex-valued analysis. No training data, no labels, no EEG-specific code.
+
+### Cross-domain: same pipeline, different data
+
+The same framework processes [VIX market data](https://github.com/adelic-ai/signalforge/blob/main/docs/img/heatmap_vix_v2.png) (2008 crisis detection), [GRACE satellite gravity](https://github.com/adelic-ai/signalforge/blob/main/docs/img/heatmap_grace_regions.png) (Greenland ice loss), [INTERMAGNET](https://intermagnet.org/data_download.html) geomagnetic observatory data, and generic CSV time series unchanged.
 
 See [docs/examples.md](https://github.com/adelic-ai/signalforge/blob/main/docs/examples.md) for full walkthroughs with each dataset.
 
