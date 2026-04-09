@@ -1,0 +1,264 @@
+"""
+signalforge.signal._schema
+
+Schema: declares the typed axes of a data source.
+
+An event is a point in a product of typed axes. The schema declares
+which axes exist and what type each one is. Records are values
+conforming to the schema.
+
+Three fundamental axis types:
+    ORDERED     — has sequence, lattice operates here (time, position, index)
+    CATEGORICAL — discrete labels, partitions the space (event code, sensor type)
+    NUMERIC     — measurable quantity (count, amplitude, temperature)
+    RELATIONAL  — points to another event (ticket hash, parent process ID)
+
+Axis types are extensible — add new types to AxisType as needed.
+SF handles built-in types; unknown types are carried as metadata.
+"""
+
+from __future__ import annotations
+
+import enum
+import json
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Sequence
+
+
+class AxisType(str, enum.Enum):
+    """Type of an axis in the schema.
+
+    Inherits from str so it serializes cleanly to JSON.
+    """
+    ORDERED = "ordered"
+    CATEGORICAL = "categorical"
+    NUMERIC = "numeric"
+    RELATIONAL = "relational"
+
+
+@dataclass
+class Axis:
+    """One axis in a schema."""
+    name: str
+    type: AxisType
+    description: str = ""
+
+    def to_dict(self) -> dict:
+        d = {"name": self.name, "type": self.type.value}
+        if self.description:
+            d["description"] = self.description
+        return d
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Axis":
+        return cls(
+            name=d["name"],
+            type=AxisType(d["type"]),
+            description=d.get("description", ""),
+        )
+
+
+@dataclass
+class Schema:
+    """Declares the typed axes of a data source.
+
+    A schema is the domain adapter in its simplest form — a declaration
+    of what axes exist and what type each one is. No code needed.
+
+    Attributes
+    ----------
+    name : str
+        Name of this schema (e.g., "kerberos", "eeg", "vix").
+    axes : list of Axis
+        The typed axes, in declaration order.
+    primary_order : str
+        Name of the ordered axis used as the primary index.
+    group_by : list of str
+        Categorical axes to group by (produce per-entity surfaces).
+    value_axis : str
+        Name of the numeric axis to surface. Default: first numeric axis.
+    channel_axis : str, optional
+        Categorical axis that defines channels (one surface per value).
+    """
+    name: str
+    axes: List[Axis]
+    primary_order: str
+    group_by: List[str] = field(default_factory=list)
+    value_axis: str = ""
+    channel_axis: str = ""
+
+    def __post_init__(self):
+        # Validate primary_order exists and is ordered
+        ax = self.get_axis(self.primary_order)
+        if ax is None:
+            raise ValueError(f"primary_order {self.primary_order!r} not in axes")
+        if ax.type != AxisType.ORDERED:
+            raise ValueError(f"primary_order {self.primary_order!r} must be ORDERED")
+
+        # Validate group_by axes exist and are categorical
+        for g in self.group_by:
+            ax = self.get_axis(g)
+            if ax is None:
+                raise ValueError(f"group_by {g!r} not in axes")
+            if ax.type != AxisType.CATEGORICAL:
+                raise ValueError(f"group_by {g!r} must be CATEGORICAL")
+
+        # Default value_axis: first numeric axis
+        if not self.value_axis:
+            for a in self.axes:
+                if a.type == AxisType.NUMERIC:
+                    self.value_axis = a.name
+                    break
+
+    def get_axis(self, name: str) -> Optional[Axis]:
+        """Get an axis by name."""
+        for a in self.axes:
+            if a.name == name:
+                return a
+        return None
+
+    @property
+    def axis_names(self) -> List[str]:
+        return [a.name for a in self.axes]
+
+    @property
+    def ordered_axes(self) -> List[Axis]:
+        return [a for a in self.axes if a.type == AxisType.ORDERED]
+
+    @property
+    def categorical_axes(self) -> List[Axis]:
+        return [a for a in self.axes if a.type == AxisType.CATEGORICAL]
+
+    @property
+    def numeric_axes(self) -> List[Axis]:
+        return [a for a in self.axes if a.type == AxisType.NUMERIC]
+
+    @property
+    def relational_axes(self) -> List[Axis]:
+        return [a for a in self.axes if a.type == AxisType.RELATIONAL]
+
+    # --- Serialization ---
+
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "axes": [a.to_dict() for a in self.axes],
+            "primary_order": self.primary_order,
+            "group_by": self.group_by,
+            "value_axis": self.value_axis,
+            "channel_axis": self.channel_axis,
+        }
+
+    @classmethod
+    def from_dict(cls, d: dict) -> "Schema":
+        return cls(
+            name=d["name"],
+            axes=[Axis.from_dict(a) for a in d["axes"]],
+            primary_order=d["primary_order"],
+            group_by=d.get("group_by", []),
+            value_axis=d.get("value_axis", ""),
+            channel_axis=d.get("channel_axis", ""),
+        )
+
+    def save(self, path: str | Path) -> None:
+        """Save schema to JSON file."""
+        with open(path, "w") as f:
+            json.dump(self.to_dict(), f, indent=2)
+
+    @classmethod
+    def load(cls, path: str | Path) -> "Schema":
+        """Load schema from JSON file."""
+        with open(path) as f:
+            return cls.from_dict(json.load(f))
+
+    # --- Inference ---
+
+    @classmethod
+    def from_csv(cls, path: str | Path, name: str = "") -> "Schema":
+        """Infer a schema from a CSV file.
+
+        Reads the first rows, detects column types:
+        - Monotonically increasing integers/dates → ORDERED
+        - Repeating strings with few unique values → CATEGORICAL
+        - Floats → NUMERIC
+        - Strings with many unique values (>80% unique) → RELATIONAL
+
+        Returns a schema that may need user correction.
+        """
+        import pandas as pd
+
+        df = pd.read_csv(path, nrows=1000)
+        if not name:
+            name = Path(path).stem
+
+        axes = []
+        primary_order = ""
+
+        for col in df.columns:
+            series = df[col].dropna()
+            if len(series) == 0:
+                continue
+
+            # Try numeric
+            numeric = pd.to_numeric(series, errors="coerce")
+            if numeric.notna().all():
+                # Check if monotonically increasing → ordered
+                if numeric.is_monotonic_increasing and len(numeric) > 5:
+                    axes.append(Axis(col, AxisType.ORDERED))
+                    if not primary_order:
+                        primary_order = col
+                else:
+                    axes.append(Axis(col, AxisType.NUMERIC))
+                continue
+
+            # Try datetime
+            try:
+                dates = pd.to_datetime(series, errors="raise")
+                axes.append(Axis(col, AxisType.ORDERED))
+                if not primary_order:
+                    primary_order = col
+                continue
+            except (ValueError, TypeError):
+                pass
+
+            # String column
+            n_unique = series.nunique()
+            n_total = len(series)
+            if n_total > 0 and n_unique / n_total > 0.8:
+                # Mostly unique → relational (hashes, IDs)
+                axes.append(Axis(col, AxisType.RELATIONAL))
+            else:
+                axes.append(Axis(col, AxisType.CATEGORICAL))
+
+        if not primary_order:
+            # No ordered axis found — use row index
+            axes.insert(0, Axis("_index", AxisType.ORDERED))
+            primary_order = "_index"
+
+        return cls(name=name, axes=axes, primary_order=primary_order)
+
+    # --- Display ---
+
+    def describe(self) -> None:
+        """Print the schema."""
+        print()
+        print(f"  Schema: {self.name}")
+        print(f"  {'─' * 50}")
+        for a in self.axes:
+            flags = []
+            if a.name == self.primary_order:
+                flags.append("primary")
+            if a.name in self.group_by:
+                flags.append("group-by")
+            if a.name == self.value_axis:
+                flags.append("value")
+            if a.name == self.channel_axis:
+                flags.append("channel")
+            flag_str = f"  ({', '.join(flags)})" if flags else ""
+            print(f"    {a.name:<20s} {a.type.value:<12s}{flag_str}")
+        print(f"  {'─' * 50}")
+        print()
+
+    def __repr__(self) -> str:
+        return f"Schema({self.name!r}, {len(self.axes)} axes, primary={self.primary_order!r})"

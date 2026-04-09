@@ -21,6 +21,8 @@ from ._complex import ComplexSignal, RealSignal
 from ._surface import Surface
 from ._convert import records_to_signals
 from ._measure import measure_signal
+from ._schema import Schema, Axis, AxisType
+from ._record import Record, records_from_csv
 
 __all__ = [
     "LatticeSignal",
