@@ -163,7 +163,7 @@ def ingest(path: str) -> list:
         Path to CSV file produced by examples/yfinance_to_csv.py.
     """
     import pandas as pd
-    from ..signal import CanonicalRecord, OrderType
+    from ..signal import Schema, Axis, AxisType, Record
 
     df = pd.read_csv(path)
 
@@ -179,16 +179,27 @@ def ingest(path: str) -> list:
     else:
         epochs = raw // 1_000_000_000
 
+    schema = Schema(
+        name="equities",
+        axes=[
+            Axis("timestamp", AxisType.ORDERED),
+            Axis("metric", AxisType.CATEGORICAL),
+            Axis("ticker", AxisType.CATEGORICAL),
+            Axis("value", AxisType.NUMERIC),
+        ],
+        primary_order="timestamp",
+        channel_axis="metric",
+        group_by=["ticker"],
+        value_axis="value",
+    )
+
     records = [
-        CanonicalRecord(
-            primary_order=int(epoch),
-            order_type=OrderType.TIME,
-            channel=str(row.metric),
-            metric="value",
-            value=float(row.value),
-            keys={"ticker": str(row.ticker)},
-            time_order=int(epoch),
-        )
+        Record(schema, {
+            "timestamp": int(epoch),
+            "metric": str(row.metric),
+            "ticker": str(row.ticker),
+            "value": float(row.value),
+        })
         for epoch, row in zip(epochs, df.itertuples(index=False))
         if str(row.value).replace(".", "").replace("-", "").isdigit()
     ]

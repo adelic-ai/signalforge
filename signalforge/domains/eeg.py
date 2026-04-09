@@ -111,7 +111,7 @@ def sampling_plan(
 
 def ingest(path: str, sfreq: int = _SFREQ) -> list:
     """
-    Load a preprocessed EEG CSV into CanonicalRecords.
+    Load a preprocessed EEG CSV into Records.
 
     Expected columns: t_sec, eeg_rms
     primary_order is sample index (round(t_sec * sfreq)).
@@ -125,22 +125,25 @@ def ingest(path: str, sfreq: int = _SFREQ) -> list:
     """
     import numpy as np
     import pandas as pd
-    from ..signal import CanonicalRecord, OrderType
+    from ..signal import Schema, Axis, AxisType, Record
 
     df = pd.read_csv(path)
     t_secs = df["t_sec"].to_numpy(dtype=np.float64)
     rms_values = df["eeg_rms"].to_numpy(dtype=np.float64)
     sample_indices = np.round(t_secs * sfreq).astype(np.int64)
 
+    schema = Schema(
+        name="eeg",
+        axes=[
+            Axis("sample", AxisType.ORDERED),
+            Axis("rms", AxisType.NUMERIC),
+        ],
+        primary_order="sample",
+        value_axis="rms",
+    )
+
     return [
-        CanonicalRecord(
-            primary_order=int(si),
-            order_type=OrderType.SEQUENCE,
-            channel="eeg",
-            metric="rms",
-            value=float(v),
-            seq_order=int(si),
-        )
+        Record(schema, {"sample": int(si), "rms": float(v)})
         for si, v in zip(sample_indices, rms_values)
     ]
 

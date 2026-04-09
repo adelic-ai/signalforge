@@ -49,10 +49,10 @@ class Record:
 
     @property
     def channel(self) -> str:
-        """Channel value, if channel_axis is defined."""
+        """Channel value, if channel_axis is defined. Defaults to value axis name or 'value'."""
         if self.schema.channel_axis:
             return str(self.values.get(self.schema.channel_axis, ""))
-        return ""
+        return self.schema.value_axis or "value"
 
     @property
     def value(self) -> float:

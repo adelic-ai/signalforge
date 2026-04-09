@@ -149,7 +149,7 @@ def ingest(path: str) -> list:
         Path to CSV file.
     """
     import pandas as pd
-    from ..signal import CanonicalRecord, OrderType
+    from ..signal import Schema, Axis, AxisType, Record
 
     df = pd.read_csv(path)
     ts = pd.to_datetime(df["timestamp"], utc=True).astype("int64")
@@ -163,16 +163,27 @@ def ingest(path: str) -> list:
     else:
         epochs = ts // 1_000_000_000
 
+    schema = Schema(
+        name="intermagnet",
+        axes=[
+            Axis("timestamp", AxisType.ORDERED),
+            Axis("component", AxisType.CATEGORICAL),
+            Axis("station", AxisType.CATEGORICAL),
+            Axis("value", AxisType.NUMERIC),
+        ],
+        primary_order="timestamp",
+        channel_axis="component",
+        group_by=["station"],
+        value_axis="value",
+    )
+
     records = [
-        CanonicalRecord(
-            primary_order=int(epoch),
-            order_type=OrderType.TIME,
-            channel=str(row.component),
-            metric="value",
-            value=float(row.value),
-            keys={"station": str(row.station)},
-            time_order=int(epoch),
-        )
+        Record(schema, {
+            "timestamp": int(epoch),
+            "component": str(row.component),
+            "station": str(row.station),
+            "value": float(row.value),
+        })
         for epoch, row in zip(epochs, df.itertuples(index=False))
     ]
     records.sort(key=lambda r: r.primary_order)

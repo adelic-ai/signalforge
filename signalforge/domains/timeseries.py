@@ -22,7 +22,7 @@ def sampling_plan(
     """
     SamplingPlan for a generic daily time series.
 
-    Horizon of 360 = 2³ × 3² × 5, giving 24 divisors and clean windows.
+    Horizon of 360 = 2^3 x 3^2 x 5, giving 24 divisors and clean windows.
     """
     cbin = bj.smallest_divisor_gte(horizon, grain)
     valid = set(bj.lattice_members(horizon, cbin))
@@ -43,13 +43,13 @@ def sampling_plan(
 
 def ingest(path: str) -> list:
     """
-    Load a two-column CSV (date, value) into CanonicalRecords.
+    Load a two-column CSV (date, value) into Records.
 
     Auto-detects column names. First column is parsed as a date,
     second as a float. Rows with missing or non-numeric values are skipped.
     """
     import pandas as pd
-    from ..signal import CanonicalRecord, OrderType
+    from ..signal import Schema, Axis, AxisType, Record
 
     df = pd.read_csv(path)
     date_col, value_col = df.columns[0], df.columns[1]
@@ -57,15 +57,20 @@ def ingest(path: str) -> list:
     df[value_col] = pd.to_numeric(df[value_col], errors="coerce")
     df = df.dropna(subset=[value_col])
 
-    records = [
-        CanonicalRecord(
-            primary_order=i,
-            order_type=OrderType.SEQUENCE,
-            channel="value",
-            metric="value",
-            value=float(row[value_col]),
-            seq_order=i,
-        )
+    schema = Schema(
+        name="timeseries",
+        axes=[
+            Axis(date_col, AxisType.ORDERED),
+            Axis(value_col, AxisType.NUMERIC),
+        ],
+        primary_order=date_col,
+        value_axis=value_col,
+    )
+
+    return [
+        Record(schema, {
+            date_col: i,
+            value_col: float(row[value_col]),
+        })
         for i, row in df.iterrows()
     ]
-    return records

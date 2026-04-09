@@ -42,10 +42,7 @@ def cmd_demo(args: argparse.Namespace) -> int:
         return 1
 
     import pandas as pd
-    from .signal import CanonicalRecord, OrderType
-    from .pipeline.binned import materialize
-    from .pipeline.surface import measure
-    from .pipeline.feature import engineer
+    from .signal import records_to_signals, measure_signal
     from .domains import eeg
 
     SFREQ = 256
@@ -62,37 +59,30 @@ def cmd_demo(args: argparse.Namespace) -> int:
     print(f"Training : none")
     print()
 
-    df = pd.read_csv(csv_path)
-    t_secs = df["t_sec"].to_numpy(dtype=np.float64)
-    rms    = df["eeg_rms"].to_numpy(dtype=np.float64)
-    sample_indices = np.round(t_secs * SFREQ).astype(np.int64)
-
     t0 = time.perf_counter()
-    records = [
-        CanonicalRecord(
-            primary_order=int(si),
-            order_type=OrderType.SEQUENCE,
-            channel="eeg", metric="rms", value=float(v),
-            seq_order=int(si),
-        )
-        for si, v in zip(sample_indices, rms)
-    ]
-    plan    = eeg.sampling_plan()
-    binned  = materialize(records, plan, agg_funcs={"eeg": {"rms": "mean"}})
-    surfaces = measure(binned, plan, profile="continuous")
-    tensors  = [engineer(s, plan) for s in surfaces]
+    records = eeg.ingest(str(csv_path))
+    signals = records_to_signals(records)
+    plan = eeg.sampling_plan()
+    surfaces = [measure_signal(s, plan, agg=["mean", "std"]) for s in signals]
     elapsed = time.perf_counter() - t0
 
-    ft = tensors[0]
-    windows_s = tuple(w // SFREQ for w in plan.windows)
-    time_axis = np.array(ft.time_axis)
+    s = surfaces[0]
+    windows_s = tuple(w // SFREQ for w in plan.windows[:s.shape[0]])
+    time_axis = np.array(s.time_axis)
 
     seiz_bin_start = (SEIZURE_START_S * SFREQ) // plan.cbin
     seiz_bin_end   = (SEIZURE_END_S   * SFREQ) // plan.cbin
     t_start = int(np.searchsorted(time_axis, seiz_bin_start))
     t_end   = int(np.searchsorted(time_axis, seiz_bin_end))
 
-    zscore_mat = ft.values["mean_zscore"]
+    # Z-score per scale
+    mean_arr = s.data["mean"]
+    zscore_mat = np.full_like(mean_arr, np.nan)
+    for i in range(mean_arr.shape[0]):
+        row = mean_arr[i]
+        valid = row[np.isfinite(row)]
+        if len(valid) > 0 and np.std(valid) > 0:
+            zscore_mat[i] = (row - np.mean(valid)) / np.std(valid)
 
     print(f"{'Scale':>8}   {'z_max':>7}   {'z_mean':>7}   {'signal'}")
     print("-" * 50)
@@ -114,9 +104,8 @@ def cmd_demo(args: argparse.Namespace) -> int:
     print()
     print(f"Peak z-score in seizure window : {overall:.2f} σ")
     print(f"Pipeline time                  : {elapsed:.1f} s")
-    print(f"Surface shape                  : {surfaces[0].shape}  (scales × time bins)")
-    print(f"Feature tensor shape           : {ft.shape}  (scales × time bins)")
-    print(f"Features computed              : {len(ft.feature_names)}")
+    print(f"Surface shape                  : {s.shape}  (scales × time bins)")
+    print(f"Aggregations                   : {list(s.data.keys())}")
     return 0
 
 
@@ -227,62 +216,59 @@ def cmd_neighborhood(args: argparse.Namespace) -> int:
 # ---------------------------------------------------------------------------
 
 def _auto_ingest(csv_path: Path) -> list:
-    """Auto-detect CSV format and ingest into CanonicalRecords."""
+    """Auto-detect CSV format and ingest into Records."""
     import pandas as pd
-    from .signal import CanonicalRecord, OrderType
+    from .signal import Schema, Axis, AxisType, Record
 
     df = pd.read_csv(csv_path)
     cols = list(df.columns)
+
+    # Multi-column: look for known domain patterns
+    lower = {c.lower(): c for c in cols}
+
+    if all(k in lower for k in ("timestamp", "ticker", "metric", "value")):
+        from .domains import equities
+        return equities.ingest(str(csv_path))
+
+    if all(k in lower for k in ("timestamp", "station", "component", "value")):
+        from .domains import intermagnet
+        return intermagnet.ingest(str(csv_path))
+
+    if all(k in lower for k in ("t_sec", "eeg_rms")):
+        from .domains import eeg
+        return eeg.ingest(str(csv_path))
 
     # Two-column CSV: treat as generic timeseries
     if len(cols) == 2:
         date_col, value_col = cols
         df[value_col] = pd.to_numeric(df[value_col], errors="coerce")
         df = df.dropna(subset=[value_col])
+
+        schema = Schema(
+            name=csv_path.stem,
+            axes=[Axis(date_col, AxisType.ORDERED), Axis(value_col, AxisType.NUMERIC)],
+            primary_order=date_col,
+            value_axis=value_col,
+        )
         return [
-            CanonicalRecord(
-                primary_order=i,
-                order_type=OrderType.SEQUENCE,
-                channel="value",
-                metric="value",
-                value=float(row[value_col]),
-                seq_order=i,
-            )
+            Record(schema, {date_col: i, value_col: float(row[value_col])})
             for i, row in df.iterrows()
         ]
 
-    # Multi-column: look for known patterns
-    lower = {c.lower(): c for c in cols}
-
-    # timestamp + ticker + metric + value (equities format)
-    if all(k in lower for k in ("timestamp", "ticker", "metric", "value")):
-        from .domains import equities
-        return equities.ingest(str(csv_path))
-
-    # timestamp + station + component + value (intermagnet format)
-    if all(k in lower for k in ("timestamp", "station", "component", "value")):
-        from .domains import intermagnet
-        return intermagnet.ingest(str(csv_path))
-
-    # t_sec + eeg_rms (EEG format)
-    if all(k in lower for k in ("t_sec", "eeg_rms")):
-        from .domains import eeg
-        return eeg.ingest(str(csv_path))
-
-    # Fallback: use first column as index, second as value
+    # Fallback: first column as index, second as value
     if len(cols) >= 2:
         value_col = cols[1]
         df[value_col] = pd.to_numeric(df[value_col], errors="coerce")
         df = df.dropna(subset=[value_col])
+
+        schema = Schema(
+            name=csv_path.stem,
+            axes=[Axis(cols[0], AxisType.ORDERED), Axis(value_col, AxisType.NUMERIC)],
+            primary_order=cols[0],
+            value_axis=value_col,
+        )
         return [
-            CanonicalRecord(
-                primary_order=i,
-                order_type=OrderType.SEQUENCE,
-                channel=value_col,
-                metric="value",
-                value=float(row[value_col]),
-                seq_order=i,
-            )
+            Record(schema, {cols[0]: i, value_col: float(row[value_col])})
             for i, row in df.iterrows()
         ]
 
