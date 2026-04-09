@@ -34,3 +34,4 @@ vix_analysis/
 .DS_Store
 
 # uv.lock is intentionally NOT gitignored — keep it tracked
+docs/_sphinx/_build/
