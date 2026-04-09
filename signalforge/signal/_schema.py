@@ -31,15 +31,25 @@ class AxisType(str, enum.Enum):
 
     Inherits from str so it serializes cleanly to JSON.
     """
-    ORDERED = "ordered"
-    CATEGORICAL = "categorical"
-    NUMERIC = "numeric"
-    RELATIONAL = "relational"
+    ORDERED = "ordered"          #: Has sequence — lattice operates here.
+    CATEGORICAL = "categorical"  #: Discrete labels — partitions the space.
+    NUMERIC = "numeric"          #: Measurable quantity — what you surface.
+    RELATIONAL = "relational"    #: Points to another event — cross-event links.
 
 
 @dataclass
 class Axis:
-    """One axis in a schema."""
+    """One axis in a schema.
+
+    Parameters
+    ----------
+    name : str
+        Column or field name.
+    type : AxisType
+        One of ORDERED, CATEGORICAL, NUMERIC, RELATIONAL.
+    description : str, optional
+        Human-readable description.
+    """
     name: str
     type: AxisType
     description: str = ""

@@ -32,10 +32,29 @@ class LatticeSignal(ABC):
     ordered, it is a LatticeSignal and gets prime decomposition,
     scale structure, and surfaces for free.
 
-    Subclasses must provide:
-        index   — integer positions (monotonic)
-        values  — complex128 array (same length as index)
-        channel — what this signal represents
+    Subclasses must implement:
+
+    Attributes
+    ----------
+    index : np.ndarray
+        Integer positions, monotonically non-decreasing.
+    values : np.ndarray
+        Complex128 array of observations, same length as index.
+    channel : str
+        What this signal represents.
+    keys : dict
+        Entity dimensions (default: empty).
+    metadata : dict
+        Arbitrary metadata (default: empty).
+
+    Derived properties (available on all signals):
+
+    - ``dtype`` — numpy dtype of values
+    - ``is_real`` — True if imaginary component is all zeros
+    - ``amplitude()`` — |values|
+    - ``phase()`` — angle(values)
+    - ``real()`` — real component
+    - ``imag()`` — imaginary component
     """
 
     @property

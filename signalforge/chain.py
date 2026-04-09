@@ -29,10 +29,48 @@ import numpy as np
 
 
 class Chain:
-    """Fluent pipeline builder.
+    """Fluent pipeline builder for quick exploration.
 
     Each method returns a new Chain with the step appended.
-    Nothing executes until .run() or .heatmap() is called.
+    Nothing executes until ``.run()`` or ``.surfaces()`` is called.
+    Chains are immutable — each step creates a new Chain.
+
+    Example
+    -------
+    ::
+
+        import signalforge as sf
+
+        surfaces = (
+            sf.load("data.csv")
+            .measure(windows=[10, 60, 360])
+            .baseline("ewma", alpha=0.1)
+            .residual("z")
+            .surfaces()
+        )
+
+    Methods
+    -------
+    load(source)
+        Load from CSV path or list of records.
+    load_schema(source, schema)
+        Load via a Schema (JSON file or Schema object).
+    from_signal(signal)
+        Start from a LatticeSignal directly.
+    measure(**kwargs)
+        Build surfaces. ``windows=`` sets analysis scales.
+    baseline(method, **kwargs)
+        Apply baseline: ``"ewma"``, ``"median"``, ``"rolling_mean"``.
+    residual(mode)
+        Compute residual: ``"z"``, ``"ratio"``, ``"difference"``.
+    hilbert()
+        Hilbert transform: adds amplitude, phase, inst_freq.
+    gradient()
+        Discrete gradient on the lattice.
+    run(**resolve_kwargs)
+        Execute, return Artifact.
+    surfaces(**resolve_kwargs)
+        Execute, return list of Surface.
     """
 
     def __init__(self, records=None, *, _steps=None, _csv_path=None):
@@ -152,9 +190,17 @@ class Chain:
     # --- Execution ---
 
     def run(self, **resolve_kwargs) -> Any:
-        """Build and execute the pipeline. Returns the final Artifact.
+        """Build and execute the pipeline.
 
-        resolve_kwargs: windows, grain, horizon — override plan derivation.
+        Parameters
+        ----------
+        **resolve_kwargs
+            Override plan derivation: ``windows``, ``grain``, ``horizon``.
+
+        Returns
+        -------
+        Artifact
+            The final pipeline result with ``.value`` and ``.plan``.
         """
         from .graph import (
             Input, Measure, Baseline, Residual,
@@ -217,12 +263,29 @@ class Chain:
         return pipe.run(records, **resolve_kwargs)
 
     def surfaces(self, **resolve_kwargs) -> list:
-        """Shortcut: run and return the list of surfaces."""
+        """Execute and return the list of surfaces.
+
+        Parameters
+        ----------
+        **resolve_kwargs
+            Override plan derivation: ``windows``, ``grain``, ``horizon``.
+
+        Returns
+        -------
+        list of Surface
+            One surface per (channel, keys) group.
+        """
         result = self.run(**resolve_kwargs)
         return result.value
 
     def heatmap(self, **resolve_kwargs) -> None:
-        """Run the pipeline and display a heatmap."""
+        """Execute the pipeline and display a heatmap.
+
+        Parameters
+        ----------
+        **resolve_kwargs
+            Override plan derivation: ``windows``, ``grain``, ``horizon``.
+        """
         surfaces = self.surfaces(**resolve_kwargs)
         result = self.run(**resolve_kwargs)
         plan = result.plan
