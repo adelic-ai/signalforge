@@ -1,0 +1,306 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>signalforge.signal._measure &mdash; SignalForge  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            SignalForge
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/signal.html">Signal Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/graph.html">Graph Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/chain.html">Chaining API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">SignalForge</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">signalforge.signal._measure</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for signalforge.signal._measure</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">signalforge.signal._measure</span>
+
+<span class="sd">measure_signal: LatticeSignal + SamplingPlan → Surface</span>
+
+<span class="sd">Takes a signal (indexed by integers, carrying values) and produces a</span>
+<span class="sd">Surface by binning and windowed aggregation. This is the signal-centric</span>
+<span class="sd">entry point — no CanonicalRecords or BinnedRecords needed.</span>
+
+<span class="sd">Supports multiple aggregations per surface. Prefix-sum aggregations</span>
+<span class="sd">(mean, sum, count, std, var, geometric_mean) are O(1) per window.</span>
+<span class="sd">Non-prefix aggregations (median, percentiles, entropy, spectral)</span>
+<span class="sd">fall back to per-window computation.</span>
+
+<span class="sd">Vectorized binning via np.add.at.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">..lattice.sampling</span><span class="w"> </span><span class="kn">import</span> <span class="n">SamplingPlan</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._signal</span><span class="w"> </span><span class="kn">import</span> <span class="n">LatticeSignal</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._surface</span><span class="w"> </span><span class="kn">import</span> <span class="n">Surface</span>
+
+
+<span class="c1"># Prefix-sum aggregations: computed from cumulative sums, O(1) per window</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_safe_div</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">):</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full_like</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">divide</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">out</span><span class="p">,</span> <span class="n">where</span><span class="o">=</span><span class="n">b</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="n">_CUMSUM_AGGS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;mean&quot;</span><span class="p">:</span>           <span class="k">lambda</span> <span class="n">s</span><span class="p">,</span> <span class="n">sq</span><span class="p">,</span> <span class="n">cnt</span><span class="p">,</span> <span class="n">lg</span><span class="p">:</span> <span class="n">_safe_div</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">cnt</span><span class="p">),</span>
+    <span class="s2">&quot;sum&quot;</span><span class="p">:</span>            <span class="k">lambda</span> <span class="n">s</span><span class="p">,</span> <span class="n">sq</span><span class="p">,</span> <span class="n">cnt</span><span class="p">,</span> <span class="n">lg</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cnt</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">s</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+    <span class="s2">&quot;count&quot;</span><span class="p">:</span>          <span class="k">lambda</span> <span class="n">s</span><span class="p">,</span> <span class="n">sq</span><span class="p">,</span> <span class="n">cnt</span><span class="p">,</span> <span class="n">lg</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">cnt</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">cnt</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+    <span class="s2">&quot;std&quot;</span><span class="p">:</span>            <span class="k">lambda</span> <span class="n">s</span><span class="p">,</span> <span class="n">sq</span><span class="p">,</span> <span class="n">cnt</span><span class="p">,</span> <span class="n">lg</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+                          <span class="n">cnt</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span>
+                          <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">_safe_div</span><span class="p">(</span><span class="n">sq</span><span class="p">,</span> <span class="n">cnt</span><span class="p">)</span> <span class="o">-</span> <span class="n">_safe_div</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">cnt</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)),</span>
+                          <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+    <span class="s2">&quot;var&quot;</span><span class="p">:</span>            <span class="k">lambda</span> <span class="n">s</span><span class="p">,</span> <span class="n">sq</span><span class="p">,</span> <span class="n">cnt</span><span class="p">,</span> <span class="n">lg</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+                          <span class="n">cnt</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">,</span>
+                          <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">_safe_div</span><span class="p">(</span><span class="n">sq</span><span class="p">,</span> <span class="n">cnt</span><span class="p">)</span> <span class="o">-</span> <span class="n">_safe_div</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">cnt</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">),</span>
+                          <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+    <span class="s2">&quot;geometric_mean&quot;</span><span class="p">:</span> <span class="k">lambda</span> <span class="n">s</span><span class="p">,</span> <span class="n">sq</span><span class="p">,</span> <span class="n">cnt</span><span class="p">,</span> <span class="n">lg</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+                          <span class="n">cnt</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">_safe_div</span><span class="p">(</span><span class="n">lg</span><span class="p">,</span> <span class="n">cnt</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">),</span>
+<span class="p">}</span>
+
+<span class="c1"># Non-prefix aggregations: need actual window values, per-window loop</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">_window_agg</span><span class="p">(</span><span class="n">dense</span><span class="p">,</span> <span class="n">starts</span><span class="p">,</span> <span class="n">ends</span><span class="p">,</span> <span class="n">agg_name</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute a non-prefix aggregation per window position.&quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..pipeline.aggregation</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_aggregation</span>
+    <span class="n">fn</span> <span class="o">=</span> <span class="n">get_aggregation</span><span class="p">(</span><span class="n">agg_name</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">starts</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">starts</span><span class="p">,</span> <span class="n">ends</span><span class="p">)):</span>
+        <span class="n">window_vals</span> <span class="o">=</span> <span class="n">dense</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="p">):</span><span class="nb">int</span><span class="p">(</span><span class="n">e</span><span class="p">)]</span>
+        <span class="n">valid</span> <span class="o">=</span> <span class="n">window_vals</span><span class="p">[</span><span class="o">~</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">window_vals</span><span class="p">)]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">valid</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">result</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="n">valid</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+
+
+<div class="viewcode-block" id="measure_signal">
+<a class="viewcode-back" href="../../../api/signal.html#signalforge.signal.measure_signal">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">measure_signal</span><span class="p">(</span>
+    <span class="n">signal</span><span class="p">:</span> <span class="n">LatticeSignal</span><span class="p">,</span>
+    <span class="n">plan</span><span class="p">:</span> <span class="n">SamplingPlan</span><span class="p">,</span>
+    <span class="n">agg</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="s2">&quot;mean&quot;</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Surface</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Measure a LatticeSignal into a Surface using a SamplingPlan.</span>
+
+<span class="sd">    Bins the signal&#39;s values by floor(index / cbin), then slides</span>
+<span class="sd">    windows across the binned data to produce a 2D (scale x time) grid.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    signal : LatticeSignal</span>
+<span class="sd">        Any signal — RealSignal, ComplexSignal, or Surface row.</span>
+<span class="sd">    plan : SamplingPlan</span>
+<span class="sd">        Defines windows, hops, and cbin.</span>
+<span class="sd">    agg : str or list of str</span>
+<span class="sd">        Aggregation(s) per window. Single string or list.</span>
+<span class="sd">        Prefix-sum (fast): &quot;mean&quot;, &quot;sum&quot;, &quot;count&quot;, &quot;std&quot;, &quot;var&quot;, &quot;geometric_mean&quot;</span>
+<span class="sd">        Per-window (slower): &quot;median&quot;, &quot;p25&quot;, &quot;p75&quot;, &quot;p90&quot;, &quot;p95&quot;, &quot;p99&quot;,</span>
+<span class="sd">            &quot;spectral_energy&quot;, &quot;dominant_freq&quot;, &quot;entropy&quot;, and any registered aggregation.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Surface</span>
+<span class="sd">        With one data array per aggregation name.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Normalize agg to list</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">agg</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="n">agg_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">agg</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">agg_names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">agg</span><span class="p">)</span>
+
+    <span class="n">idx</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">index</span>
+    <span class="n">vals</span> <span class="o">=</span> <span class="n">signal</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">cbin</span> <span class="o">=</span> <span class="n">plan</span><span class="o">.</span><span class="n">cbin</span>
+
+    <span class="n">is_complex</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">vals</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">complexfloating</span><span class="p">)</span>
+    <span class="n">dtype</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">complex128</span> <span class="k">if</span> <span class="n">is_complex</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span>
+
+    <span class="c1"># --- Step 1: Bin (vectorized) ---</span>
+    <span class="n">bin_indices</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">//</span> <span class="n">cbin</span>
+    <span class="n">min_bin</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">bin_indices</span><span class="o">.</span><span class="n">min</span><span class="p">())</span>
+    <span class="n">max_bin</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">bin_indices</span><span class="o">.</span><span class="n">max</span><span class="p">())</span>
+    <span class="n">n_time</span> <span class="o">=</span> <span class="n">max_bin</span> <span class="o">-</span> <span class="n">min_bin</span> <span class="o">+</span> <span class="mi">1</span>
+
+    <span class="n">rel_bins</span> <span class="o">=</span> <span class="p">(</span><span class="n">bin_indices</span> <span class="o">-</span> <span class="n">min_bin</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">intp</span><span class="p">)</span>
+
+    <span class="n">dense_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_time</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+    <span class="n">dense_count</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_time</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">intp</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">dense_sum</span><span class="p">,</span> <span class="n">rel_bins</span><span class="p">,</span> <span class="n">vals</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="o">.</span><span class="n">at</span><span class="p">(</span><span class="n">dense_count</span><span class="p">,</span> <span class="n">rel_bins</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+    <span class="c1"># Dense binned values (mean per bin)</span>
+    <span class="k">with</span> <span class="n">np</span><span class="o">.</span><span class="n">errstate</span><span class="p">(</span><span class="n">divide</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">,</span> <span class="n">invalid</span><span class="o">=</span><span class="s1">&#39;ignore&#39;</span><span class="p">):</span>
+        <span class="n">dense</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">dense_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="n">dense_sum</span> <span class="o">/</span> <span class="n">dense_count</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+
+    <span class="c1"># --- Step 2: Prefix sums ---</span>
+    <span class="n">time_axis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">min_bin</span><span class="p">,</span> <span class="n">max_bin</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)</span>
+    <span class="n">n_scales</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">windows</span><span class="p">)</span>
+
+    <span class="n">valid_mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">dense_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+    <span class="n">dense_clean</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">valid_mask</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">),</span> <span class="n">dense</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">zero</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span> <span class="o">+</span> <span class="mi">0</span><span class="n">j</span><span class="p">])</span> <span class="k">if</span> <span class="n">is_complex</span> <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.0</span><span class="p">])</span>
+    <span class="n">cs_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">zero</span><span class="p">,</span> <span class="n">dense_clean</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()])</span>
+    <span class="n">cs_sq</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">zero</span><span class="p">,</span> <span class="p">(</span><span class="n">dense_clean</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()])</span>
+    <span class="n">cs_cnt</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="mf">0.0</span><span class="p">],</span> <span class="n">valid_mask</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()])</span>
+    <span class="n">cs_ne</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="mi">0</span><span class="p">],</span> <span class="n">dense_count</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()])</span>
+
+    <span class="c1"># Log for geometric mean (only for positive real values)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">is_complex</span><span class="p">:</span>
+        <span class="n">pos_mask</span> <span class="o">=</span> <span class="n">valid_mask</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">bool</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">dense</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">cs_log</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="mf">0.0</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">pos_mask</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">dense</span><span class="p">,</span> <span class="mf">1e-300</span><span class="p">)),</span> <span class="mf">0.0</span><span class="p">)</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">cs_log</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># --- Step 3: Compute aggregations ---</span>
+    <span class="n">data</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">n_events_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_scales</span><span class="p">,</span> <span class="n">n_time</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">intp</span><span class="p">)</span>
+    <span class="n">coverage_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">n_scales</span><span class="p">,</span> <span class="n">n_time</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+    <span class="c1"># Determine which aggs are prefix-sum and which need per-window</span>
+    <span class="n">cumsum_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">agg_names</span> <span class="k">if</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">_CUMSUM_AGGS</span><span class="p">]</span>
+    <span class="n">window_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">agg_names</span> <span class="k">if</span> <span class="n">a</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">_CUMSUM_AGGS</span><span class="p">]</span>
+
+    <span class="c1"># Initialize arrays</span>
+    <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">agg_names</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_complex</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">_CUMSUM_AGGS</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">n_scales</span><span class="p">,</span> <span class="n">n_time</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span> <span class="o">+</span> <span class="mi">0</span><span class="n">j</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex128</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="n">n_scales</span><span class="p">,</span> <span class="n">n_time</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">scale_idx</span><span class="p">,</span> <span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="n">hop</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">plan</span><span class="o">.</span><span class="n">windows</span><span class="p">,</span> <span class="n">plan</span><span class="o">.</span><span class="n">hops</span><span class="p">)):</span>
+        <span class="n">w</span> <span class="o">=</span> <span class="n">window</span> <span class="o">//</span> <span class="n">cbin</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">hop</span> <span class="o">//</span> <span class="n">cbin</span>
+
+        <span class="n">starts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n_time</span><span class="p">,</span> <span class="n">h</span><span class="p">)</span>
+        <span class="n">ends</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">minimum</span><span class="p">(</span><span class="n">starts</span> <span class="o">+</span> <span class="n">w</span><span class="p">,</span> <span class="n">n_time</span><span class="p">)</span>
+
+        <span class="c1"># Common: count and coverage</span>
+        <span class="n">cnt_w</span> <span class="o">=</span> <span class="n">cs_cnt</span><span class="p">[</span><span class="n">ends</span><span class="p">]</span> <span class="o">-</span> <span class="n">cs_cnt</span><span class="p">[</span><span class="n">starts</span><span class="p">]</span>
+        <span class="n">coverage_arr</span><span class="p">[</span><span class="n">scale_idx</span><span class="p">,</span> <span class="n">starts</span><span class="p">]</span> <span class="o">=</span> <span class="n">cnt_w</span> <span class="o">/</span> <span class="n">w</span>
+        <span class="n">n_events_arr</span><span class="p">[</span><span class="n">scale_idx</span><span class="p">,</span> <span class="n">starts</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">cs_ne</span><span class="p">[</span><span class="n">ends</span><span class="p">]</span> <span class="o">-</span> <span class="n">cs_ne</span><span class="p">[</span><span class="n">starts</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">intp</span><span class="p">)</span>
+
+        <span class="c1"># Prefix-sum differences</span>
+        <span class="n">s_val</span> <span class="o">=</span> <span class="n">cs_val</span><span class="p">[</span><span class="n">ends</span><span class="p">]</span> <span class="o">-</span> <span class="n">cs_val</span><span class="p">[</span><span class="n">starts</span><span class="p">]</span>
+        <span class="n">s_sq</span> <span class="o">=</span> <span class="n">cs_sq</span><span class="p">[</span><span class="n">ends</span><span class="p">]</span> <span class="o">-</span> <span class="n">cs_sq</span><span class="p">[</span><span class="n">starts</span><span class="p">]</span>
+        <span class="n">s_log</span> <span class="o">=</span> <span class="p">(</span><span class="n">cs_log</span><span class="p">[</span><span class="n">ends</span><span class="p">]</span> <span class="o">-</span> <span class="n">cs_log</span><span class="p">[</span><span class="n">starts</span><span class="p">])</span> <span class="k">if</span> <span class="n">cs_log</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="c1"># Compute cumsum-based aggregations</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">cumsum_names</span><span class="p">:</span>
+            <span class="n">fn</span> <span class="o">=</span> <span class="n">_CUMSUM_AGGS</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">scale_idx</span><span class="p">,</span> <span class="n">starts</span><span class="p">]</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="n">s_val</span><span class="p">,</span> <span class="n">s_sq</span><span class="p">,</span> <span class="n">cnt_w</span><span class="p">,</span> <span class="n">s_log</span><span class="p">)</span>
+
+        <span class="c1"># Compute per-window aggregations</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">window_names</span><span class="p">:</span>
+            <span class="n">data</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="n">scale_idx</span><span class="p">,</span> <span class="n">starts</span><span class="p">]</span> <span class="o">=</span> <span class="n">_window_agg</span><span class="p">(</span><span class="n">dense</span><span class="p">,</span> <span class="n">starts</span><span class="p">,</span> <span class="n">ends</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+
+    <span class="n">scale_axis</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">w</span> <span class="o">//</span> <span class="n">cbin</span> <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="n">plan</span><span class="o">.</span><span class="n">windows</span><span class="p">)</span>
+    <span class="n">profile</span> <span class="o">=</span> <span class="s2">&quot;,&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">agg_names</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">agg_names</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">agg_names</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">Surface</span><span class="p">(</span>
+        <span class="n">time_axis</span><span class="o">=</span><span class="n">time_axis</span><span class="p">,</span>
+        <span class="n">scale_axis</span><span class="o">=</span><span class="n">scale_axis</span><span class="p">,</span>
+        <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span>
+        <span class="n">channel</span><span class="o">=</span><span class="n">signal</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span>
+        <span class="n">plan</span><span class="o">=</span><span class="n">plan</span><span class="p">,</span>
+        <span class="n">keys</span><span class="o">=</span><span class="n">signal</span><span class="o">.</span><span class="n">keys</span><span class="p">,</span>
+        <span class="n">metric</span><span class="o">=</span><span class="n">agg_names</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">profile</span><span class="o">=</span><span class="n">profile</span><span class="p">,</span>
+        <span class="n">coordinates</span><span class="o">=</span><span class="n">plan</span><span class="o">.</span><span class="n">coordinates</span><span class="p">,</span>
+        <span class="n">n_events</span><span class="o">=</span><span class="n">n_events_arr</span><span class="p">,</span>
+        <span class="n">coverage</span><span class="o">=</span><span class="n">coverage_arr</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Adelic AI.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

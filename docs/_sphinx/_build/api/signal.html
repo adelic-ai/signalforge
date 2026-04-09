@@ -1,0 +1,1652 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Signal Module &mdash; SignalForge  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Graph Module" href="graph.html" />
+    <link rel="prev" title="SignalForge" href="../index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            SignalForge
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Signal Module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#signalforge.signal.LatticeSignal"><code class="docutils literal notranslate"><span class="pre">LatticeSignal</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.LatticeSignal.index"><code class="docutils literal notranslate"><span class="pre">LatticeSignal.index</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.LatticeSignal.values"><code class="docutils literal notranslate"><span class="pre">LatticeSignal.values</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.LatticeSignal.channel"><code class="docutils literal notranslate"><span class="pre">LatticeSignal.channel</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.LatticeSignal.keys"><code class="docutils literal notranslate"><span class="pre">LatticeSignal.keys</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.LatticeSignal.metadata"><code class="docutils literal notranslate"><span class="pre">LatticeSignal.metadata</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id0"><code class="docutils literal notranslate"><span class="pre">LatticeSignal.index</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id1"><code class="docutils literal notranslate"><span class="pre">LatticeSignal.values</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id2"><code class="docutils literal notranslate"><span class="pre">LatticeSignal.channel</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id3"><code class="docutils literal notranslate"><span class="pre">LatticeSignal.keys</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id4"><code class="docutils literal notranslate"><span class="pre">LatticeSignal.metadata</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.LatticeSignal.dtype"><code class="docutils literal notranslate"><span class="pre">LatticeSignal.dtype</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.LatticeSignal.is_real"><code class="docutils literal notranslate"><span class="pre">LatticeSignal.is_real</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.LatticeSignal.amplitude"><code class="docutils literal notranslate"><span class="pre">LatticeSignal.amplitude()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.LatticeSignal.phase"><code class="docutils literal notranslate"><span class="pre">LatticeSignal.phase()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.LatticeSignal.real"><code class="docutils literal notranslate"><span class="pre">LatticeSignal.real()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.LatticeSignal.imag"><code class="docutils literal notranslate"><span class="pre">LatticeSignal.imag()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#signalforge.signal.ComplexSignal"><code class="docutils literal notranslate"><span class="pre">ComplexSignal</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.ComplexSignal.index"><code class="docutils literal notranslate"><span class="pre">ComplexSignal.index</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.ComplexSignal.values"><code class="docutils literal notranslate"><span class="pre">ComplexSignal.values</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.ComplexSignal.channel"><code class="docutils literal notranslate"><span class="pre">ComplexSignal.channel</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.ComplexSignal.keys"><code class="docutils literal notranslate"><span class="pre">ComplexSignal.keys</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.ComplexSignal.metadata"><code class="docutils literal notranslate"><span class="pre">ComplexSignal.metadata</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#signalforge.signal.RealSignal"><code class="docutils literal notranslate"><span class="pre">RealSignal</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.RealSignal.index"><code class="docutils literal notranslate"><span class="pre">RealSignal.index</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.RealSignal.values"><code class="docutils literal notranslate"><span class="pre">RealSignal.values</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.RealSignal.channel"><code class="docutils literal notranslate"><span class="pre">RealSignal.channel</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.RealSignal.keys"><code class="docutils literal notranslate"><span class="pre">RealSignal.keys</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.RealSignal.metadata"><code class="docutils literal notranslate"><span class="pre">RealSignal.metadata</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#signalforge.signal.Surface"><code class="docutils literal notranslate"><span class="pre">Surface</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Surface.index"><code class="docutils literal notranslate"><span class="pre">Surface.index</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Surface.values"><code class="docutils literal notranslate"><span class="pre">Surface.values</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Surface.channel"><code class="docutils literal notranslate"><span class="pre">Surface.channel</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Surface.keys"><code class="docutils literal notranslate"><span class="pre">Surface.keys</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Surface.metadata"><code class="docutils literal notranslate"><span class="pre">Surface.metadata</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Surface.metric"><code class="docutils literal notranslate"><span class="pre">Surface.metric</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Surface.time_axis"><code class="docutils literal notranslate"><span class="pre">Surface.time_axis</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Surface.scale_axis"><code class="docutils literal notranslate"><span class="pre">Surface.scale_axis</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Surface.data"><code class="docutils literal notranslate"><span class="pre">Surface.data</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Surface.plan"><code class="docutils literal notranslate"><span class="pre">Surface.plan</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Surface.profile"><code class="docutils literal notranslate"><span class="pre">Surface.profile</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Surface.coordinates"><code class="docutils literal notranslate"><span class="pre">Surface.coordinates</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Surface.n_events"><code class="docutils literal notranslate"><span class="pre">Surface.n_events</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Surface.coverage"><code class="docutils literal notranslate"><span class="pre">Surface.coverage</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Surface.shape"><code class="docutils literal notranslate"><span class="pre">Surface.shape</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#signalforge.signal.Artifact"><code class="docutils literal notranslate"><span class="pre">Artifact</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Artifact.type"><code class="docutils literal notranslate"><span class="pre">Artifact.type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Artifact.value"><code class="docutils literal notranslate"><span class="pre">Artifact.value</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Artifact.producing_op"><code class="docutils literal notranslate"><span class="pre">Artifact.producing_op</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Artifact.plan"><code class="docutils literal notranslate"><span class="pre">Artifact.plan</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Artifact.metadata"><code class="docutils literal notranslate"><span class="pre">Artifact.metadata</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Artifact.parent_ids"><code class="docutils literal notranslate"><span class="pre">Artifact.parent_ids</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Artifact.id"><code class="docutils literal notranslate"><span class="pre">Artifact.id</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#signalforge.signal.ArtifactType"><code class="docutils literal notranslate"><span class="pre">ArtifactType</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.ArtifactType.RECORDS"><code class="docutils literal notranslate"><span class="pre">ArtifactType.RECORDS</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.ArtifactType.SIGNALS"><code class="docutils literal notranslate"><span class="pre">ArtifactType.SIGNALS</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.ArtifactType.BINNED"><code class="docutils literal notranslate"><span class="pre">ArtifactType.BINNED</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.ArtifactType.SURFACES"><code class="docutils literal notranslate"><span class="pre">ArtifactType.SURFACES</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.ArtifactType.TENSORS"><code class="docutils literal notranslate"><span class="pre">ArtifactType.TENSORS</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.ArtifactType.BUNDLE"><code class="docutils literal notranslate"><span class="pre">ArtifactType.BUNDLE</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#signalforge.signal.CanonicalRecord"><code class="docutils literal notranslate"><span class="pre">CanonicalRecord</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.CanonicalRecord.primary_order"><code class="docutils literal notranslate"><span class="pre">CanonicalRecord.primary_order</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.CanonicalRecord.order_type"><code class="docutils literal notranslate"><span class="pre">CanonicalRecord.order_type</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.CanonicalRecord.channel"><code class="docutils literal notranslate"><span class="pre">CanonicalRecord.channel</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.CanonicalRecord.metric"><code class="docutils literal notranslate"><span class="pre">CanonicalRecord.metric</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.CanonicalRecord.value"><code class="docutils literal notranslate"><span class="pre">CanonicalRecord.value</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.CanonicalRecord.keys"><code class="docutils literal notranslate"><span class="pre">CanonicalRecord.keys</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.CanonicalRecord.time_order"><code class="docutils literal notranslate"><span class="pre">CanonicalRecord.time_order</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.CanonicalRecord.seq_order"><code class="docutils literal notranslate"><span class="pre">CanonicalRecord.seq_order</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.CanonicalRecord.order_delta"><code class="docutils literal notranslate"><span class="pre">CanonicalRecord.order_delta</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.CanonicalRecord.orders"><code class="docutils literal notranslate"><span class="pre">CanonicalRecord.orders</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#signalforge.signal.OrderType"><code class="docutils literal notranslate"><span class="pre">OrderType</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.OrderType.TIME"><code class="docutils literal notranslate"><span class="pre">OrderType.TIME</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.OrderType.SEQUENCE"><code class="docutils literal notranslate"><span class="pre">OrderType.SEQUENCE</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.OrderType.BOTH"><code class="docutils literal notranslate"><span class="pre">OrderType.BOTH</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#signalforge.signal.records_to_signals"><code class="docutils literal notranslate"><span class="pre">records_to_signals()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#signalforge.signal.measure_signal"><code class="docutils literal notranslate"><span class="pre">measure_signal()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#latticesignal">LatticeSignal</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.LatticeSignal"><code class="docutils literal notranslate"><span class="pre">LatticeSignal</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#realsignal">RealSignal</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.RealSignal"><code class="docutils literal notranslate"><span class="pre">RealSignal</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#complexsignal">ComplexSignal</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.ComplexSignal"><code class="docutils literal notranslate"><span class="pre">ComplexSignal</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#surface">Surface</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Surface"><code class="docutils literal notranslate"><span class="pre">Surface</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#schema">Schema</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Schema"><code class="docutils literal notranslate"><span class="pre">Schema</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#record">Record</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.Record"><code class="docutils literal notranslate"><span class="pre">Record</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#functions">Functions</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.records_to_signals"><code class="docutils literal notranslate"><span class="pre">records_to_signals()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.measure_signal"><code class="docutils literal notranslate"><span class="pre">measure_signal()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#signalforge.signal.records_from_csv"><code class="docutils literal notranslate"><span class="pre">records_from_csv()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="graph.html">Graph Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="chain.html">Chaining API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">SignalForge</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Signal Module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/signal.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-signalforge.signal">
+<span id="signal-module"></span><h1>Signal Module<a class="headerlink" href="#module-signalforge.signal" title="Link to this heading"></a></h1>
+<p>signalforge.signal</p>
+<p>The type foundation of SignalForge.</p>
+<p>Everything is a LatticeSignal. The pipeline takes signals in and
+produces signals out. Complex-valued natively; real is the special case.</p>
+<blockquote>
+<div><dl class="simple">
+<dt>LatticeSignal       — the ABC. Integer-indexed, complex128 values.</dt><dd><p>ComplexSignal     — the atom. Two components on the lattice.
+RealSignal        — imag=0. The common case.
+Surface           — 2D measurement (scale x time). Also a signal.</p>
+</dd>
+</dl>
+<p>Artifact            — wraps any pipeline product with provenance.
+CanonicalRecord     — normalized ingest unit.</p>
+</div></blockquote>
+<dl class="py class">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">signalforge.signal.</span></span><span class="sig-name descname"><span class="pre">LatticeSignal</span></span><a class="reference internal" href="../_modules/signalforge/signal/_signal.html#LatticeSignal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.LatticeSignal" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<p>Anything indexed by integers on the prime lattice.</p>
+<p>This is the universal contract. If your data is discrete and
+ordered, it is a LatticeSignal and gets prime decomposition,
+scale structure, and surfaces for free.</p>
+<p>Subclasses must implement:</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.index">
+<span class="sig-name descname"><span class="pre">index</span></span><a class="headerlink" href="#signalforge.signal.LatticeSignal.index" title="Link to this definition"></a></dt>
+<dd><p>Integer positions, monotonically non-decreasing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.values">
+<span class="sig-name descname"><span class="pre">values</span></span><a class="headerlink" href="#signalforge.signal.LatticeSignal.values" title="Link to this definition"></a></dt>
+<dd><p>Complex128 array of observations, same length as index.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.channel">
+<span class="sig-name descname"><span class="pre">channel</span></span><a class="headerlink" href="#signalforge.signal.LatticeSignal.channel" title="Link to this definition"></a></dt>
+<dd><p>What this signal represents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.keys">
+<span class="sig-name descname"><span class="pre">keys</span></span><a class="headerlink" href="#signalforge.signal.LatticeSignal.keys" title="Link to this definition"></a></dt>
+<dd><p>Entity dimensions (default: empty).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><a class="headerlink" href="#signalforge.signal.LatticeSignal.metadata" title="Link to this definition"></a></dt>
+<dd><p>Arbitrary metadata (default: empty).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">Derived</span> <span class="pre">properties</span> <span class="pre">(available</span> <span class="pre">on</span> <span class="pre">all</span> <span class="pre">signals)</span></span></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">-</span> <span class="pre">``dtype``</span> <span class="pre">—</span> <span class="pre">numpy</span> <span class="pre">dtype</span> <span class="pre">of</span> <span class="pre">values</span></span></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">-</span> <span class="pre">``is_real``</span> <span class="pre">—</span> <span class="pre">True</span> <span class="pre">if</span> <span class="pre">imaginary</span> <span class="pre">component</span> <span class="pre">is</span> <span class="pre">all</span> <span class="pre">zeros</span></span></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">-</span> <span class="pre">``amplitude()``</span> <span class="pre">—</span> <span class="pre">|values|</span></span></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">-</span> <span class="pre">``phase()``</span> <span class="pre">—</span> <span class="pre">angle(values)</span></span></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">-</span> <span class="pre">``real()``</span> <span class="pre">—</span> <span class="pre">real</span> <span class="pre">component</span></span></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">-</span> <span class="pre">``imag()``</span> <span class="pre">—</span> <span class="pre">imaginary</span> <span class="pre">component</span></span></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id0">
+<span class="property"><span class="k"><span class="pre">abstract</span></span><span class="w"> </span><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">index</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#id0" title="Link to this definition"></a></dt>
+<dd><p>Integer index array. Monotonically non-decreasing.</p>
+<p>These are the positions on the lattice — primary_order values,
+bin indices, time steps, event counts. The prime decomposition
+of these integers defines the scale structure.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id1">
+<span class="property"><span class="k"><span class="pre">abstract</span></span><span class="w"> </span><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">values</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#id1" title="Link to this definition"></a></dt>
+<dd><p>Complex128 array of observations, same length as index.</p>
+<p>Real-valued signals: imag component is zero.
+Complex signals: both components carry meaning defined by
+the subclass (time vs event order, amplitude vs phase, etc.).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id2">
+<span class="property"><span class="k"><span class="pre">abstract</span></span><span class="w"> </span><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">channel</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#id2" title="Link to this definition"></a></dt>
+<dd><p>What this signal represents.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id3">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">keys</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#id3" title="Link to this definition"></a></dt>
+<dd><p>Entity dimensions this signal is sliced on.</p>
+<p>Default: empty (unkeyed / aggregate signal).
+Override to carry entity context (user, host, NIC, etc.).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id4">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">metadata</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#id4" title="Link to this definition"></a></dt>
+<dd><p>Arbitrary metadata. Subclasses may override.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.dtype">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">dtype</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.dtype.html#numpy.dtype" title="(in NumPy v2.4)"><span class="pre">dtype</span></a></span><a class="headerlink" href="#signalforge.signal.LatticeSignal.dtype" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.is_real">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">is_real</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><a class="headerlink" href="#signalforge.signal.LatticeSignal.is_real" title="Link to this definition"></a></dt>
+<dd><p>True if imaginary component is all zeros.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.amplitude">
+<span class="sig-name descname"><span class="pre">amplitude</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_signal.html#LatticeSignal.amplitude"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.LatticeSignal.amplitude" title="Link to this definition"></a></dt>
+<dd><p>abs(values). For real signals, this is abs(real part).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.phase">
+<span class="sig-name descname"><span class="pre">phase</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_signal.html#LatticeSignal.phase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.LatticeSignal.phase" title="Link to this definition"></a></dt>
+<dd><p>angle(values). For real signals, this is 0 or pi.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.real">
+<span class="sig-name descname"><span class="pre">real</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_signal.html#LatticeSignal.real"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.LatticeSignal.real" title="Link to this definition"></a></dt>
+<dd><p>Real component.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.imag">
+<span class="sig-name descname"><span class="pre">imag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_signal.html#LatticeSignal.imag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.LatticeSignal.imag" title="Link to this definition"></a></dt>
+<dd><p>Imaginary component.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="signalforge.signal.ComplexSignal">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">signalforge.signal.</span></span><span class="sig-name descname"><span class="pre">ComplexSignal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">real_part</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imag_part</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_complex.html#ComplexSignal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.ComplexSignal" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#signalforge.signal.LatticeSignal" title="signalforge.signal._signal.LatticeSignal"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatticeSignal</span></code></a></p>
+<p>Two components on the lattice, combined as complex128.</p>
+<p>The atom of SignalForge. Everything more complex (Clifford, tensor)
+is built from these. Everything simpler (real) is a special case.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>index</strong> (<em>array-like</em><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Integer positions on the lattice.</p></li>
+<li><p><strong>real_part</strong> (<em>array-like</em><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – First component.</p></li>
+<li><p><strong>imag_part</strong> (<em>array-like</em><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Second component.</p></li>
+<li><p><strong>channel</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – What this signal represents.</p></li>
+<li><p><strong>keys</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Entity dimensions.</p></li>
+<li><p><strong>metadata</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Arbitrary metadata (component labels, source info, etc.).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.ComplexSignal.index">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">index</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#signalforge.signal.ComplexSignal.index" title="Link to this definition"></a></dt>
+<dd><p>Integer index array. Monotonically non-decreasing.</p>
+<p>These are the positions on the lattice — primary_order values,
+bin indices, time steps, event counts. The prime decomposition
+of these integers defines the scale structure.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.ComplexSignal.values">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">values</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#signalforge.signal.ComplexSignal.values" title="Link to this definition"></a></dt>
+<dd><p>Complex128 array of observations, same length as index.</p>
+<p>Real-valued signals: imag component is zero.
+Complex signals: both components carry meaning defined by
+the subclass (time vs event order, amplitude vs phase, etc.).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.ComplexSignal.channel">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">channel</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#signalforge.signal.ComplexSignal.channel" title="Link to this definition"></a></dt>
+<dd><p>What this signal represents.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.ComplexSignal.keys">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">keys</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.ComplexSignal.keys" title="Link to this definition"></a></dt>
+<dd><p>Entity dimensions this signal is sliced on.</p>
+<p>Default: empty (unkeyed / aggregate signal).
+Override to carry entity context (user, host, NIC, etc.).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.ComplexSignal.metadata">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">metadata</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.ComplexSignal.metadata" title="Link to this definition"></a></dt>
+<dd><p>Arbitrary metadata. Subclasses may override.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="signalforge.signal.RealSignal">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">signalforge.signal.</span></span><span class="sig-name descname"><span class="pre">RealSignal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_complex.html#RealSignal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.RealSignal" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#signalforge.signal.LatticeSignal" title="signalforge.signal._signal.LatticeSignal"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatticeSignal</span></code></a></p>
+<p>One real-valued component on the lattice. imag=0.</p>
+<p>The most common case: a timeseries, a count stream, a measurement.
+Stored as float64, promoted to complex128 only when needed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>index</strong> (<em>array-like</em><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Integer positions on the lattice.</p></li>
+<li><p><strong>values</strong> (<em>array-like</em><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Observations.</p></li>
+<li><p><strong>channel</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – What this signal represents.</p></li>
+<li><p><strong>keys</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Entity dimensions.</p></li>
+<li><p><strong>metadata</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Arbitrary metadata.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.RealSignal.index">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">index</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#signalforge.signal.RealSignal.index" title="Link to this definition"></a></dt>
+<dd><p>Integer index array. Monotonically non-decreasing.</p>
+<p>These are the positions on the lattice — primary_order values,
+bin indices, time steps, event counts. The prime decomposition
+of these integers defines the scale structure.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.RealSignal.values">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">values</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#signalforge.signal.RealSignal.values" title="Link to this definition"></a></dt>
+<dd><p>Complex128 array of observations, same length as index.</p>
+<p>Real-valued signals: imag component is zero.
+Complex signals: both components carry meaning defined by
+the subclass (time vs event order, amplitude vs phase, etc.).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.RealSignal.channel">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">channel</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#signalforge.signal.RealSignal.channel" title="Link to this definition"></a></dt>
+<dd><p>What this signal represents.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.RealSignal.keys">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">keys</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.RealSignal.keys" title="Link to this definition"></a></dt>
+<dd><p>Entity dimensions this signal is sliced on.</p>
+<p>Default: empty (unkeyed / aggregate signal).
+Override to carry entity context (user, host, NIC, etc.).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.RealSignal.metadata">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">metadata</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.RealSignal.metadata" title="Link to this definition"></a></dt>
+<dd><p>Arbitrary metadata. Subclasses may override.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="signalforge.signal.Surface">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">signalforge.signal.</span></span><span class="sig-name descname"><span class="pre">Surface</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_axis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale_axis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plan</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coordinates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_events</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coverage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_surface.html#Surface"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.Surface" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#signalforge.signal.LatticeSignal" title="signalforge.signal._signal.LatticeSignal"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatticeSignal</span></code></a></p>
+<p>2D measurement grid: scale x time.</p>
+<p>Each row is a scale (window size). Each column is a time position.
+Values are aggregated observations at that scale and position.</p>
+<p>A Surface satisfies the LatticeSignal contract — its index is the
+time_axis and its values are the 2D grid. This makes surfaces
+composable: you can measure a surface, baseline a surface, take
+residuals of surfaces, feed surfaces into further analysis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>time_axis</strong> (<em>array-like</em><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Bin positions along the time dimension.</p></li>
+<li><p><strong>scale_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Window sizes, one per row. From the SamplingPlan.</p></li>
+<li><p><strong>data</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em> of </em><em>str -&gt; np.ndarray</em>) – Named value arrays, each (n_scales, n_time). complex128 or float64.
+E.g. {“mean”: …, “std”: …} for a continuous profile.</p></li>
+<li><p><strong>channel</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – What signal this surface was measured from.</p></li>
+<li><p><strong>plan</strong> (<em>SamplingPlan</em>) – The geometry used to construct this surface.</p></li>
+<li><p><strong>keys</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Entity dimensions inherited from the source signal.</p></li>
+<li><p><strong>metric</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Name of the measured quantity.</p></li>
+<li><p><strong>profile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Name of the aggregation profile used.</p></li>
+<li><p><strong>coordinates</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Prime exponent vector per scale row.</p></li>
+<li><p><strong>n_events</strong> (<em>np.ndarray</em><em>, </em><em>optional</em>) – (n_scales, n_time) int array of raw event counts per cell.</p></li>
+<li><p><strong>coverage</strong> (<em>np.ndarray</em><em>, </em><em>optional</em>) – (n_scales, n_time) float array, fraction of bins occupied.</p></li>
+<li><p><strong>metadata</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Arbitrary metadata.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.index">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">index</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#signalforge.signal.Surface.index" title="Link to this definition"></a></dt>
+<dd><p>Time axis — bin positions.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.values">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">values</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#signalforge.signal.Surface.values" title="Link to this definition"></a></dt>
+<dd><p>Primary value array (first in data dict).</p>
+<p>For the full multi-aggregation view, use surface.data directly.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.channel">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">channel</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#signalforge.signal.Surface.channel" title="Link to this definition"></a></dt>
+<dd><p>What this signal represents.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.keys">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">keys</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.Surface.keys" title="Link to this definition"></a></dt>
+<dd><p>Entity dimensions this signal is sliced on.</p>
+<p>Default: empty (unkeyed / aggregate signal).
+Override to carry entity context (user, host, NIC, etc.).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.metadata">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">metadata</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.Surface.metadata" title="Link to this definition"></a></dt>
+<dd><p>Arbitrary metadata. Subclasses may override.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.metric">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">metric</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#signalforge.signal.Surface.metric" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.time_axis">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">time_axis</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#signalforge.signal.Surface.time_axis" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.scale_axis">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">scale_axis</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.Surface.scale_axis" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.data">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">data</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.Surface.data" title="Link to this definition"></a></dt>
+<dd><p>…}.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>All named value arrays. E.g. {“mean”</p>
+</dd>
+<dt class="field-even">Type<span class="colon">:</span></dt>
+<dd class="field-even"><p>…, “std”</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.plan">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">plan</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">SamplingPlan</span></span><a class="headerlink" href="#signalforge.signal.Surface.plan" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.profile">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">profile</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#signalforge.signal.Surface.profile" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.coordinates">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">coordinates</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.Surface.coordinates" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.n_events">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">n_events</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#signalforge.signal.Surface.n_events" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.coverage">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">coverage</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#signalforge.signal.Surface.coverage" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.shape">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">shape</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.Surface.shape" title="Link to this definition"></a></dt>
+<dd><p>(n_scales, n_time)</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="signalforge.signal.Artifact">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">signalforge.signal.</span></span><span class="sig-name descname"><span class="pre">Artifact</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">producing_op</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">parent_ids</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_base.html#Artifact"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.Artifact" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Wraps a pipeline product with metadata about how it was produced.</p>
+<p>This is the currency of the graph — every node consumes and produces
+Artifacts. The type tag enables validation; the metadata enables
+inspection and lineage tracking.</p>
+<p>The <cite>id</cite> field is a deterministic hash of (type, plan, op, parents).
+Two artifacts with the same inputs, plan, and transform chain have
+the same ID. Use for caching, reproducibility, and ML lineage.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>type</strong> (<a class="reference internal" href="#signalforge.signal.ArtifactType" title="signalforge.signal._base.ArtifactType"><em>ArtifactType</em></a>)</p></li>
+<li><p><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a>)</p></li>
+<li><p><strong>producing_op</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>plan</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>metadata</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><em>Dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a><em>]</em>)</p></li>
+<li><p><strong>parent_ids</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a>)</p></li>
+<li><p><strong>id</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.Artifact.type">
+<span class="sig-name descname"><span class="pre">type</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#signalforge.signal.ArtifactType" title="signalforge.signal._base.ArtifactType"><span class="pre">ArtifactType</span></a></span><a class="headerlink" href="#signalforge.signal.Artifact.type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.Artifact.value">
+<span class="sig-name descname"><span class="pre">value</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a></span><a class="headerlink" href="#signalforge.signal.Artifact.value" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.Artifact.producing_op">
+<span class="sig-name descname"><span class="pre">producing_op</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#signalforge.signal.Artifact.producing_op" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.Artifact.plan">
+<span class="sig-name descname"><span class="pre">plan</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></span><a class="headerlink" href="#signalforge.signal.Artifact.plan" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.Artifact.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.Artifact.metadata" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.Artifact.parent_ids">
+<span class="sig-name descname"><span class="pre">parent_ids</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><span class="pre">tuple</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">()</span></span><a class="headerlink" href="#signalforge.signal.Artifact.parent_ids" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.Artifact.id">
+<span class="sig-name descname"><span class="pre">id</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">''</span></span><a class="headerlink" href="#signalforge.signal.Artifact.id" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="signalforge.signal.ArtifactType">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">signalforge.signal.</span></span><span class="sig-name descname"><span class="pre">ArtifactType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_base.html#ArtifactType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.ArtifactType" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/enum.html#enum.Enum" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></a></p>
+<p>Tags what a graph node produces.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.ArtifactType.RECORDS">
+<span class="sig-name descname"><span class="pre">RECORDS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'records'</span></span><a class="headerlink" href="#signalforge.signal.ArtifactType.RECORDS" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.ArtifactType.SIGNALS">
+<span class="sig-name descname"><span class="pre">SIGNALS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'signals'</span></span><a class="headerlink" href="#signalforge.signal.ArtifactType.SIGNALS" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.ArtifactType.BINNED">
+<span class="sig-name descname"><span class="pre">BINNED</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'binned'</span></span><a class="headerlink" href="#signalforge.signal.ArtifactType.BINNED" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.ArtifactType.SURFACES">
+<span class="sig-name descname"><span class="pre">SURFACES</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'surfaces'</span></span><a class="headerlink" href="#signalforge.signal.ArtifactType.SURFACES" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.ArtifactType.TENSORS">
+<span class="sig-name descname"><span class="pre">TENSORS</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'tensors'</span></span><a class="headerlink" href="#signalforge.signal.ArtifactType.TENSORS" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.ArtifactType.BUNDLE">
+<span class="sig-name descname"><span class="pre">BUNDLE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'bundle'</span></span><a class="headerlink" href="#signalforge.signal.ArtifactType.BUNDLE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="signalforge.signal.CanonicalRecord">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">signalforge.signal.</span></span><span class="sig-name descname"><span class="pre">CanonicalRecord</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">primary_order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">time_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seq_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order_delta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orders</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_base.html#CanonicalRecord"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.CanonicalRecord" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>One normalized observation from a raw source event.</p>
+<p>A single raw event with k metrics produces k CanonicalRecords, one per
+(metric, value) pair. All records from the same event share ordering,
+channel, and keys.</p>
+<dl class="simple">
+<dt>Invariants:</dt><dd><ul class="simple">
+<li><p>primary_order &gt;= 0</p></li>
+<li><p>value is float</p></li>
+<li><p>time_order present when order_type is TIME or BOTH</p></li>
+<li><p>seq_order present when order_type is SEQUENCE or BOTH</p></li>
+<li><p>order_delta present when order_type is BOTH</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>primary_order</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>)</p></li>
+<li><p><strong>order_type</strong> (<a class="reference internal" href="#signalforge.signal.OrderType" title="signalforge.signal._base.OrderType"><em>OrderType</em></a>)</p></li>
+<li><p><strong>channel</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+<li><p><strong>metric</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+<li><p><strong>value</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>)</p></li>
+<li><p><strong>keys</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><em>Dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><em>List</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em><em>]</em>)</p></li>
+<li><p><strong>time_order</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>seq_order</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>order_delta</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em> | </em><em>None</em>)</p></li>
+<li><p><strong>orders</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><em>Dict</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a><em>]</em>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.CanonicalRecord.primary_order">
+<span class="sig-name descname"><span class="pre">primary_order</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#signalforge.signal.CanonicalRecord.primary_order" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.CanonicalRecord.order_type">
+<span class="sig-name descname"><span class="pre">order_type</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#signalforge.signal.OrderType" title="signalforge.signal._base.OrderType"><span class="pre">OrderType</span></a></span><a class="headerlink" href="#signalforge.signal.CanonicalRecord.order_type" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.CanonicalRecord.channel">
+<span class="sig-name descname"><span class="pre">channel</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#signalforge.signal.CanonicalRecord.channel" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.CanonicalRecord.metric">
+<span class="sig-name descname"><span class="pre">metric</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#signalforge.signal.CanonicalRecord.metric" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.CanonicalRecord.value">
+<span class="sig-name descname"><span class="pre">value</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#signalforge.signal.CanonicalRecord.value" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.CanonicalRecord.keys">
+<span class="sig-name descname"><span class="pre">keys</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><span class="pre">List</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.CanonicalRecord.keys" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.CanonicalRecord.time_order">
+<span class="sig-name descname"><span class="pre">time_order</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#signalforge.signal.CanonicalRecord.time_order" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.CanonicalRecord.seq_order">
+<span class="sig-name descname"><span class="pre">seq_order</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#signalforge.signal.CanonicalRecord.seq_order" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.CanonicalRecord.order_delta">
+<span class="sig-name descname"><span class="pre">order_delta</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.14)"><span class="pre">None</span></a></span><a class="headerlink" href="#signalforge.signal.CanonicalRecord.order_delta" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.CanonicalRecord.orders">
+<span class="sig-name descname"><span class="pre">orders</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.CanonicalRecord.orders" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="signalforge.signal.OrderType">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">signalforge.signal.</span></span><span class="sig-name descname"><span class="pre">OrderType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_base.html#OrderType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.OrderType" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/enum.html#enum.Enum" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Enum</span></code></a></p>
+<p>Declares which ordering dimensions a CanonicalRecord carries.</p>
+<p>TIME      — primary_order is a time epoch integer
+SEQUENCE  — primary_order is a machine sequence number
+BOTH      — both dimensions present; order_delta is meaningful</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.OrderType.TIME">
+<span class="sig-name descname"><span class="pre">TIME</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'TIME'</span></span><a class="headerlink" href="#signalforge.signal.OrderType.TIME" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.OrderType.SEQUENCE">
+<span class="sig-name descname"><span class="pre">SEQUENCE</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'SEQUENCE'</span></span><a class="headerlink" href="#signalforge.signal.OrderType.SEQUENCE" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.OrderType.BOTH">
+<span class="sig-name descname"><span class="pre">BOTH</span></span><span class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">'BOTH'</span></span><a class="headerlink" href="#signalforge.signal.OrderType.BOTH" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="signalforge.signal.records_to_signals">
+<span class="sig-prename descclassname"><span class="pre">signalforge.signal.</span></span><span class="sig-name descname"><span class="pre">records_to_signals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">records</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mean'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_convert.html#records_to_signals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.records_to_signals" title="Link to this definition"></a></dt>
+<dd><p>Convert records into RealSignals, one per (channel, keys) group.</p>
+<p>Accepts both CanonicalRecord (legacy) and Record (typed axes).
+Records with the same primary_order within a group are aggregated
+using the specified function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>records</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em> of </em><a class="reference internal" href="#signalforge.signal.CanonicalRecord" title="signalforge.signal.CanonicalRecord"><em>CanonicalRecord</em></a><em> or </em><a class="reference internal" href="#signalforge.signal.Record" title="signalforge.signal.Record"><em>Record</em></a>) – Input records. Need not be sorted.</p></li>
+<li><p><strong>agg</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Aggregation for multiple values at the same index.
+“mean”, “sum”, “max”, “min”, “count”, “last”.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>One signal per distinct (channel, keys) combination.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a> of <a class="reference internal" href="#signalforge.signal.RealSignal" title="signalforge.signal.RealSignal">RealSignal</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="signalforge.signal.measure_signal">
+<span class="sig-prename descclassname"><span class="pre">signalforge.signal.</span></span><span class="sig-name descname"><span class="pre">measure_signal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plan</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mean'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_measure.html#measure_signal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.measure_signal" title="Link to this definition"></a></dt>
+<dd><p>Measure a LatticeSignal into a Surface using a SamplingPlan.</p>
+<p>Bins the signal’s values by floor(index / cbin), then slides
+windows across the binned data to produce a 2D (scale x time) grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>signal</strong> (<a class="reference internal" href="#signalforge.signal.LatticeSignal" title="signalforge.signal.LatticeSignal"><em>LatticeSignal</em></a>) – Any signal — RealSignal, ComplexSignal, or Surface row.</p></li>
+<li><p><strong>plan</strong> (<em>SamplingPlan</em>) – Defines windows, hops, and cbin.</p></li>
+<li><p><strong>agg</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – <p>Aggregation(s) per window. Single string or list.
+Prefix-sum (fast): “mean”, “sum”, “count”, “std”, “var”, “geometric_mean”
+Per-window (slower): “median”, “p25”, “p75”, “p90”, “p95”, “p99”,</p>
+<blockquote>
+<div><p>”spectral_energy”, “dominant_freq”, “entropy”, and any registered aggregation.</p>
+</div></blockquote>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>With one data array per aggregation name.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#signalforge.signal.Surface" title="signalforge.signal.Surface">Surface</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<section id="latticesignal">
+<h2>LatticeSignal<a class="headerlink" href="#latticesignal" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">signalforge.signal.</span></span><span class="sig-name descname"><span class="pre">LatticeSignal</span></span><a class="reference internal" href="../_modules/signalforge/signal/_signal.html#LatticeSignal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.LatticeSignal" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/abc.html#abc.ABC" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">ABC</span></code></a></p>
+<p>Anything indexed by integers on the prime lattice.</p>
+<p>This is the universal contract. If your data is discrete and
+ordered, it is a LatticeSignal and gets prime decomposition,
+scale structure, and surfaces for free.</p>
+<p>Subclasses must implement:</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.index">
+<span class="sig-name descname"><span class="pre">index</span></span><a class="headerlink" href="#signalforge.signal.LatticeSignal.index" title="Link to this definition"></a></dt>
+<dd><p>Integer positions, monotonically non-decreasing.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.values">
+<span class="sig-name descname"><span class="pre">values</span></span><a class="headerlink" href="#signalforge.signal.LatticeSignal.values" title="Link to this definition"></a></dt>
+<dd><p>Complex128 array of observations, same length as index.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.channel">
+<span class="sig-name descname"><span class="pre">channel</span></span><a class="headerlink" href="#signalforge.signal.LatticeSignal.channel" title="Link to this definition"></a></dt>
+<dd><p>What this signal represents.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.keys">
+<span class="sig-name descname"><span class="pre">keys</span></span><a class="headerlink" href="#signalforge.signal.LatticeSignal.keys" title="Link to this definition"></a></dt>
+<dd><p>Entity dimensions (default: empty).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><a class="headerlink" href="#signalforge.signal.LatticeSignal.metadata" title="Link to this definition"></a></dt>
+<dd><p>Arbitrary metadata (default: empty).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)">dict</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">Derived</span> <span class="pre">properties</span> <span class="pre">(available</span> <span class="pre">on</span> <span class="pre">all</span> <span class="pre">signals)</span></span></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">-</span> <span class="pre">``dtype``</span> <span class="pre">—</span> <span class="pre">numpy</span> <span class="pre">dtype</span> <span class="pre">of</span> <span class="pre">values</span></span></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">-</span> <span class="pre">``is_real``</span> <span class="pre">—</span> <span class="pre">True</span> <span class="pre">if</span> <span class="pre">imaginary</span> <span class="pre">component</span> <span class="pre">is</span> <span class="pre">all</span> <span class="pre">zeros</span></span></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">-</span> <span class="pre">``amplitude()``</span> <span class="pre">—</span> <span class="pre">|values|</span></span></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">-</span> <span class="pre">``phase()``</span> <span class="pre">—</span> <span class="pre">angle(values)</span></span></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">-</span> <span class="pre">``real()``</span> <span class="pre">—</span> <span class="pre">real</span> <span class="pre">component</span></span></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py">
+<span class="sig-name descname"><span class="pre">-</span> <span class="pre">``imag()``</span> <span class="pre">—</span> <span class="pre">imaginary</span> <span class="pre">component</span></span></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id5">
+<span class="property"><span class="k"><span class="pre">abstract</span></span><span class="w"> </span><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">index</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#id5" title="Link to this definition"></a></dt>
+<dd><p>Integer index array. Monotonically non-decreasing.</p>
+<p>These are the positions on the lattice — primary_order values,
+bin indices, time steps, event counts. The prime decomposition
+of these integers defines the scale structure.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id6">
+<span class="property"><span class="k"><span class="pre">abstract</span></span><span class="w"> </span><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">values</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#id6" title="Link to this definition"></a></dt>
+<dd><p>Complex128 array of observations, same length as index.</p>
+<p>Real-valued signals: imag component is zero.
+Complex signals: both components carry meaning defined by
+the subclass (time vs event order, amplitude vs phase, etc.).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id7">
+<span class="property"><span class="k"><span class="pre">abstract</span></span><span class="w"> </span><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">channel</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#id7" title="Link to this definition"></a></dt>
+<dd><p>What this signal represents.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id8">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">keys</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#id8" title="Link to this definition"></a></dt>
+<dd><p>Entity dimensions this signal is sliced on.</p>
+<p>Default: empty (unkeyed / aggregate signal).
+Override to carry entity context (user, host, NIC, etc.).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="id9">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">metadata</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#id9" title="Link to this definition"></a></dt>
+<dd><p>Arbitrary metadata. Subclasses may override.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.is_real">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">is_real</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.14)"><span class="pre">bool</span></a></span><a class="headerlink" href="#signalforge.signal.LatticeSignal.is_real" title="Link to this definition"></a></dt>
+<dd><p>True if imaginary component is all zeros.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.amplitude">
+<span class="sig-name descname"><span class="pre">amplitude</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_signal.html#LatticeSignal.amplitude"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.LatticeSignal.amplitude" title="Link to this definition"></a></dt>
+<dd><p>abs(values). For real signals, this is abs(real part).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.phase">
+<span class="sig-name descname"><span class="pre">phase</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_signal.html#LatticeSignal.phase"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.LatticeSignal.phase" title="Link to this definition"></a></dt>
+<dd><p>angle(values). For real signals, this is 0 or pi.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.real">
+<span class="sig-name descname"><span class="pre">real</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_signal.html#LatticeSignal.real"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.LatticeSignal.real" title="Link to this definition"></a></dt>
+<dd><p>Real component.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="signalforge.signal.LatticeSignal.imag">
+<span class="sig-name descname"><span class="pre">imag</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_signal.html#LatticeSignal.imag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.LatticeSignal.imag" title="Link to this definition"></a></dt>
+<dd><p>Imaginary component.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><em>ndarray</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="realsignal">
+<h2>RealSignal<a class="headerlink" href="#realsignal" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="signalforge.signal.RealSignal">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">signalforge.signal.</span></span><span class="sig-name descname"><span class="pre">RealSignal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_complex.html#RealSignal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.RealSignal" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#signalforge.signal.LatticeSignal" title="signalforge.signal._signal.LatticeSignal"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatticeSignal</span></code></a></p>
+<p>One real-valued component on the lattice. imag=0.</p>
+<p>The most common case: a timeseries, a count stream, a measurement.
+Stored as float64, promoted to complex128 only when needed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>index</strong> (<em>array-like</em><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Integer positions on the lattice.</p></li>
+<li><p><strong>values</strong> (<em>array-like</em><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Observations.</p></li>
+<li><p><strong>channel</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – What this signal represents.</p></li>
+<li><p><strong>keys</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Entity dimensions.</p></li>
+<li><p><strong>metadata</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Arbitrary metadata.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.RealSignal.index">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">index</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#signalforge.signal.RealSignal.index" title="Link to this definition"></a></dt>
+<dd><p>Integer index array. Monotonically non-decreasing.</p>
+<p>These are the positions on the lattice — primary_order values,
+bin indices, time steps, event counts. The prime decomposition
+of these integers defines the scale structure.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.RealSignal.values">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">values</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#signalforge.signal.RealSignal.values" title="Link to this definition"></a></dt>
+<dd><p>Complex128 array of observations, same length as index.</p>
+<p>Real-valued signals: imag component is zero.
+Complex signals: both components carry meaning defined by
+the subclass (time vs event order, amplitude vs phase, etc.).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.RealSignal.channel">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">channel</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#signalforge.signal.RealSignal.channel" title="Link to this definition"></a></dt>
+<dd><p>What this signal represents.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.RealSignal.keys">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">keys</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.RealSignal.keys" title="Link to this definition"></a></dt>
+<dd><p>Entity dimensions this signal is sliced on.</p>
+<p>Default: empty (unkeyed / aggregate signal).
+Override to carry entity context (user, host, NIC, etc.).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.RealSignal.metadata">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">metadata</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.RealSignal.metadata" title="Link to this definition"></a></dt>
+<dd><p>Arbitrary metadata. Subclasses may override.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="complexsignal">
+<h2>ComplexSignal<a class="headerlink" href="#complexsignal" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="signalforge.signal.ComplexSignal">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">signalforge.signal.</span></span><span class="sig-name descname"><span class="pre">ComplexSignal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">real_part</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">imag_part</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_complex.html#ComplexSignal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.ComplexSignal" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#signalforge.signal.LatticeSignal" title="signalforge.signal._signal.LatticeSignal"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatticeSignal</span></code></a></p>
+<p>Two components on the lattice, combined as complex128.</p>
+<p>The atom of SignalForge. Everything more complex (Clifford, tensor)
+is built from these. Everything simpler (real) is a special case.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>index</strong> (<em>array-like</em><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Integer positions on the lattice.</p></li>
+<li><p><strong>real_part</strong> (<em>array-like</em><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – First component.</p></li>
+<li><p><strong>imag_part</strong> (<em>array-like</em><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><em>float</em></a>) – Second component.</p></li>
+<li><p><strong>channel</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – What this signal represents.</p></li>
+<li><p><strong>keys</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Entity dimensions.</p></li>
+<li><p><strong>metadata</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Arbitrary metadata (component labels, source info, etc.).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.ComplexSignal.index">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">index</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#signalforge.signal.ComplexSignal.index" title="Link to this definition"></a></dt>
+<dd><p>Integer index array. Monotonically non-decreasing.</p>
+<p>These are the positions on the lattice — primary_order values,
+bin indices, time steps, event counts. The prime decomposition
+of these integers defines the scale structure.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.ComplexSignal.values">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">values</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#signalforge.signal.ComplexSignal.values" title="Link to this definition"></a></dt>
+<dd><p>Complex128 array of observations, same length as index.</p>
+<p>Real-valued signals: imag component is zero.
+Complex signals: both components carry meaning defined by
+the subclass (time vs event order, amplitude vs phase, etc.).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.ComplexSignal.channel">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">channel</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#signalforge.signal.ComplexSignal.channel" title="Link to this definition"></a></dt>
+<dd><p>What this signal represents.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.ComplexSignal.keys">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">keys</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.ComplexSignal.keys" title="Link to this definition"></a></dt>
+<dd><p>Entity dimensions this signal is sliced on.</p>
+<p>Default: empty (unkeyed / aggregate signal).
+Override to carry entity context (user, host, NIC, etc.).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.ComplexSignal.metadata">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">metadata</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.ComplexSignal.metadata" title="Link to this definition"></a></dt>
+<dd><p>Arbitrary metadata. Subclasses may override.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="surface">
+<h2>Surface<a class="headerlink" href="#surface" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="signalforge.signal.Surface">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">signalforge.signal.</span></span><span class="sig-name descname"><span class="pre">Surface</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">time_axis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale_axis</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plan</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keys</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">profile</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coordinates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_events</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coverage</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metadata</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_surface.html#Surface"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.Surface" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#signalforge.signal.LatticeSignal" title="signalforge.signal._signal.LatticeSignal"><code class="xref py py-class docutils literal notranslate"><span class="pre">LatticeSignal</span></code></a></p>
+<p>2D measurement grid: scale x time.</p>
+<p>Each row is a scale (window size). Each column is a time position.
+Values are aggregated observations at that scale and position.</p>
+<p>A Surface satisfies the LatticeSignal contract — its index is the
+time_axis and its values are the 2D grid. This makes surfaces
+composable: you can measure a surface, baseline a surface, take
+residuals of surfaces, feed surfaces into further analysis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>time_axis</strong> (<em>array-like</em><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Bin positions along the time dimension.</p></li>
+<li><p><strong>scale_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><em>int</em></a>) – Window sizes, one per row. From the SamplingPlan.</p></li>
+<li><p><strong>data</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em> of </em><em>str -&gt; np.ndarray</em>) – Named value arrays, each (n_scales, n_time). complex128 or float64.
+E.g. {“mean”: …, “std”: …} for a continuous profile.</p></li>
+<li><p><strong>channel</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – What signal this surface was measured from.</p></li>
+<li><p><strong>plan</strong> (<em>SamplingPlan</em>) – The geometry used to construct this surface.</p></li>
+<li><p><strong>keys</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Entity dimensions inherited from the source signal.</p></li>
+<li><p><strong>metric</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Name of the measured quantity.</p></li>
+<li><p><strong>profile</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>, </em><em>optional</em>) – Name of the aggregation profile used.</p></li>
+<li><p><strong>coordinates</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.14)"><em>tuple</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Prime exponent vector per scale row.</p></li>
+<li><p><strong>n_events</strong> (<em>np.ndarray</em><em>, </em><em>optional</em>) – (n_scales, n_time) int array of raw event counts per cell.</p></li>
+<li><p><strong>coverage</strong> (<em>np.ndarray</em><em>, </em><em>optional</em>) – (n_scales, n_time) float array, fraction of bins occupied.</p></li>
+<li><p><strong>metadata</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a><em>, </em><em>optional</em>) – Arbitrary metadata.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.index">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">index</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#signalforge.signal.Surface.index" title="Link to this definition"></a></dt>
+<dd><p>Time axis — bin positions.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.values">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">values</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a></span><a class="headerlink" href="#signalforge.signal.Surface.values" title="Link to this definition"></a></dt>
+<dd><p>Primary value array (first in data dict).</p>
+<p>For the full multi-aggregation view, use surface.data directly.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.channel">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">channel</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#signalforge.signal.Surface.channel" title="Link to this definition"></a></dt>
+<dd><p>What this signal represents.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.keys">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">keys</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.Surface.keys" title="Link to this definition"></a></dt>
+<dd><p>Entity dimensions this signal is sliced on.</p>
+<p>Default: empty (unkeyed / aggregate signal).
+Override to carry entity context (user, host, NIC, etc.).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.metadata">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">metadata</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><span class="pre">Any</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.Surface.metadata" title="Link to this definition"></a></dt>
+<dd><p>Arbitrary metadata. Subclasses may override.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.data">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">data</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://numpy.org/doc/stable/reference/generated/numpy.ndarray.html#numpy.ndarray" title="(in NumPy v2.4)"><span class="pre">ndarray</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.Surface.data" title="Link to this definition"></a></dt>
+<dd><p>…}.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>All named value arrays. E.g. {“mean”</p>
+</dd>
+<dt class="field-even">Type<span class="colon">:</span></dt>
+<dd class="field-even"><p>…, “std”</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Surface.shape">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">shape</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Tuple" title="(in Python v3.14)"><span class="pre">Tuple</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.Surface.shape" title="Link to this definition"></a></dt>
+<dd><p>(n_scales, n_time)</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="schema">
+<h2>Schema<a class="headerlink" href="#schema" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="signalforge.signal.Schema">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">signalforge.signal.</span></span><span class="sig-name descname"><span class="pre">Schema</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">primary_order</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">group_by</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">&lt;factory&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">value_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">channel_axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_schema.html#Schema"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.Schema" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Declares the typed axes of a data source.</p>
+<p>A schema is the domain adapter in its simplest form — a declaration
+of what axes exist and what type each one is. No code needed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+<li><p><strong>axes</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><em>List</em></a><em>[</em><em>Axis</em><em>]</em>)</p></li>
+<li><p><strong>primary_order</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+<li><p><strong>group_by</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.List" title="(in Python v3.14)"><em>List</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em>]</em>)</p></li>
+<li><p><strong>value_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+<li><p><strong>channel_axis</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.Schema.name">
+<span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#signalforge.signal.Schema.name" title="Link to this definition"></a></dt>
+<dd><p>Name of this schema (e.g., “kerberos”, “eeg”, “vix”).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.Schema.axes">
+<span class="sig-name descname"><span class="pre">axes</span></span><a class="headerlink" href="#signalforge.signal.Schema.axes" title="Link to this definition"></a></dt>
+<dd><p>The typed axes, in declaration order.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a> of Axis</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.Schema.primary_order">
+<span class="sig-name descname"><span class="pre">primary_order</span></span><a class="headerlink" href="#signalforge.signal.Schema.primary_order" title="Link to this definition"></a></dt>
+<dd><p>Name of the ordered axis used as the primary index.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.Schema.group_by">
+<span class="sig-name descname"><span class="pre">group_by</span></span><a class="headerlink" href="#signalforge.signal.Schema.group_by" title="Link to this definition"></a></dt>
+<dd><p>Categorical axes to group by (produce per-entity surfaces).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a> of <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.Schema.value_axis">
+<span class="sig-name descname"><span class="pre">value_axis</span></span><a class="headerlink" href="#signalforge.signal.Schema.value_axis" title="Link to this definition"></a></dt>
+<dd><p>Name of the numeric axis to surface. Default: first numeric axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="signalforge.signal.Schema.channel_axis">
+<span class="sig-name descname"><span class="pre">channel_axis</span></span><a class="headerlink" href="#signalforge.signal.Schema.channel_axis" title="Link to this definition"></a></dt>
+<dd><p>Categorical axis that defines channels (one surface per value).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)">str</a>, optional</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="signalforge.signal.Schema.get_axis">
+<span class="sig-name descname"><span class="pre">get_axis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_schema.html#Schema.get_axis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.Schema.get_axis" title="Link to this definition"></a></dt>
+<dd><p>Get an axis by name.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><em>Axis</em> | None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="signalforge.signal.Schema.save">
+<span class="sig-name descname"><span class="pre">save</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_schema.html#Schema.save"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.Schema.save" title="Link to this definition"></a></dt>
+<dd><p>Save schema to JSON file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><em>Path</em></a>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="signalforge.signal.Schema.load">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_schema.html#Schema.load"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.Schema.load" title="Link to this definition"></a></dt>
+<dd><p>Load schema from JSON file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><em>Path</em></a>)</p>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#signalforge.signal.Schema" title="signalforge.signal._schema.Schema"><em>Schema</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="signalforge.signal.Schema.from_csv">
+<span class="property"><span class="k"><span class="pre">classmethod</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">from_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_schema.html#Schema.from_csv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.Schema.from_csv" title="Link to this definition"></a></dt>
+<dd><p>Infer a schema from a CSV file.</p>
+<p>Reads the first rows, detects column types:
+- Monotonically increasing integers/dates → ORDERED
+- Repeating strings with few unique values → CATEGORICAL
+- Floats → NUMERIC
+- Strings with many unique values (&gt;80% unique) → RELATIONAL</p>
+<p>Returns a schema that may need user correction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> | </em><a class="reference external" href="https://docs.python.org/3/library/pathlib.html#pathlib.Path" title="(in Python v3.14)"><em>Path</em></a>)</p></li>
+<li><p><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference internal" href="#signalforge.signal.Schema" title="signalforge.signal._schema.Schema"><em>Schema</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="signalforge.signal.Schema.describe">
+<span class="sig-name descname"><span class="pre">describe</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_schema.html#Schema.describe"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.Schema.describe" title="Link to this definition"></a></dt>
+<dd><p>Print the schema.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>None</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="record">
+<h2>Record<a class="headerlink" href="#record" title="Link to this heading"></a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="signalforge.signal.Record">
+<span class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></span><span class="sig-prename descclassname"><span class="pre">signalforge.signal.</span></span><span class="sig-name descname"><span class="pre">Record</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">schema</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_record.html#Record"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.Record" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.14)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>One event — values for each axis in the schema.</p>
+<p>Lightweight: just a dict of values plus a reference to the schema.
+Validated on construction to ensure required axes are present
+and types are plausible.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>schema</strong> (<a class="reference internal" href="#signalforge.signal.Schema" title="signalforge.signal.Schema"><em>Schema</em></a>) – The schema this record conforms to.</p></li>
+<li><p><strong>values</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.14)"><em>dict</em></a>) – Axis name → value. Must include at least the primary_order axis.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Record.primary_order">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">primary_order</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.14)"><span class="pre">int</span></a></span><a class="headerlink" href="#signalforge.signal.Record.primary_order" title="Link to this definition"></a></dt>
+<dd><p>The primary ordering value.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Record.channel">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">channel</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a></span><a class="headerlink" href="#signalforge.signal.Record.channel" title="Link to this definition"></a></dt>
+<dd><p>Channel value, if channel_axis is defined. Defaults to value axis name or ‘value’.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Record.value">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">value</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.14)"><span class="pre">float</span></a></span><a class="headerlink" href="#signalforge.signal.Record.value" title="Link to this definition"></a></dt>
+<dd><p>Numeric value from the value_axis.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="signalforge.signal.Record.keys">
+<span class="property"><span class="k"><span class="pre">property</span></span><span class="w"> </span></span><span class="sig-name descname"><span class="pre">keys</span></span><span class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Dict" title="(in Python v3.14)"><span class="pre">Dict</span></a><span class="p"><span class="pre">[</span></span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><span class="pre">str</span></a><span class="p"><span class="pre">]</span></span></span><a class="headerlink" href="#signalforge.signal.Record.keys" title="Link to this definition"></a></dt>
+<dd><p>Grouping keys — values of group_by axes.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="signalforge.signal.Record.get">
+<span class="sig-name descname"><span class="pre">get</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_record.html#Record.get"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.Record.get" title="Link to this definition"></a></dt>
+<dd><p>Get value for any axis.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>axis_name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>)</p></li>
+<li><p><strong>default</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a>)</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Any" title="(in Python v3.14)"><em>Any</em></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="signalforge.signal.records_to_signals">
+<span class="sig-prename descclassname"><span class="pre">signalforge.signal.</span></span><span class="sig-name descname"><span class="pre">records_to_signals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">records</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mean'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_convert.html#records_to_signals"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.records_to_signals" title="Link to this definition"></a></dt>
+<dd><p>Convert records into RealSignals, one per (channel, keys) group.</p>
+<p>Accepts both CanonicalRecord (legacy) and Record (typed axes).
+Records with the same primary_order within a group are aggregated
+using the specified function.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>records</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em> of </em><a class="reference internal" href="#signalforge.signal.CanonicalRecord" title="signalforge.signal.CanonicalRecord"><em>CanonicalRecord</em></a><em> or </em><a class="reference internal" href="#signalforge.signal.Record" title="signalforge.signal.Record"><em>Record</em></a>) – Input records. Need not be sorted.</p></li>
+<li><p><strong>agg</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Aggregation for multiple values at the same index.
+“mean”, “sum”, “max”, “min”, “count”, “last”.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>One signal per distinct (channel, keys) combination.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a> of <a class="reference internal" href="#signalforge.signal.RealSignal" title="signalforge.signal.RealSignal">RealSignal</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="signalforge.signal.measure_signal">
+<span class="sig-prename descclassname"><span class="pre">signalforge.signal.</span></span><span class="sig-name descname"><span class="pre">measure_signal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">signal</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plan</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">agg</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mean'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_measure.html#measure_signal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.measure_signal" title="Link to this definition"></a></dt>
+<dd><p>Measure a LatticeSignal into a Surface using a SamplingPlan.</p>
+<p>Bins the signal’s values by floor(index / cbin), then slides
+windows across the binned data to produce a 2D (scale x time) grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>signal</strong> (<a class="reference internal" href="#signalforge.signal.LatticeSignal" title="signalforge.signal.LatticeSignal"><em>LatticeSignal</em></a>) – Any signal — RealSignal, ComplexSignal, or Surface row.</p></li>
+<li><p><strong>plan</strong> (<em>SamplingPlan</em>) – Defines windows, hops, and cbin.</p></li>
+<li><p><strong>agg</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a><em> or </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)"><em>list</em></a><em> of </em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – <p>Aggregation(s) per window. Single string or list.
+Prefix-sum (fast): “mean”, “sum”, “count”, “std”, “var”, “geometric_mean”
+Per-window (slower): “median”, “p25”, “p75”, “p90”, “p95”, “p99”,</p>
+<blockquote>
+<div><p>”spectral_energy”, “dominant_freq”, “entropy”, and any registered aggregation.</p>
+</div></blockquote>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>With one data array per aggregation name.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><a class="reference internal" href="#signalforge.signal.Surface" title="signalforge.signal.Surface">Surface</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="signalforge.signal.records_from_csv">
+<span class="sig-prename descclassname"><span class="pre">signalforge.signal.</span></span><span class="sig-name descname"><span class="pre">records_from_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">schema</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/signalforge/signal/_record.html#records_from_csv"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#signalforge.signal.records_from_csv" title="Link to this definition"></a></dt>
+<dd><p>Load a CSV file into Records using a Schema.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>path</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.14)"><em>str</em></a>) – Path to CSV file.</p></li>
+<li><p><strong>schema</strong> (<a class="reference internal" href="#signalforge.signal.Schema" title="signalforge.signal.Schema"><em>Schema</em></a>) – Schema defining axis types and roles.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.14)">list</a> of <a class="reference internal" href="#signalforge.signal.Record" title="signalforge.signal.Record">Record</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../index.html" class="btn btn-neutral float-left" title="SignalForge" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="graph.html" class="btn btn-neutral float-right" title="Graph Module" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Adelic AI.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

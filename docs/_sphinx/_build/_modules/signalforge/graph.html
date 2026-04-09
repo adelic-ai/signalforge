@@ -1,0 +1,246 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>signalforge.graph &mdash; SignalForge  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=9edc463e" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=fd6eb6e6"></script>
+      <script src="../../_static/sphinx_highlight.js?v=6ffebe34"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            SignalForge
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/signal.html">Signal Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/graph.html">Graph Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/chain.html">Chaining API</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">SignalForge</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">signalforge.graph</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for signalforge.graph</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">signalforge.graph</span>
+
+<span class="sd">Keras-style functional computation graph for composing pipeline stages.</span>
+
+<span class="sd">    from signalforge.graph import Input, Bin, Measure, Engineer, Assemble, Pipeline</span>
+
+<span class="sd">    x = Input()</span>
+<span class="sd">    b = Bin()(x)</span>
+<span class="sd">    m = Measure(profile=&quot;continuous&quot;)(b)</span>
+<span class="sd">    e = Engineer()(m)</span>
+<span class="sd">    a = Assemble()(e)</span>
+
+<span class="sd">    pipeline = Pipeline(x, a)</span>
+<span class="sd">    pipeline.resolve(horizon=360, grain=1)</span>
+<span class="sd">    result = pipeline.build(records)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">._core</span><span class="w"> </span><span class="kn">import</span> <span class="n">GraphPipeline</span><span class="p">,</span> <span class="n">Node</span><span class="p">,</span> <span class="n">Op</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..signal._base</span><span class="w"> </span><span class="kn">import</span> <span class="n">Artifact</span><span class="p">,</span> <span class="n">ArtifactType</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._ops</span><span class="w"> </span><span class="kn">import</span> <span class="n">AssembleOp</span><span class="p">,</span> <span class="n">BinOp</span><span class="p">,</span> <span class="n">EngineerOp</span><span class="p">,</span> <span class="n">InputOp</span><span class="p">,</span> <span class="n">MeasureOp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._multi_ops</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaselineOp</span><span class="p">,</span> <span class="n">GradientOp</span><span class="p">,</span> <span class="n">HilbertOp</span><span class="p">,</span> <span class="n">ResidualOp</span><span class="p">,</span> <span class="n">StackOp</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">._types</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_duration</span>
+
+
+<span class="c1"># ---------------------------------------------------------------------------</span>
+<span class="c1"># User-facing factories</span>
+<span class="c1"># ---------------------------------------------------------------------------</span>
+
+<div class="viewcode-block" id="Input">
+<a class="viewcode-back" href="../../api/graph.html#signalforge.graph.Input">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Input</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Node</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an Input node. Returns a Node directly (no parents).&quot;&quot;&quot;</span>
+    <span class="n">op</span> <span class="o">=</span> <span class="n">InputOp</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">Node</span><span class="p">(</span><span class="n">op</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Bin">
+<a class="viewcode-back" href="../../api/graph.html#signalforge.graph.Bin">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Bin</span><span class="p">(</span><span class="n">agg</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;mean&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BinOp</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a Bin operator. Call with (input_node) to wire into graph.</span>
+
+<span class="sd">    agg: aggregation function name (e.g. &quot;mean&quot;, &quot;count&quot;, &quot;max&quot;).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">BinOp</span><span class="p">(</span><span class="n">agg</span><span class="o">=</span><span class="n">agg</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Measure">
+<a class="viewcode-back" href="../../api/graph.html#signalforge.graph.Measure">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Measure</span><span class="p">(</span><span class="n">profile</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;continuous&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MeasureOp</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a Measure operator. Call with (binned_node) to wire into graph.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">MeasureOp</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="n">profile</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Engineer">
+<a class="viewcode-back" href="../../api/graph.html#signalforge.graph.Engineer">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Engineer</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">EngineerOp</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an Engineer operator. Call with (surfaces_node) to wire into graph.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">EngineerOp</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Assemble">
+<a class="viewcode-back" href="../../api/graph.html#signalforge.graph.Assemble">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Assemble</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AssembleOp</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create an Assemble operator. Call with (tensors_node) to wire into graph.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">AssembleOp</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Baseline">
+<a class="viewcode-back" href="../../api/graph.html#signalforge.graph.Baseline">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Baseline</span><span class="p">(</span><span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ewma&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BaselineOp</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a Baseline operator. Call with (surfaces_node) to wire into graph.</span>
+
+<span class="sd">    method: &quot;ewma&quot;, &quot;median&quot;, or &quot;rolling_mean&quot;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">BaselineOp</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Residual">
+<a class="viewcode-back" href="../../api/graph.html#signalforge.graph.Residual">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Residual</span><span class="p">(</span><span class="n">mode</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;difference&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ResidualOp</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a Residual operator. Call with (measured_node, baseline_node).</span>
+
+<span class="sd">    mode: &quot;difference&quot;, &quot;ratio&quot;, or &quot;z&quot;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">ResidualOp</span><span class="p">(</span><span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Hilbert">
+<a class="viewcode-back" href="../../api/graph.html#signalforge.graph.Hilbert">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Hilbert</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">HilbertOp</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute analytic signal: amplitude, phase, instantaneous frequency.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">HilbertOp</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Stack">
+<a class="viewcode-back" href="../../api/graph.html#signalforge.graph.Stack">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Stack</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StackOp</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Create a Stack operator. Call with ([node1, node2, ...]).&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">StackOp</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="Gradient">
+<a class="viewcode-back" href="../../api/graph.html#signalforge.graph.Gradient">[docs]</a>
+<span class="k">def</span><span class="w"> </span><span class="nf">Gradient</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GradientOp</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the discrete gradient on the lattice.</span>
+
+<span class="sd">    Produces grad_t (temporal), grad_p2, grad_p3, ... (per prime axis),</span>
+<span class="sd">    and grad_scale_mag (magnitude across all prime axes).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">GradientOp</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+
+<span class="n">Pipeline</span> <span class="o">=</span> <span class="n">GraphPipeline</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;Input&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Bin&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Measure&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Engineer&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Assemble&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Baseline&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Residual&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Hilbert&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Gradient&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Stack&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Pipeline&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Artifact&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ArtifactType&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Node&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Op&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;parse_duration&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2026, Adelic AI.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
