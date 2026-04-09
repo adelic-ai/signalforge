@@ -70,6 +70,7 @@ from .signal import CanonicalRecord, OrderType, Surface
 # Chaining API
 from .chain import Chain
 load = Chain.load
+load_schema = Chain.load_schema
 from_signal = Chain.from_signal
 
 # Domains

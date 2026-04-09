@@ -321,7 +321,13 @@ def cmd_load(args: argparse.Namespace) -> int:
     import pandas as pd
 
     t0 = time.perf_counter()
-    records = _auto_ingest(csv_path)
+    schema_path = getattr(args, "schema", None)
+    if schema_path:
+        from .signal import Schema, records_from_csv
+        schema = Schema.load(schema_path)
+        records = records_from_csv(str(csv_path), schema)
+    else:
+        records = _auto_ingest(csv_path)
     elapsed = time.perf_counter() - t0
 
     if not records:
@@ -1406,6 +1412,7 @@ def main(argv: list[str] | None = None) -> int:
     # load
     p_load = sub.add_parser("load", help="Show a summary of a CSV file")
     p_load.add_argument("csv", help="Input CSV file path")
+    p_load.add_argument("--schema", default=None, help="Schema file for typed-axis loading")
 
     # surface
     p_surf = sub.add_parser("surface", help="Build and display a surface from a CSV")

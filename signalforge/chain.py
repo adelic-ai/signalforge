@@ -72,6 +72,25 @@ class Chain:
             return Chain(records=source)
 
     @staticmethod
+    def load_schema(source, schema) -> "Chain":
+        """Load data via a Schema.
+
+            sf.load_schema("data.csv", "my.schema.json").measure().run()
+            sf.load_schema("data.csv", schema_obj).measure().run()
+        """
+        from pathlib import Path
+        from .signal import Schema, records_from_csv
+
+        if isinstance(schema, (str, Path)):
+            schema = Schema.load(schema)
+
+        path = str(source)
+        records = records_from_csv(path, schema)
+        if not records:
+            raise ValueError(f"No records loaded from {path}")
+        return Chain(records=records, _csv_path=path)
+
+    @staticmethod
     def from_signal(signal) -> "Chain":
         """Start a chain from a LatticeSignal directly.
 
