@@ -981,6 +981,68 @@ def cmd_status(args: argparse.Namespace) -> int:
 
 
 # ---------------------------------------------------------------------------
+# schema
+# ---------------------------------------------------------------------------
+
+
+def cmd_schema(args: argparse.Namespace) -> int:
+    """Infer or display a schema for a data file."""
+    from .signal import Schema, AxisType
+
+    csv_path = Path(args.csv)
+    if not csv_path.exists():
+        print(f"  File not found: {csv_path}")
+        return 1
+
+    # Load existing schema or infer
+    schema_path = getattr(args, "load_schema", None)
+    if schema_path:
+        schema = Schema.load(schema_path)
+    else:
+        schema = Schema.from_csv(csv_path)
+
+    # Apply corrections
+    set_args = getattr(args, "set", None) or []
+    for s in set_args:
+        if "=" not in s:
+            print(f"  Invalid --set format: {s!r}. Use: --set column=type")
+            return 1
+        col, typ = s.split("=", 1)
+        ax = schema.get_axis(col)
+        if ax is None:
+            print(f"  Unknown column: {col!r}")
+            return 1
+        try:
+            ax.type = AxisType(typ)
+        except ValueError:
+            print(f"  Unknown type: {typ!r}. Use: ordered, categorical, numeric, relational")
+            return 1
+
+    group_by = getattr(args, "group_by", None) or []
+    if group_by:
+        schema.group_by = group_by
+
+    channel = getattr(args, "channel", None)
+    if channel:
+        schema.channel_axis = channel
+
+    # Display
+    schema.describe()
+
+    # Save if requested
+    save_path = getattr(args, "save_schema", None)
+    if save_path:
+        schema.save(save_path)
+        print(f"  Saved: {save_path}")
+    else:
+        default_path = csv_path.with_suffix(".schema.json")
+        print(f"  Save:  sf schema {csv_path} --save {default_path}")
+
+    print()
+    return 0
+
+
+# ---------------------------------------------------------------------------
 # inspect
 # ---------------------------------------------------------------------------
 
@@ -1260,6 +1322,20 @@ def main(argv: list[str] | None = None) -> int:
     # status
     p_status = sub.add_parser("status", help="Show workspace status")
 
+    # schema
+    p_schema = sub.add_parser("schema", help="Infer or display a data schema")
+    p_schema.add_argument("csv", help="Input CSV file path")
+    p_schema.add_argument("--set", nargs="*", default=None,
+                          help="Override axis types: --set column=type (e.g. ticket_hash=relational)")
+    p_schema.add_argument("--group-by", nargs="*", default=None,
+                          help="Categorical axes to group by")
+    p_schema.add_argument("--channel", default=None,
+                          help="Categorical axis that defines channels")
+    p_schema.add_argument("--save", dest="save_schema", default=None,
+                          help="Save schema to JSON file")
+    p_schema.add_argument("--load", dest="load_schema", default=None,
+                          help="Load existing schema instead of inferring")
+
     # inspect
     p_insp = sub.add_parser("inspect", help="Show docs for a method, operator, or concept")
     p_insp.add_argument("name", nargs="?", default=None,
@@ -1299,6 +1375,8 @@ def main(argv: list[str] | None = None) -> int:
                         help="Save heatmap to file instead of displaying")
     p_surf.add_argument("--name", default=None,
                         help="Save this run as a named experiment in the workspace")
+    p_surf.add_argument("--schema", default=None,
+                        help="Schema file (.schema.json) for typed-axis loading")
 
     # neighborhood
     p_nb = sub.add_parser("neighborhood", help="Show the p-adic arithmetic viewing box")
@@ -1316,6 +1394,7 @@ def main(argv: list[str] | None = None) -> int:
         "plan":         cmd_plan,
         "init":         cmd_init,
         "status":       cmd_status,
+        "schema":       cmd_schema,
         "inspect":      cmd_inspect,
         "load":         cmd_load,
         "surface":      cmd_surface,
