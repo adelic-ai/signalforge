@@ -403,12 +403,27 @@ def cmd_surface(args: argparse.Namespace) -> int:
 
     t_total = time.perf_counter()
 
-    # Ingest
+    # Ingest — schema path or legacy auto-ingest
     t0 = time.perf_counter()
-    records = _auto_ingest(csv_path)
-    if not records:
-        return 1
-    t_ingest = time.perf_counter() - t0
+    schema_path = getattr(args, "schema", None)
+    if schema_path:
+        from .signal import Schema, records_from_csv, records_to_signals
+        schema = Schema.load(schema_path)
+        typed_records = records_from_csv(str(csv_path), schema)
+        if not typed_records:
+            print("  No records loaded via schema.")
+            return 1
+        # Convert to signals directly (bypass CanonicalRecord)
+        signals = records_to_signals(typed_records)
+        t_ingest = time.perf_counter() - t0
+        channels = sorted({s.channel or s.metadata.get("channel", "value") for s in signals})
+        records = typed_records  # keep for grain estimation
+    else:
+        records = _auto_ingest(csv_path)
+        if not records:
+            return 1
+        t_ingest = time.perf_counter() - t0
+        signals = None
 
     # Zoom — slice records by index or date
     zoom_label = ""
@@ -447,51 +462,98 @@ def cmd_surface(args: argparse.Namespace) -> int:
                 r.seq_order = i
         zoom_label = f"  zoom      : bin {s} → {e} ({len(records):,} records)"
 
-    channels = sorted({r.channel for r in records})
+    if signals is None:
+        # Legacy path — compute channels from records
+        channels = sorted({r.channel for r in records})
 
-    # Build graph — signal path: Input → Measure (no explicit Bin)
+    # Build graph / measure
     from .graph import Input, Measure, Baseline, Residual, Pipeline
 
-    x = Input()
-    m = Measure()(x)
+    if signals is not None:
+        # Schema path — signals already computed, measure directly
+        from .signal import measure_signal
+        from .lattice.sampling import SamplingPlan
+        import binjamin as bj
 
-    # Default output is the measured surface
-    output = m
+        resolve_kwargs = {}
+        if args.max_window:
+            resolve_kwargs["windows"] = [args.max_window]
+        if args.grain:
+            resolve_kwargs["grain"] = args.grain
 
-    # Apply baseline and/or residual if requested
-    if args.baseline:
-        bl_kwargs = {"method": args.baseline}
-        if args.baseline == "ewma":
-            bl_kwargs["alpha"] = args.alpha
+        # Derive plan
+        if "windows" in resolve_kwargs and len(resolve_kwargs["windows"]) == 1:
+            grain = resolve_kwargs.get("grain", 1)
+            plan = SamplingPlan(resolve_kwargs["windows"][0], grain)
+        elif "windows" in resolve_kwargs:
+            geo = bj.lattice(resolve_kwargs["windows"], grain=resolve_kwargs.get("grain", 1))
+            plan = SamplingPlan(geo.horizon, resolve_kwargs.get("grain", 1), windows=list(geo.windows))
         else:
-            bl_kwargs["window"] = args.window
-        bl = Baseline(**bl_kwargs)(m)
+            plan = SamplingPlan(360, resolve_kwargs.get("grain", 1))
 
-        if args.residual:
-            output = Residual(mode=args.residual)(m, bl)
-        else:
-            output = bl
-    elif args.residual:
-        print("  --residual requires --baseline")
-        return 1
+        t0 = time.perf_counter()
+        surfaces = [measure_signal(s, plan) for s in signals]
 
-    pipe = Pipeline(x, output)
+        # Apply baseline/residual via graph if requested
+        if args.baseline or args.residual:
+            from .signal._base import Artifact, ArtifactType
+            x = Input()
+            m = Measure()(x)
+            output = m
+            if args.baseline:
+                bl_kwargs = {"method": args.baseline}
+                if args.baseline == "ewma":
+                    bl_kwargs["alpha"] = args.alpha
+                else:
+                    bl_kwargs["window"] = args.window
+                bl = Baseline(**bl_kwargs)(m)
+                if args.residual:
+                    output = Residual(mode=args.residual)(m, bl)
+                else:
+                    output = bl
+            pipe = Pipeline(x, output)
+            pipe.resolve(records=signals, **resolve_kwargs)
+            plan = pipe.plan
+            result = pipe.build(signals)
+            surfaces = result.value
 
-    # Resolve — derive horizon from max_window if given
-    resolve_kwargs = {}
-    if args.max_window:
-        resolve_kwargs["windows"] = [args.max_window]
-    if args.grain:
-        resolve_kwargs["grain"] = args.grain
+        t_build = time.perf_counter() - t0
+    else:
+        # Legacy path — use graph pipeline
+        x = Input()
+        m = Measure()(x)
+        output = m
 
-    pipe.resolve(records=records, **resolve_kwargs)
-    plan = pipe.plan
+        if args.baseline:
+            bl_kwargs = {"method": args.baseline}
+            if args.baseline == "ewma":
+                bl_kwargs["alpha"] = args.alpha
+            else:
+                bl_kwargs["window"] = args.window
+            bl = Baseline(**bl_kwargs)(m)
+            if args.residual:
+                output = Residual(mode=args.residual)(m, bl)
+            else:
+                output = bl
+        elif args.residual:
+            print("  --residual requires --baseline")
+            return 1
 
-    # Build
-    t0 = time.perf_counter()
-    result = pipe.build(records)
-    surfaces = result.value
-    t_build = time.perf_counter() - t0
+        pipe = Pipeline(x, output)
+
+        resolve_kwargs = {}
+        if args.max_window:
+            resolve_kwargs["windows"] = [args.max_window]
+        if args.grain:
+            resolve_kwargs["grain"] = args.grain
+
+        pipe.resolve(records=records, **resolve_kwargs)
+        plan = pipe.plan
+
+        t0 = time.perf_counter()
+        result = pipe.build(records)
+        surfaces = result.value
+        t_build = time.perf_counter() - t0
 
     # --- Output ---
     print()
