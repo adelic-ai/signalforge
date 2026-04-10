@@ -1,15 +1,14 @@
 # Examples
 
-SignalForge is domain-agnostic. These examples demonstrate the same pipeline on different types of data — from financial markets to clinical EEG to geomagnetic observatories.
+Same pipeline, different data. These are the built-in examples — one command each. The [community gallery](https://github.com/adelic-ai/signalforge/discussions) (coming soon) will have more from users.
 
 ## Table of Contents
 
-- [VIX Volatility Index](#vix-volatility-index)
-- [EEG Seizure Detection](#eeg-seizure-detection)
-- [INTERMAGNET Geomagnetic Data](#intermagnet-geomagnetic-data)
-- [GRACE/GRACE-FO Satellite Gravity](#gracegrace-fo-satellite-gravity)
-- [Generic Time Series](#generic-time-series)
-- [Bringing Your Own Data](#bringing-your-own-data)
+- [VIX Volatility Index](#vix-volatility-index) — financial regime change
+- [EEG Seizure Detection](#eeg-seizure-detection) — clinical neuroscience
+- [INTERMAGNET Geomagnetic Data](#intermagnet-geomagnetic-data) — earth science
+- [GRACE/GRACE-FO Satellite Gravity](#gracegrace-fo-satellite-gravity) — ice mass, hydrology
+- [Generic Time Series](#generic-time-series) — any two-column CSV
 
 ---
 
@@ -161,45 +160,6 @@ sf load my_data.csv
 sf surface my_data.csv -hm
 ```
 
-SignalForge auto-detects the format: first column as index, second as value. Grain is estimated from the data. No domain adapter needed.
+Auto-detected. No schema, no adapter, no setup.
 
----
-
-## Bringing Your Own Data
-
-SignalForge accepts any ordered sequence. The minimum requirement: a list of `CanonicalRecord` objects.
-
-```python
-from signalforge.signal import CanonicalRecord, OrderType
-
-records = [
-    CanonicalRecord(
-        primary_order=i,
-        order_type=OrderType.SEQUENCE,
-        channel="my_channel",
-        metric="value",
-        value=float(measurement),
-        seq_order=i,
-    )
-    for i, measurement in enumerate(my_data)
-]
-
-import signalforge as sf
-surfaces = sf.load(records).measure().surfaces()
-```
-
-Or go directly from arrays:
-
-```python
-from signalforge.signal import RealSignal
-import numpy as np
-
-sig = RealSignal(
-    index=np.arange(len(my_data)),
-    values=np.array(my_data, dtype=float),
-    channel="my_channel",
-)
-surfaces = sf.from_signal(sig).measure(windows=[10, 30, 90]).surfaces()
-```
-
-For multi-column CSVs with known formats (equities, intermagnet, EEG), see the domain modules in `signalforge/domains/`.
+For multi-column data, see [Your Data](your-data.md) — `sf schema` handles it.
