@@ -72,7 +72,7 @@ result = pipe.run(records, windows=[10, 60, 360])
 
 ## Custom aggregations
 
-Each surface cell reduces a window to a number. SF ships with 20+ aggregations and you can add your own:
+Each surface cell reduces a window to a number — by default a mean. SF ships with 20+ aggregations (mean, std, percentiles, spectral energy, dominant frequency, Shannon entropy, ...) and you can add your own:
 
 ```python
 from signalforge.pipeline.aggregation import register_aggregation

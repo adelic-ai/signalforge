@@ -1,6 +1,6 @@
-# CLI Guide
+# CLI Reference
 
-SignalForge's CLI is designed for exploration. Each command leads naturally to the next — the output suggests what to try, and the structure teaches itself through use.
+All commands and flags.
 
 ## Table of Contents
 
