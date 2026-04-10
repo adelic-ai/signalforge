@@ -185,35 +185,46 @@ class Schema:
     # --- Inference ---
 
     @classmethod
-    def from_csv(cls, path: str | Path, name: str = "") -> "Schema":
+    def infer(cls, path: str | Path, name: str = "") -> "Schema":
         """Infer a schema from a CSV file.
 
-        Reads the first rows, detects column types:
-        - Monotonically increasing integers/dates → ORDERED
-        - Repeating strings with few unique values → CATEGORICAL
-        - Floats → NUMERIC
-        - Strings with many unique values (>80% unique) → RELATIONAL
+        Reads the file, detects column types, caches the DataFrame.
+        Use ``schema.records()`` to get Records from the cached data
+        without re-reading the file.
 
-        Returns a schema that may need user correction.
+        Parameters
+        ----------
+        path : str or Path
+            Path to CSV file.
+        name : str, optional
+            Schema name. Defaults to filename stem.
+
+        Returns
+        -------
+        Schema
+            With ``_df`` cached for ``records()`` and ``_path`` stored.
         """
         import pandas as pd
 
-        df = pd.read_csv(path, nrows=1000)
+        path = Path(path)
+        df = pd.read_csv(path)
         if not name:
-            name = Path(path).stem
+            name = path.stem
 
         axes = []
         primary_order = ""
 
-        for col in df.columns:
-            series = df[col].dropna()
+        # Use first 1000 rows for type inference
+        sample = df.head(1000)
+
+        for col in sample.columns:
+            series = sample[col].dropna()
             if len(series) == 0:
                 continue
 
             # Try numeric
             numeric = pd.to_numeric(series, errors="coerce")
             if numeric.notna().all():
-                # Check if monotonically increasing → ordered
                 if numeric.is_monotonic_increasing and len(numeric) > 5:
                     axes.append(Axis(col, AxisType.ORDERED))
                     if not primary_order:
@@ -236,17 +247,92 @@ class Schema:
             n_unique = series.nunique()
             n_total = len(series)
             if n_total > 0 and n_unique / n_total > 0.8:
-                # Mostly unique → relational (hashes, IDs)
                 axes.append(Axis(col, AxisType.RELATIONAL))
             else:
                 axes.append(Axis(col, AxisType.CATEGORICAL))
 
         if not primary_order:
-            # No ordered axis found — use row index
             axes.insert(0, Axis("_index", AxisType.ORDERED))
             primary_order = "_index"
 
-        return cls(name=name, axes=axes, primary_order=primary_order)
+        schema = cls(name=name, axes=axes, primary_order=primary_order)
+        schema._df = df
+        schema._path = str(path)
+        return schema
+
+    # Alias for Python convention
+    from_csv = infer
+
+    # --- Data loading ---
+
+    def records(self) -> list:
+        """Produce Records from cached data (after infer).
+
+        Returns
+        -------
+        list of Record
+            One Record per row in the cached DataFrame.
+
+        Raises
+        ------
+        ValueError
+            If no cached data (schema was loaded from JSON, not inferred).
+        """
+        df = getattr(self, "_df", None)
+        if df is None:
+            raise ValueError(
+                "No cached data. Use Schema.infer() to cache, "
+                "or schema.read(path) to load a file."
+            )
+        return self._df_to_records(df)
+
+    def read(self, path: str | Path) -> list:
+        """Load a CSV file through this schema.
+
+        Parameters
+        ----------
+        path : str or Path
+            Path to CSV file.
+
+        Returns
+        -------
+        list of Record
+        """
+        import pandas as pd
+        df = pd.read_csv(path)
+        return self._df_to_records(df)
+
+    def _df_to_records(self, df) -> list:
+        """Convert a DataFrame to Records using this schema."""
+        import pandas as pd
+        from ._record import Record
+
+        # Handle datetime primary_order
+        po_col = self.primary_order
+        if po_col in df.columns:
+            try:
+                dates = pd.to_datetime(df[po_col], errors="raise")
+                df = df.copy()
+                df[po_col] = range(len(df))
+            except (ValueError, TypeError):
+                df = df.copy()
+                df[po_col] = pd.to_numeric(df[po_col], errors="coerce")
+
+        records = []
+        for _, row in df.iterrows():
+            values = {}
+            for axis in self.axes:
+                if axis.name in df.columns:
+                    val = row[axis.name]
+                    if pd.notna(val):
+                        values[axis.name] = val
+                elif axis.name == "_index":
+                    values["_index"] = int(row.name)
+
+            if self.primary_order in values:
+                records.append(Record(self, values))
+
+        return records
 
     # --- Display ---
 
