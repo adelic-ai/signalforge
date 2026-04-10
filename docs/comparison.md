@@ -81,10 +81,10 @@ sense SignalForge requires.
 
 | Property | STFT | Wavelets | EMD | SignalForge |
 |----------|------|----------|-----|-------------|
-| Window sizes | Analyst choice | Powers of 2 | Data-driven | Divisors of H |
+| Window sizes | Analyst choice | Powers of 2 | Data-driven | Derived from declared windows |
 | Scale relationship | None | Dyadic chain | None | Full lattice |
 | Cross-recording comparability | Requires matching params | Requires matching params | Difficult | Guaranteed by lattice |
-| Prime axes covered | — | Prime 2 only | — | All primes dividing H |
+| Prime axes covered | — | Prime 2 only | — | Determined by your window choice |
 | Boundary artifacts | Possible | Possible | N/A | None within lattice; recording boundaries handled as in any windowed method |
 | Computation | O(H log H) per scale | O(H) | O(H²) typical | O(H · τ(H)), nearly linear |
 
