@@ -124,5 +124,26 @@ def derive_plan(
     if horizon is not None:
         return SamplingPlan(horizon, grain)
 
-    # Case 4: nothing — default
+    # Case 4: nothing specified — derive from data span
+    if records is not None:
+        from ..signal._signal import LatticeSignal
+        import numpy as np
+        if isinstance(records, LatticeSignal):
+            span = int(records.index[-1] - records.index[0])
+        elif isinstance(records, list) and records:
+            if isinstance(records[0], LatticeSignal):
+                spans = [int(s.index[-1] - s.index[0]) for s in records]
+                span = max(spans)
+            else:
+                orders = [r.primary_order for r in records]
+                span = max(orders) - min(orders)
+        else:
+            span = 360
+
+        # Use span as max window, derive through binjamin
+        max_w = max(span, 2)
+        geo = bj.lattice([max_w], grain=grain)
+        return SamplingPlan(geo.horizon, grain)
+
+    # Absolute fallback — no data, no constraints
     return SamplingPlan(360, grain)
