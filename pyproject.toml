@@ -1,6 +1,6 @@
 [project]
 name = "adelic-signalforge"
-version = "0.3.3"
+version = "0.4.0"
 description = "Multiscale signal analysis on a normalized scale space"
 readme = "README.md"
 requires-python = ">=3.12"
