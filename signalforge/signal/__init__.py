@@ -23,6 +23,12 @@ from ._convert import records_to_signals
 from ._measure import measure_signal
 from ._schema import Schema, Axis, AxisType
 from ._record import Record, records_from_csv
+from ._segment import Segment, discover_segments, segments_to_signals, print_stats as print_segment_stats
+from ._features import (
+    entity_signals, entity_channel_matrix,
+    label_segments, segment_summary, print_segment_summary,
+    segment_features, segments_to_matrix,
+)
 
 __all__ = [
     "LatticeSignal",
