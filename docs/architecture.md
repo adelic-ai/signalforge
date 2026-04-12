@@ -45,6 +45,8 @@ signal/
   _record.py    # Record — universal event type
   _convert.py   # records_to_signals()
   _measure.py   # measure_signal() — multi-aggregation, prefix sums
+  _segment.py   # Segment discovery — gap-based activity boundaries
+  _features.py  # Feature extraction, labeling, join enrichment
   __init__.py   # Public API
 ```
 
@@ -54,6 +56,8 @@ signal/
 - `Surface` implements `LatticeSignal` — signal in, signal out.
 - `Schema` + `Record` replace `CanonicalRecord` for data ingest. An event is a point in a product of typed axes (ORDERED, CATEGORICAL, NUMERIC, RELATIONAL).
 - `measure_signal()` supports multiple aggregations per surface via prefix sums (fast) and per-window fallback (any registered aggregation).
+- `discover_segments()` finds natural activity boundaries from inter-event gaps. Domain-agnostic.
+- `join_segments()` enriches segments with cross-segment context — group by a different key, compute fanout/fanin/co-occurrence. The caller picks the join key; SF computes the aggregates.
 - Each `Artifact` has a deterministic ID (hash of plan + op + parent IDs) for caching and lineage.
 
 ---

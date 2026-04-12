@@ -27,7 +27,7 @@ from ._segment import Segment, discover_segments, segments_to_signals, print_sta
 from ._features import (
     entity_signals, entity_channel_matrix,
     label_segments, segment_summary, print_segment_summary,
-    segment_features, segments_to_matrix,
+    segment_features, segments_to_matrix, join_segments,
 )
 
 __all__ = [

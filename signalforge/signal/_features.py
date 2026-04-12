@@ -262,6 +262,129 @@ def segment_features(segment, channels: list = None,
     return features
 
 
+# ---------------------------------------------------------------------------
+# Cross-segment join
+# ---------------------------------------------------------------------------
+
+def join_segments(segments: list, join_key: str,
+                  time_window: Optional[int] = None) -> List[dict]:
+    """Enrich segments with features computed across a shared key.
+
+    Groups segments by a join key (from entity dict or event values),
+    then for each segment computes how many other segments, entities,
+    and events share that key — optionally within a time window.
+
+    This is the domain-agnostic join primitive. The caller picks the
+    key; SF computes the aggregates.
+
+    Parameters
+    ----------
+    segments : list of Segment
+    join_key : str
+        Key to join on. Looked up first in segment.entity, then in
+        event values. If in events, uses the most common value.
+    time_window : int, optional
+        If set, only consider segments whose time ranges overlap
+        within this window (in primary_order units).
+
+    Returns
+    -------
+    list of dict
+        One dict per input segment with join features:
+        - join_{key}_value: the resolved join key value
+        - join_{key}_segments: number of segments sharing this key
+        - join_{key}_entities: distinct entity count sharing this key
+        - join_{key}_events: total events across all segments sharing this key
+        - join_{key}_fanout_{other_key}: distinct values of each other
+          entity key across segments sharing this key
+        - join_{key}_channels: dict of channel totals across joined segments
+        - join_{key}_self_frac: this segment's event share of the group
+    """
+    # Resolve join key value for each segment
+    def _resolve_key(seg):
+        # First: entity dict (group-by keys)
+        if join_key in seg.entity:
+            return str(seg.entity[join_key])
+        # Second: most common value in events
+        if seg.events:
+            from collections import Counter
+            vals = [str(e.get(join_key, "")) for e in seg.events if e.get(join_key)]
+            if vals:
+                return Counter(vals).most_common(1)[0][0]
+        return ""
+
+    key_values = [_resolve_key(seg) for seg in segments]
+
+    # Group segment indices by join key value
+    groups: Dict[str, list] = defaultdict(list)
+    for i, val in enumerate(key_values):
+        if val:
+            groups[val].append(i)
+
+    # Collect all entity keys (for fanout computation)
+    all_entity_keys = set()
+    for seg in segments:
+        all_entity_keys.update(seg.entity.keys())
+    other_keys = sorted(all_entity_keys - {join_key})
+
+    # Compute join features per segment
+    results = []
+    for i, seg in enumerate(segments):
+        val = key_values[i]
+        row = {f"join_{join_key}_value": val}
+
+        if not val or val not in groups:
+            row[f"join_{join_key}_segments"] = 0
+            row[f"join_{join_key}_entities"] = 0
+            row[f"join_{join_key}_events"] = 0
+            row[f"join_{join_key}_self_frac"] = 1.0
+            for k in other_keys:
+                row[f"join_{join_key}_fanout_{k}"] = 0
+            results.append(row)
+            continue
+
+        # Find neighbors — segments sharing this key value
+        neighbors = groups[val]
+
+        if time_window is not None:
+            neighbors = [
+                j for j in neighbors
+                if abs(segments[j].start - seg.start) <= time_window
+                or (segments[j].start <= seg.end + time_window
+                    and segments[j].end >= seg.start - time_window)
+            ]
+
+        # Aggregate over neighbors
+        total_events = sum(segments[j].event_count for j in neighbors)
+        entities = set()
+        channel_totals: Dict[str, int] = defaultdict(int)
+
+        fanout: Dict[str, set] = {k: set() for k in other_keys}
+
+        for j in neighbors:
+            nseg = segments[j]
+            entity_tuple = tuple(sorted(nseg.entity.items()))
+            entities.add(entity_tuple)
+            for ch, cnt in nseg.channels.items():
+                channel_totals[ch] += cnt
+            for k in other_keys:
+                if k in nseg.entity:
+                    fanout[k].add(nseg.entity[k])
+
+        row[f"join_{join_key}_segments"] = len(neighbors)
+        row[f"join_{join_key}_entities"] = len(entities)
+        row[f"join_{join_key}_events"] = total_events
+        row[f"join_{join_key}_self_frac"] = (
+            seg.event_count / max(total_events, 1)
+        )
+        for k in other_keys:
+            row[f"join_{join_key}_fanout_{k}"] = len(fanout[k])
+
+        results.append(row)
+
+    return results
+
+
 def segments_to_matrix(segments: list, channels: list = None,
                        plan: SamplingPlan = None, cbin: int = 1) -> Tuple[np.ndarray, list, list]:
     """Convert all segments into a feature matrix for ML.

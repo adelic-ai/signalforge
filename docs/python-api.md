@@ -8,6 +8,7 @@ Two APIs for different needs: **chaining** for quick exploration, **DAG** for fu
 - [DAG Composition](#dag-composition)
 - [Signals](#signals)
 - [Surfaces](#surfaces)
+- [Segments and Features](#segments-and-features)
 - [Hilbert](#hilbert)
 - [Operators](#operators)
 
@@ -226,6 +227,92 @@ surface.coverage      # fraction of bins occupied per cell
 ```
 
 The `.values` property (from the LatticeSignal contract) returns the first data array. Use `.data` to access all named arrays.
+
+---
+
+## Segments and Features
+
+Segments are natural units of activity discovered from event gaps. Features convert segments into vectors for ML.
+
+### Discovering segments
+
+```python
+from signalforge.signal import Schema, discover_segments
+
+schema = Schema.infer("events.csv")
+records = schema.records()
+
+segments, stats = discover_segments(records)
+# stats: n_entities, n_segments, gap_threshold, mean_duration, ...
+```
+
+Gap threshold is estimated from the data (Freedman-Diaconis on inter-event gaps). Override with `gap_threshold=300`.
+
+### Feature extraction
+
+```python
+from signalforge.signal import segments_to_matrix
+
+matrix, feature_names, info = segments_to_matrix(segments, channels=channels, plan=plan)
+# matrix: (n_segments, n_features) — ready for ML
+# Features: duration, event_count, event_rate, per-channel counts/ratios,
+#           channel_diversity, multiscale z-scores
+```
+
+### Joins
+
+Segments are keyed by their entity (the group-by fields). A join enriches each segment with context from other segments that share a different key.
+
+```python
+from signalforge.signal import join_segments
+
+# How many other segments share this IP?
+ip_join = join_segments(segments, "Client_Address")
+
+# How many other entities requested this service?
+svc_join = join_segments(segments, "Service_Name")
+```
+
+Each returns a list of dicts (one per segment) with:
+
+| Feature | Meaning |
+|---------|---------|
+| `join_{key}_segments` | Number of segments sharing this key value |
+| `join_{key}_entities` | Distinct entities sharing this key |
+| `join_{key}_events` | Total events across all segments sharing this key |
+| `join_{key}_fanout_{other_key}` | Distinct values of other entity keys |
+| `join_{key}_self_frac` | This segment's share of the group's events |
+
+The join key is resolved from the segment entity first, then from event values (most common value). Use `time_window=` to limit to temporally nearby segments.
+
+```python
+# Combine SF features + join features into one matrix
+import numpy as np
+
+join_names = sorted(k for k in ip_join[0] if isinstance(ip_join[0][k], (int, float)))
+join_matrix = np.array([[row[n] for n in join_names] for row in ip_join])
+
+matrix = np.hstack([matrix, join_matrix])
+feature_names = feature_names + join_names
+```
+
+### Labeling
+
+```python
+from signalforge.signal import label_segments, segment_summary, print_segment_summary
+
+labeled = label_segments(segments)  # default: single_event, short_burst, normal
+summary = segment_summary(labeled)
+print_segment_summary(summary)
+
+# Custom rules
+labeled = label_segments(segments, rules={
+    "tiny": lambda s: s.event_count == 1,
+    "burst": lambda s: s.duration < 10 and s.event_count > 5,
+    "long": lambda s: s.duration > 300,
+    "normal": lambda s: True,
+})
+```
 
 ---
 
