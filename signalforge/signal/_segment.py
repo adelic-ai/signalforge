@@ -101,8 +101,11 @@ def discover_segments(
     elif method == "information_gain":
         segments, method_stats = _discover_information_gain(
             entities, min_gain, min_segment_events)
+    elif method == "lattice":
+        segments, method_stats = _discover_lattice(
+            records, entities, min_gain, min_segment_events)
     else:
-        raise ValueError(f"Unknown method {method!r}. Use 'gap' or 'information_gain'.")
+        raise ValueError(f"Unknown method {method!r}. Use 'gap', 'information_gain', or 'lattice'.")
 
     segments.sort(key=lambda s: s.start)
 
@@ -275,6 +278,123 @@ def _discover_information_gain(
 
     return segments, {"min_gain": min_gain, "total_splits": total_splits,
                       "bin_size": bin_size}
+
+
+def _discover_lattice(
+    records: list,
+    entities: Dict[tuple, list],
+    min_gain: float,
+    min_segment_events: int,
+) -> Tuple[List[Segment], dict]:
+    """Lattice-guided segment discovery.
+
+    Uses discover_scales to find the scale where session structure lives,
+    then discovers segments at that resolution. No FD, no external estimators.
+    The lattice provides valid scales, information gain selects the right one.
+    """
+    from ._complex import RealSignal
+    from ._information import discover_scales
+
+    # Build a single signal from all records to find the global session scale
+    orders = np.array([r.primary_order for r in records])
+    min_o, max_o = orders.min(), orders.max()
+    span = max_o - min_o + 1
+
+    # Use a coarse grain for the scale walk (fast), then refine
+    # Grain for the walk: ~1/1000th of span, at least 1
+    walk_grain = max(span // 1000, 1)
+    n_bins = span // walk_grain + 1
+
+    counts = np.zeros(n_bins, dtype=np.float64)
+    for o in orders:
+        counts[(o - min_o) // walk_grain] += 1
+    sig = RealSignal(np.arange(n_bins), counts, channel="_discovery")
+
+    # Find a horizon with decent divisor count near n_bins
+    from binjamin import divisors
+
+    horizon = n_bins
+    for candidate in range(n_bins, n_bins + 20):
+        if len(divisors(candidate)) > len(divisors(horizon)):
+            horizon = candidate
+
+    scales = discover_scales(sig, horizon=horizon, grain=1, min_gain=min_gain / 2)
+
+    # Find the session scale: the scale with the highest information gain
+    # that produces a reasonable number of bins (not too coarse, not too fine)
+    best_scale = None
+    best_gain = 0.0
+    for s in scales:
+        if s["bins"] >= 2 and s["gain"] > best_gain:
+            best_gain = s["gain"]
+            best_scale = s
+
+    if best_scale is not None:
+        bin_size = best_scale["window"] * walk_grain
+    else:
+        # Fallback: use the finest discovered scale
+        fine_scales = [s for s in scales if s["bins"] >= 2]
+        if fine_scales:
+            bin_size = min(s["window"] for s in fine_scales) * walk_grain
+        else:
+            bin_size = max(span // 100, 1)
+
+    # Now do IG-based segmentation at the discovered resolution
+    segments = []
+    total_splits = 0
+
+    for key, events in entities.items():
+        entity_dict = dict(key)
+
+        if len(events) < min_segment_events:
+            segments.append(_make_segment(entity_dict, events))
+            continue
+
+        e_orders = np.array([r.primary_order for r in events])
+        e_min, e_max = e_orders.min(), e_orders.max()
+
+        if e_min == e_max:
+            segments.append(_make_segment(entity_dict, events))
+            continue
+
+        n_bins = (e_max - e_min) // bin_size + 1
+        e_counts = np.zeros(n_bins, dtype=np.float64)
+        for o in e_orders:
+            e_counts[(o - e_min) // bin_size] += 1
+
+        # Find split points recursively
+        split_positions = []
+        _recursive_split(e_counts, 0, n_bins, min_gain, min_segment_events,
+                         split_positions)
+        split_positions.sort()
+
+        if not split_positions:
+            segments.append(_make_segment(entity_dict, events))
+        else:
+            total_splits += len(split_positions)
+            thresholds = [e_min + pos * bin_size for pos in split_positions]
+
+            current = []
+            thresh_idx = 0
+            for ev in events:
+                if (thresh_idx < len(thresholds) and
+                        ev.primary_order >= thresholds[thresh_idx]):
+                    if current:
+                        segments.append(_make_segment(entity_dict, current))
+                    current = [ev]
+                    thresh_idx += 1
+                else:
+                    current.append(ev)
+            if current:
+                segments.append(_make_segment(entity_dict, current))
+
+    return segments, {
+        "min_gain": min_gain,
+        "total_splits": total_splits,
+        "bin_size": bin_size,
+        "session_scale": best_scale,
+        "n_scales_discovered": len(scales),
+    }
 
 
 def _recursive_split(
