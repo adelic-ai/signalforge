@@ -260,16 +260,29 @@ def entropy_surface(surface: Surface) -> np.ndarray:
     return result
 
 
-def entropy_from_signal(
+def _bin_signal(signal, cbin):
+    """Bin a signal's events at cbin resolution. Returns dense_count and time info."""
+    idx = signal.index
+    bin_indices = idx // cbin
+    min_bin = int(bin_indices.min())
+    max_bin = int(bin_indices.max())
+    n_time = max_bin - min_bin + 1
+    rel_bins = (bin_indices - min_bin).astype(np.intp)
+    dense_count = np.zeros(n_time, dtype=np.intp)
+    np.add.at(dense_count, rel_bins, 1)
+    time_axis = np.arange(min_bin, max_bin + 1, dtype=np.int64)
+    return dense_count, time_axis, n_time
+
+
+def entropy_surface(
     signal,
     plan: SamplingPlan,
-    n_bins: int = 10,
-) -> np.ndarray:
-    """Compute entropy surface from a signal with per-window histograms.
+) -> Surface:
+    """Entropy surface: Shannon entropy of event distribution within each window.
 
-    For each (scale, time) cell, builds a histogram of values within
-    that window and computes Shannon entropy. This gives the distribution
-    shape — concentrated (low entropy) vs spread (high entropy).
+    At each (scale, time) cell, measures how evenly events are spread
+    across the sub-bins within that window. High entropy = spread,
+    low entropy = concentrated.
 
     Parameters
     ----------
@@ -277,151 +290,212 @@ def entropy_from_signal(
         The signal to measure.
     plan : SamplingPlan
         Lattice geometry.
-    n_bins : int
-        Number of histogram bins within each window. Default: 10.
 
     Returns
     -------
-    np.ndarray
-        2D array (n_scales, n_time) of entropy values in bits.
+    Surface
+        With data keys: "entropy", "count".
     """
-    idx = signal.index
-    vals = signal.values
+    dense_count, time_axis, n_time = _bin_signal(signal, plan.cbin)
     cbin = plan.cbin
-
-    # Bin the signal
-    bin_indices = idx // cbin
-    min_bin = int(bin_indices.min())
-    max_bin = int(bin_indices.max())
-    n_time = max_bin - min_bin + 1
-
-    rel_bins = (bin_indices - min_bin).astype(np.intp)
-
-    dense_count = np.zeros(n_time, dtype=np.intp)
-    np.add.at(dense_count, rel_bins, 1)
-
     n_scales = len(plan.windows)
-    result = np.full((n_scales, n_time), np.nan)
+
+    ent_arr = np.full((n_scales, n_time), np.nan)
+    cnt_arr = np.full((n_scales, n_time), np.nan)
 
     for scale_idx, (window, hop) in enumerate(zip(plan.windows, plan.hops)):
         w = window // cbin
         h = hop // cbin
-
         starts = np.arange(0, n_time, h)
 
         for start in starts:
             end = min(start + w, n_time)
-            window_counts = dense_count[start:end]
-
-            if window_counts.sum() == 0:
+            window_counts = dense_count[start:end].astype(np.float64)
+            total = window_counts.sum()
+            if total <= 0:
                 continue
+            cnt_arr[scale_idx, start] = total
+            ent_arr[scale_idx, start] = entropy(window_counts)
 
-            # Entropy of the count distribution within this window
-            # Each sub-bin's count is a category
-            result[scale_idx, start] = entropy(window_counts)
-
-    return result
+    scale_axis = tuple(w // cbin for w in plan.windows)
+    return Surface(
+        time_axis=time_axis,
+        scale_axis=scale_axis,
+        data={"entropy": ent_arr, "count": cnt_arr},
+        channel=signal.channel,
+        plan=plan,
+        keys=signal.keys,
+        metric="entropy",
+        profile="information",
+        coordinates=plan.coordinates,
+    )
 
 
 def mutual_information_surface(
-    surface_a: Surface,
-    surface_b: Surface,
-) -> np.ndarray:
-    """Mutual information between two surfaces at each time position.
+    signal_a,
+    signal_b,
+    plan: SamplingPlan,
+) -> Surface:
+    """Mutual information between two signals at each (scale, time) cell.
 
-    Computes MI across the scale axis — "how much does the scale
-    structure of A tell you about the scale structure of B at this time?"
+    At each window position, computes MI between the sub-bin count
+    distributions of the two signals. High MI = the signals' temporal
+    patterns are correlated at that scale. Low MI = independent.
 
     Parameters
     ----------
-    surface_a, surface_b : Surface
-        Must have the same plan (same scales and time axis).
+    signal_a, signal_b : LatticeSignal
+        Two signals to compare (e.g., channel 4768 and 4769).
+    plan : SamplingPlan
+        Lattice geometry. Both signals are binned with this plan.
 
     Returns
     -------
-    np.ndarray
-        1D array (n_time,) of MI values in bits.
+    Surface
+        With data keys: "mi", "entropy_a", "entropy_b".
     """
-    count_a = surface_a.data.get("count")
-    count_b = surface_b.data.get("count")
+    cbin = plan.cbin
+    count_a, time_a, n_time_a = _bin_signal(signal_a, cbin)
+    count_b, time_b, n_time_b = _bin_signal(signal_b, cbin)
 
-    if count_a is None or count_b is None:
-        raise ValueError("Both surfaces must have 'count' data")
+    # Align to common time range
+    min_bin = min(time_a[0], time_b[0])
+    max_bin = max(time_a[-1], time_b[-1])
+    n_time = int(max_bin - min_bin + 1)
 
-    n_scales, n_time = count_a.shape
-    result = np.full(n_time, np.nan)
+    aligned_a = np.zeros(n_time, dtype=np.intp)
+    aligned_b = np.zeros(n_time, dtype=np.intp)
+    offset_a = int(time_a[0] - min_bin)
+    offset_b = int(time_b[0] - min_bin)
+    aligned_a[offset_a:offset_a + len(count_a)] = count_a
+    aligned_b[offset_b:offset_b + len(count_b)] = count_b
 
-    for t in range(n_time):
-        col_a = count_a[:, t]
-        col_b = count_b[:, t]
+    n_scales = len(plan.windows)
+    mi_arr = np.full((n_scales, n_time), np.nan)
+    ent_a_arr = np.full((n_scales, n_time), np.nan)
+    ent_b_arr = np.full((n_scales, n_time), np.nan)
 
-        valid = ~np.isnan(col_a) & ~np.isnan(col_b)
-        if valid.sum() < 2:
-            continue
+    for scale_idx, (window, hop) in enumerate(zip(plan.windows, plan.hops)):
+        w = window // cbin
+        h = hop // cbin
+        starts = np.arange(0, n_time, h)
 
-        result[t] = mutual_information(
-            col_a[valid].astype(np.float64),
-            col_b[valid].astype(np.float64),
-        )
+        for start in starts:
+            end = min(start + w, n_time)
+            wa = aligned_a[start:end].astype(np.float64)
+            wb = aligned_b[start:end].astype(np.float64)
 
-    return result
+            if wa.sum() <= 0 and wb.sum() <= 0:
+                continue
+
+            ha = entropy(wa)
+            hb = entropy(wb)
+            ent_a_arr[scale_idx, start] = ha
+            ent_b_arr[scale_idx, start] = hb
+            mi_arr[scale_idx, start] = ha + hb - joint_entropy(wa, wb)
+
+    time_axis = np.arange(min_bin, max_bin + 1, dtype=np.int64)
+    scale_axis = tuple(w // cbin for w in plan.windows)
+
+    ch_label = f"MI({signal_a.channel},{signal_b.channel})"
+    keys = signal_a.keys if signal_a.keys == signal_b.keys else {}
+
+    return Surface(
+        time_axis=time_axis,
+        scale_axis=scale_axis,
+        data={"mi": mi_arr, "entropy_a": ent_a_arr, "entropy_b": ent_b_arr},
+        channel=ch_label,
+        plan=plan,
+        keys=keys,
+        metric="mutual_information",
+        profile="information",
+        coordinates=plan.coordinates,
+    )
 
 
 def divergence_surface(
-    surface: Surface,
-    baseline: Surface,
-) -> np.ndarray:
-    """KL divergence from baseline at each (scale, time) cell.
+    signal,
+    signal_baseline,
+    plan: SamplingPlan,
+) -> Surface:
+    """KL divergence surface: how different is the signal from a baseline?
 
-    "How different is the current distribution from the baseline?"
-    Computed across the scale axis at each time position.
+    At each (scale, time) cell, computes KL divergence between the
+    sub-bin count distribution of the signal and the baseline.
+    High divergence = the distribution shape changed.
 
     Parameters
     ----------
-    surface : Surface
-        Current measurement.
-    baseline : Surface
-        Reference distribution (e.g., EWMA baseline).
+    signal : LatticeSignal
+        Current signal.
+    signal_baseline : LatticeSignal
+        Reference signal (e.g., historical baseline).
+    plan : SamplingPlan
+        Lattice geometry.
 
     Returns
     -------
-    np.ndarray
-        1D array (n_time,) of KL divergence values.
+    Surface
+        With data keys: "kl_divergence".
     """
-    count_s = surface.data.get("count")
-    count_b = baseline.data.get("count")
+    cbin = plan.cbin
+    count_s, time_s, n_time_s = _bin_signal(signal, cbin)
+    count_b, time_b, n_time_b = _bin_signal(signal_baseline, cbin)
 
-    if count_s is None or count_b is None:
-        raise ValueError("Both surfaces must have 'count' data")
+    min_bin = min(time_s[0], time_b[0])
+    max_bin = max(time_s[-1], time_b[-1])
+    n_time = int(max_bin - min_bin + 1)
 
-    n_scales, n_time = count_s.shape
-    result = np.full(n_time, np.nan)
+    aligned_s = np.zeros(n_time, dtype=np.intp)
+    aligned_b = np.zeros(n_time, dtype=np.intp)
+    offset_s = int(time_s[0] - min_bin)
+    offset_b = int(time_b[0] - min_bin)
+    aligned_s[offset_s:offset_s + len(count_s)] = count_s
+    aligned_b[offset_b:offset_b + len(count_b)] = count_b
 
-    for t in range(n_time):
-        col_s = count_s[:, t]
-        col_b = count_b[:, t]
+    n_scales = len(plan.windows)
+    kl_arr = np.full((n_scales, n_time), np.nan)
 
-        valid = ~np.isnan(col_s) & ~np.isnan(col_b)
-        if valid.sum() < 2:
-            continue
+    for scale_idx, (window, hop) in enumerate(zip(plan.windows, plan.hops)):
+        w = window // cbin
+        h = hop // cbin
+        starts = np.arange(0, n_time, h)
 
-        result[t] = kl_divergence(
-            col_s[valid].astype(np.float64),
-            col_b[valid].astype(np.float64),
-        )
+        for start in starts:
+            end = min(start + w, n_time)
+            ws = aligned_s[start:end].astype(np.float64)
+            wb = aligned_b[start:end].astype(np.float64)
 
-    return result
+            if ws.sum() <= 0 or wb.sum() <= 0:
+                continue
+
+            kl_arr[scale_idx, start] = kl_divergence(ws, wb)
+
+    time_axis = np.arange(min_bin, max_bin + 1, dtype=np.int64)
+    scale_axis = tuple(w // cbin for w in plan.windows)
+
+    return Surface(
+        time_axis=time_axis,
+        scale_axis=scale_axis,
+        data={"kl_divergence": kl_arr},
+        channel=signal.channel,
+        plan=plan,
+        keys=signal.keys,
+        metric="kl_divergence",
+        profile="information",
+        coordinates=plan.coordinates,
+    )
 
 
 def information_gain_surface(
     signal,
     plan: SamplingPlan,
-) -> np.ndarray:
-    """Information gain from splitting at each time position.
+) -> Surface:
+    """Information gain surface: where splitting reduces entropy most.
 
-    For each time position, computes how much entropy is reduced
-    by splitting the signal there. High gain = natural boundary
-    (session boundary, regime change, anomaly onset).
+    At each (scale, time) cell, computes the information gain from
+    splitting the window at its midpoint. High gain = the window
+    contains a natural boundary (session edge, regime change).
 
     Parameters
     ----------
@@ -432,26 +506,47 @@ def information_gain_surface(
 
     Returns
     -------
-    np.ndarray
-        1D array (n_time_bins,) of information gain values.
+    Surface
+        With data keys: "information_gain", "entropy".
     """
-    idx = signal.index
-    vals = signal.values
+    dense_count, time_axis, n_time = _bin_signal(signal, plan.cbin)
     cbin = plan.cbin
+    n_scales = len(plan.windows)
 
-    bin_indices = idx // cbin
-    min_bin = int(bin_indices.min())
-    max_bin = int(bin_indices.max())
-    n_time = max_bin - min_bin + 1
+    ig_arr = np.full((n_scales, n_time), np.nan)
+    ent_arr = np.full((n_scales, n_time), np.nan)
 
-    rel_bins = (bin_indices - min_bin).astype(np.intp)
+    for scale_idx, (window, hop) in enumerate(zip(plan.windows, plan.hops)):
+        w = window // cbin
+        h = hop // cbin
+        starts = np.arange(0, n_time, h)
 
-    dense_count = np.zeros(n_time, dtype=np.intp)
-    np.add.at(dense_count, rel_bins, 1)
+        for start in starts:
+            end = min(start + w, n_time)
+            window_counts = dense_count[start:end].astype(np.float64)
 
-    # Information gain at each possible split point
-    result = np.zeros(n_time)
-    for t in range(1, n_time - 1):
-        result[t] = information_gain(dense_count, t)
+            if window_counts.sum() <= 0:
+                continue
 
-    return result
+            ent_arr[scale_idx, start] = entropy(window_counts)
+
+            # Best split within this window
+            best_gain = 0.0
+            for split in range(1, len(window_counts)):
+                g = information_gain(window_counts, split)
+                if g > best_gain:
+                    best_gain = g
+            ig_arr[scale_idx, start] = best_gain
+
+    scale_axis = tuple(w // cbin for w in plan.windows)
+    return Surface(
+        time_axis=time_axis,
+        scale_axis=scale_axis,
+        data={"information_gain": ig_arr, "entropy": ent_arr},
+        channel=signal.channel,
+        plan=plan,
+        keys=signal.keys,
+        metric="information_gain",
+        profile="information",
+        coordinates=plan.coordinates,
+    )
