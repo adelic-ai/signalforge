@@ -45,8 +45,9 @@ signal/
   _record.py    # Record — universal event type
   _convert.py   # records_to_signals()
   _measure.py   # measure_signal() — multi-aggregation, prefix sums
-  _segment.py   # Segment discovery — gap-based activity boundaries
+  _segment.py   # Segment discovery — gap-based and information-gain
   _features.py  # Feature extraction, labeling, join enrichment
+  _information.py # Information-theoretic operations, scale discovery
   __init__.py   # Public API
 ```
 
@@ -58,6 +59,7 @@ signal/
 - `measure_signal()` supports multiple aggregations per surface via prefix sums (fast) and per-window fallback (any registered aggregation).
 - `discover_segments()` finds natural activity boundaries from inter-event gaps. Domain-agnostic.
 - `join_segments()` enriches segments with cross-segment context — group by a different key, compute fanout/fanin/co-occurrence. The caller picks the join key; SF computes the aggregates.
+- `_information.py` provides information-theoretic operations on the lattice: entropy, mutual information, KL divergence, information gain. All return Surface objects. `discover_scales()` walks the lattice top-down guided by information gain — no external estimators (FD, Nyquist) needed.
 - Each `Artifact` has a deterministic ID (hash of plan + op + parent IDs) for caching and lineage.
 
 ---

@@ -9,6 +9,7 @@ Two APIs for different needs: **chaining** for quick exploration, **DAG** for fu
 - [Signals](#signals)
 - [Surfaces](#surfaces)
 - [Segments and Features](#segments-and-features)
+- [Information](#information)
 - [Hilbert](#hilbert)
 - [Operators](#operators)
 
@@ -313,6 +314,80 @@ labeled = label_segments(segments, rules={
     "normal": lambda s: True,
 })
 ```
+
+---
+
+## Information
+
+The information layer measures where structure lives in the data. The lattice provides valid measurement scales; information content selects which ones matter.
+
+### Entropy surface
+
+```python
+from signalforge.signal import entropy_surface, RealSignal
+from signalforge.lattice.sampling import SamplingPlan
+
+plan = SamplingPlan(3600, 60)
+surface = entropy_surface(signal, plan)
+# surface.data: {"entropy": ..., "count": ...}
+# High entropy = events spread evenly. Low = concentrated.
+```
+
+### Mutual information between channels
+
+```python
+from signalforge.signal import mutual_information_surface
+
+mi = mutual_information_surface(signal_4768, signal_4769, plan)
+# mi.data: {"mi": ..., "entropy_a": ..., "entropy_b": ...}
+# High MI = channels are coupled. Drop in MI = chain broken.
+```
+
+### KL divergence from baseline
+
+```python
+from signalforge.signal import divergence_surface
+
+div = divergence_surface(signal_current, signal_baseline, plan)
+# div.data: {"kl_divergence": ...}
+# Distribution-level anomaly score. Replaces scalar z-score.
+```
+
+### Information gain
+
+```python
+from signalforge.signal import information_gain_surface
+
+ig = information_gain_surface(signal, plan)
+# ig.data: {"information_gain": ..., "entropy": ...}
+# High gain = natural boundary (session edge, regime change).
+```
+
+### Count entropy as aggregation
+
+```python
+from signalforge.signal import measure_signal
+
+surface = measure_signal(signal, plan, agg=["mean", "count", "count_entropy"])
+# count_entropy: Shannon entropy of event count distribution within each window.
+# Measures temporal spread, not value spread.
+```
+
+### Scale discovery
+
+```python
+from signalforge.signal import discover_scales, discover_plan
+
+# Find which scales carry information — no FD, no manual selection
+scales = discover_scales(signal, horizon=604800, grain=60)
+for s in scales:
+    print(f"window={s['window']}  entropy={s['entropy']:.2f}  gain={s['gain']:.3f}")
+
+# Build a complete plan from data alone
+plan = discover_plan(signal, horizon=604800, grain=60)
+```
+
+All information surfaces return `Surface` objects — they plug into baselines, residuals, and heatmaps.
 
 ---
 

@@ -314,7 +314,9 @@ def discover_scales(
                 "bins": n_windows,
             })
 
-            if gain < min_gain:
+            if gain < min_gain and n_windows > 1:
+                # Only stop descending if we actually had enough bins to
+                # evaluate. 1 bin = can't see anything yet, keep going.
                 return
 
         # Descend: find the next valid scales below this one
