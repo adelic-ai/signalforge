@@ -29,6 +29,12 @@ from ._features import (
     label_segments, segment_summary, print_segment_summary,
     segment_features, segments_to_matrix, join_segments,
 )
+from ._information import (
+    entropy, joint_entropy, mutual_information, kl_divergence,
+    information_gain, best_split,
+    entropy_from_signal, mutual_information_surface,
+    divergence_surface, information_gain_surface,
+)
 
 __all__ = [
     "LatticeSignal",
