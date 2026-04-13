@@ -48,21 +48,37 @@ def discover_segments(
     records: list,
     gap_threshold: Optional[int] = None,
     gap_method: str = "freedman_diaconis",
+    method: str = "gap",
+    min_gain: float = 0.1,
+    min_segment_events: int = 2,
 ) -> Tuple[List[Segment], dict]:
     """Discover segments from records.
 
-    Groups events by entity (keys), finds gaps between consecutive events,
-    determines a gap threshold, and splits into Segments.
+    Groups events by entity (keys) and splits into Segments using
+    one of two methods:
+
+    - "gap" (default): split where inter-event gaps exceed a threshold.
+      Simple, fast, works well when sessions have clear pauses.
+    - "information_gain": recursively split where Shannon entropy
+      reduction is highest. No threshold needed — the data tells you
+      where the natural boundaries are. Better for complex patterns
+      where gap sizes vary.
 
     Parameters
     ----------
     records : list of Record or CanonicalRecord
         Events with .primary_order, .channel, .keys
     gap_threshold : int, optional
-        Gap size that defines a segment boundary. If None, estimated
-        from the gap distribution.
+        Gap size for "gap" method. If None, estimated from distribution.
     gap_method : str
         Estimation method for gap threshold. Default: freedman_diaconis.
+    method : str
+        "gap" or "information_gain". Default: "gap".
+    min_gain : float
+        Minimum information gain to justify a split (for "information_gain").
+        Default: 0.1 bits.
+    min_segment_events : int
+        Minimum events per segment (for "information_gain"). Default: 2.
 
     Returns
     -------
@@ -79,6 +95,41 @@ def discover_segments(
     for key in entities:
         entities[key].sort(key=lambda r: r.primary_order)
 
+    if method == "gap":
+        segments, method_stats = _discover_gap(
+            entities, gap_threshold, gap_method)
+    elif method == "information_gain":
+        segments, method_stats = _discover_information_gain(
+            entities, min_gain, min_segment_events)
+    else:
+        raise ValueError(f"Unknown method {method!r}. Use 'gap' or 'information_gain'.")
+
+    segments.sort(key=lambda s: s.start)
+
+    # Stats
+    durations = [s.duration for s in segments]
+    stats = {
+        "method": method,
+        "n_entities": len(entities),
+        "n_segments": len(segments),
+        "mean_duration": float(np.mean(durations)) if durations else 0,
+        "median_duration": float(np.median(durations)) if durations else 0,
+        "std_duration": float(np.std(durations)) if durations else 0,
+        "min_duration": int(np.min(durations)) if durations else 0,
+        "max_duration": int(np.max(durations)) if durations else 0,
+        "mean_events": float(np.mean([s.event_count for s in segments])) if segments else 0,
+    }
+    stats.update(method_stats)
+
+    return segments, stats
+
+
+def _discover_gap(
+    entities: Dict[tuple, list],
+    gap_threshold: Optional[int],
+    gap_method: str,
+) -> Tuple[List[Segment], dict]:
+    """Gap-based segment discovery."""
     # Collect all inter-event gaps
     all_gaps = []
     for key, events in entities.items():
@@ -98,7 +149,6 @@ def discover_segments(
     elif gap_threshold is None:
         gap_threshold = int(np.median(all_gaps) * 10) if len(all_gaps) > 0 else 100
 
-    # Segment
     segments = []
     for key, events in entities.items():
         entity_dict = dict(key)
@@ -115,23 +165,159 @@ def discover_segments(
         if current:
             segments.append(_make_segment(entity_dict, current))
 
-    segments.sort(key=lambda s: s.start)
+    return segments, {"gap_threshold": gap_threshold}
 
-    # Stats
-    durations = [s.duration for s in segments]
-    stats = {
-        "n_entities": len(entities),
-        "n_segments": len(segments),
-        "gap_threshold": gap_threshold,
-        "mean_duration": float(np.mean(durations)) if durations else 0,
-        "median_duration": float(np.median(durations)) if durations else 0,
-        "std_duration": float(np.std(durations)) if durations else 0,
-        "min_duration": int(np.min(durations)) if durations else 0,
-        "max_duration": int(np.max(durations)) if durations else 0,
-        "mean_events": float(np.mean([s.event_count for s in segments])) if segments else 0,
-    }
 
-    return segments, stats
+def _entropy(counts: np.ndarray) -> float:
+    """Shannon entropy of a count array. Bits."""
+    total = counts.sum()
+    if total <= 0:
+        return 0.0
+    p = counts[counts > 0] / total
+    return float(-np.sum(p * np.log2(p)))
+
+
+def _information_gain(counts: np.ndarray, split: int) -> float:
+    """Information gain from splitting a count array at position."""
+    if split <= 0 or split >= len(counts):
+        return 0.0
+    left = counts[:split]
+    right = counts[split:]
+    total = counts.sum()
+    if total <= 0:
+        return 0.0
+    h_parent = _entropy(counts)
+    w_left = left.sum() / total
+    w_right = right.sum() / total
+    return float(h_parent - w_left * _entropy(left) - w_right * _entropy(right))
+
+
+def _discover_information_gain(
+    entities: Dict[tuple, list],
+    min_gain: float,
+    min_segment_events: int,
+) -> Tuple[List[Segment], dict]:
+    """Information-gain-based segment discovery.
+
+    For each entity, bin events at a data-derived resolution, then
+    recursively split at the point of maximum information gain.
+    Stop when gain drops below min_gain or segments are too small.
+
+    The bin resolution is estimated from inter-event gaps (FD estimator)
+    — the same statistic the gap method uses, but here it becomes the
+    analysis grain rather than a threshold.
+    """
+    # Estimate bin resolution from all gaps
+    all_gaps = []
+    for key, events in entities.items():
+        orders = [r.primary_order for r in events]
+        gaps = np.diff(sorted(orders))
+        gaps = gaps[gaps > 0]
+        all_gaps.extend(gaps.tolist())
+
+    if len(all_gaps) > 10:
+        import binjamin as bj
+        bin_size = int(max(bj.freedman_diaconis(np.array(all_gaps)), 1))
+    else:
+        bin_size = int(np.median(all_gaps)) if all_gaps else 1
+
+    segments = []
+    total_splits = 0
+
+    for key, events in entities.items():
+        entity_dict = dict(key)
+
+        if len(events) < min_segment_events:
+            segments.append(_make_segment(entity_dict, events))
+            continue
+
+        # Bin events at estimated resolution
+        orders = np.array([r.primary_order for r in events])
+        min_o, max_o = orders.min(), orders.max()
+
+        if min_o == max_o:
+            segments.append(_make_segment(entity_dict, events))
+            continue
+
+        n_bins = (max_o - min_o) // bin_size + 1
+        counts = np.zeros(n_bins, dtype=np.float64)
+        for o in orders:
+            counts[(o - min_o) // bin_size] += 1
+
+        # Find split points recursively
+        split_positions = []
+        _recursive_split(counts, 0, n_bins, min_gain, min_segment_events,
+                         split_positions)
+        split_positions.sort()
+
+        # Convert split positions to event boundaries
+        # Split positions are in bin-space; map back to event indices
+        if not split_positions:
+            segments.append(_make_segment(entity_dict, events))
+        else:
+            total_splits += len(split_positions)
+            # Convert bin positions to primary_order thresholds
+            thresholds = [min_o + pos * bin_size for pos in split_positions]
+
+            current = []
+            thresh_idx = 0
+            for ev in events:
+                if (thresh_idx < len(thresholds) and
+                        ev.primary_order >= thresholds[thresh_idx]):
+                    if current:
+                        segments.append(_make_segment(entity_dict, current))
+                    current = [ev]
+                    thresh_idx += 1
+                else:
+                    current.append(ev)
+            if current:
+                segments.append(_make_segment(entity_dict, current))
+
+    return segments, {"min_gain": min_gain, "total_splits": total_splits,
+                      "bin_size": bin_size}
+
+
+def _recursive_split(
+    counts: np.ndarray,
+    offset: int,
+    length: int,
+    min_gain: float,
+    min_events: int,
+    result: list,
+    max_depth: int = 20,
+) -> None:
+    """Recursively find split points by maximum information gain."""
+    if length < 2 * min_events or max_depth <= 0:
+        return
+
+    window = counts[offset:offset + length]
+    if window.sum() < 2 * min_events:
+        return
+
+    # Find best split
+    best_pos = 0
+    best_gain = 0.0
+    for i in range(min_events, length - min_events + 1):
+        left_sum = window[:i].sum()
+        right_sum = window[i:].sum()
+        if left_sum < min_events or right_sum < min_events:
+            continue
+        g = _information_gain(window, i)
+        if g > best_gain:
+            best_gain = g
+            best_pos = i
+
+    if best_gain < min_gain:
+        return
+
+    # Record the split point (in absolute position)
+    result.append(offset + best_pos)
+
+    # Recurse on both halves
+    _recursive_split(counts, offset, best_pos,
+                     min_gain, min_events, result, max_depth - 1)
+    _recursive_split(counts, offset + best_pos, length - best_pos,
+                     min_gain, min_events, result, max_depth - 1)
 
 
 def _make_segment(entity: dict, events: list) -> Segment:
