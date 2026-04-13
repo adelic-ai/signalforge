@@ -207,58 +207,194 @@ def best_split(counts: np.ndarray, min_size: int = 1) -> Tuple[int, float]:
 
 
 # ---------------------------------------------------------------------------
-# Surface operations
+# Lattice walk — scale discovery
 # ---------------------------------------------------------------------------
 
-def entropy_surface(surface: Surface) -> np.ndarray:
-    """Compute entropy at each (scale, time) cell of a surface.
+def discover_scales(
+    signal,
+    horizon: int,
+    grain: int = 1,
+    min_gain: float = 0.05,
+    min_events: int = 2,
+) -> list:
+    """Walk the lattice top-down to find scales with information content.
 
-    Uses the count data from the surface. At each cell, the "distribution"
-    is the event count — entropy measures how concentrated vs spread
-    the events are within each window.
+    Starts at the coarsest scale (horizon) and divides by prime factors.
+    At each scale, measures information gain from the split. Keeps
+    descending where gain is above threshold, stops where it's not.
 
-    For richer entropy (distribution of values, not just counts),
-    use entropy_from_signal which builds per-window histograms.
+    This replaces FD-based grain estimation. The lattice provides the
+    valid scales, information gain selects which ones matter.
 
     Parameters
     ----------
-    surface : Surface
-        Must have 'count' in surface.data.
+    signal : LatticeSignal
+        The signal to analyze.
+    horizon : int
+        Outer boundary (largest window to consider).
+    grain : int
+        Finest resolution to descend to. Default: 1.
+    min_gain : float
+        Minimum information gain to justify descending. Default: 0.05 bits.
+    min_events : int
+        Minimum total events in a window to evaluate it. Default: 2.
 
     Returns
     -------
-    np.ndarray
-        2D array (n_scales, n_time) of entropy values in bits.
+    list of dict
+        One entry per discovered scale:
+        {"window": int, "entropy": float, "gain": float, "bins": int}
+        Sorted coarsest to finest.
     """
-    count_data = surface.data.get("count")
-    if count_data is None:
-        raise ValueError("Surface must have 'count' data for entropy computation")
+    from binjamin import factorize, divisors
 
-    n_scales, n_time = count_data.shape
-    result = np.full((n_scales, n_time), np.nan)
+    idx = signal.index
+    vals = signal.values
 
-    for s in range(n_scales):
-        row = count_data[s]
-        valid = ~np.isnan(row)
-        if not valid.any():
-            continue
+    # Bin at grain resolution
+    bin_indices = idx // grain
+    min_bin = int(bin_indices.min())
+    max_bin = int(bin_indices.max())
+    n_bins = max_bin - min_bin + 1
 
-        # Sliding entropy: for each position, compute entropy of the
-        # window centered/starting at that position
-        # Since count_data already has the windowed counts, we compute
-        # entropy of the local distribution of counts across neighboring bins
-        for t in range(n_time):
-            if not valid[t]:
-                continue
-            # Local window: the count at this cell represents the
-            # total events in one window. The entropy of a single count
-            # is 0. We need the distribution WITHIN the window.
-            # This requires the sub-bin counts, which we compute from
-            # the dense binned data.
-            result[s, t] = 0.0  # placeholder — needs sub-bin distribution
+    rel_bins = (bin_indices - min_bin).astype(np.intp)
+    dense = np.zeros(n_bins, dtype=np.float64)
+    np.add.at(dense, rel_bins, vals if len(vals.shape) == 1 else np.ones(len(vals)))
 
-    return result
+    total_events = dense.sum()
+    if total_events < min_events:
+        return []
 
+    # Get all divisors of horizon that are multiples of grain
+    all_scales = sorted([d for d in divisors(horizon) if d >= grain], reverse=True)
+
+    discovered = []
+
+    def _walk(window):
+        if window < grain:
+            return
+
+        w_bins = window // grain
+        if w_bins > n_bins:
+            # Window larger than data — compute single entropy
+            h = entropy(dense)
+            discovered.append({
+                "window": window,
+                "entropy": h,
+                "gain": 0.0,
+                "bins": 1,
+            })
+            # Still try to descend
+        else:
+            # Compute entropy at this scale
+            n_windows = n_bins // w_bins
+            if n_windows < 1:
+                return
+
+            # Count events per window-sized bin
+            window_counts = np.zeros(n_windows)
+            for i in range(n_windows):
+                window_counts[i] = dense[i * w_bins:(i + 1) * w_bins].sum()
+
+            if window_counts.sum() < min_events:
+                return
+
+            h = entropy(window_counts)
+
+            # Best split of the window counts
+            if n_windows >= 2:
+                _, gain = best_split(window_counts, min_size=1)
+            else:
+                gain = 0.0
+
+            discovered.append({
+                "window": window,
+                "entropy": h,
+                "gain": gain,
+                "bins": n_windows,
+            })
+
+            if gain < min_gain:
+                return
+
+        # Descend: find the next valid scales below this one
+        # These are divisors of this window that are also divisors of horizon
+        factors = factorize(window // grain) if window > grain else {}
+        children = set()
+        for p in factors:
+            child = window // p
+            if child >= grain and child in set(all_scales):
+                children.add(child)
+
+        for child in sorted(children, reverse=True):
+            _walk(child)
+
+    _walk(horizon)
+
+    # Deduplicate and sort
+    seen = set()
+    unique = []
+    for entry in discovered:
+        if entry["window"] not in seen:
+            seen.add(entry["window"])
+            unique.append(entry)
+
+    unique.sort(key=lambda x: -x["window"])
+    return unique
+
+
+def discover_plan(
+    signal,
+    horizon: int,
+    grain: int = 1,
+    min_gain: float = 0.05,
+) -> SamplingPlan:
+    """Build a SamplingPlan from data using the lattice walk.
+
+    No FD, no manual window selection. The lattice provides valid scales,
+    information gain selects which ones carry structure.
+
+    Parameters
+    ----------
+    signal : LatticeSignal
+        The signal to analyze.
+    horizon : int
+        Outer boundary.
+    grain : int
+        Finest resolution. Default: 1.
+    min_gain : float
+        Minimum gain to include a scale. Default: 0.05.
+
+    Returns
+    -------
+    SamplingPlan
+        With windows selected by information content.
+    """
+    scales = discover_scales(signal, horizon, grain, min_gain)
+
+    if not scales:
+        # Fallback: use horizon as single window
+        return SamplingPlan(horizon, grain)
+
+    # Select windows where gain > 0 (they revealed structure)
+    windows = [s["window"] for s in scales if s["gain"] > 0 or s["window"] == horizon]
+
+    if not windows:
+        windows = [horizon]
+
+    # Ensure grain is included in lcm for clean horizon
+    from math import gcd
+    from functools import reduce
+    all_for_lcm = windows + [grain]
+    plan_horizon = reduce(lambda a, b: a * b // gcd(a, b), all_for_lcm)
+
+    # Build plan with selected windows
+    return SamplingPlan(plan_horizon, grain, windows=sorted(set(windows)))
+
+
+# ---------------------------------------------------------------------------
+# Surface operations
+# ---------------------------------------------------------------------------
 
 def _bin_signal(signal, cbin):
     """Bin a signal's events at cbin resolution. Returns dense_count and time info."""

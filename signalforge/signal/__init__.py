@@ -32,6 +32,7 @@ from ._features import (
 from ._information import (
     entropy, joint_entropy, mutual_information, kl_divergence,
     information_gain, best_split,
+    discover_scales, discover_plan,
     entropy_surface, mutual_information_surface,
     divergence_surface, information_gain_surface,
 )
