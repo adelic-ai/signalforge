@@ -63,6 +63,27 @@ def _window_agg(dense, starts, ends, agg_name):
     return result
 
 
+def _count_entropy(dense_count, starts, ends):
+    """Shannon entropy of event count distribution within each window.
+
+    Measures temporal spread: low = events clustered in a few sub-bins,
+    high = events spread evenly across the window. Returns bits (log2).
+
+    This is the information-theoretic primitive. The existing 'entropy'
+    aggregation (in pipeline/aggregation.py) histograms values; this one
+    measures the count distribution directly on the lattice bins.
+    """
+    result = np.full(len(starts), np.nan)
+    for i, (s, e) in enumerate(zip(starts, ends)):
+        counts = dense_count[int(s):int(e)].astype(np.float64)
+        total = counts.sum()
+        if total <= 0:
+            continue
+        p = counts[counts > 0] / total
+        result[i] = float(-np.sum(p * np.log2(p)))
+    return result
+
+
 def measure_signal(
     signal: LatticeSignal,
     plan: SamplingPlan,
@@ -145,9 +166,11 @@ def measure_signal(
     n_events_arr = np.zeros((n_scales, n_time), dtype=np.intp)
     coverage_arr = np.zeros((n_scales, n_time), dtype=np.float64)
 
-    # Determine which aggs are prefix-sum and which need per-window
+    # Determine which aggs are prefix-sum, count-entropy, or per-window
     cumsum_names = [a for a in agg_names if a in _CUMSUM_AGGS]
-    window_names = [a for a in agg_names if a not in _CUMSUM_AGGS]
+    has_count_entropy = "count_entropy" in agg_names
+    window_names = [a for a in agg_names
+                    if a not in _CUMSUM_AGGS and a != "count_entropy"]
 
     # Initialize arrays
     for name in agg_names:
@@ -177,6 +200,11 @@ def measure_signal(
         for name in cumsum_names:
             fn = _CUMSUM_AGGS[name]
             data[name][scale_idx, starts] = fn(s_val, s_sq, cnt_w, s_log)
+
+        # Count entropy: Shannon entropy of event count distribution per window
+        if has_count_entropy:
+            data["count_entropy"][scale_idx, starts] = _count_entropy(
+                dense_count, starts, ends)
 
         # Compute per-window aggregations
         for name in window_names:
