@@ -712,4 +712,236 @@ def analyze(
         "n_bridge_pairs": sum(1 for p in pairwise_mi if p["group"] == "bridge"),
     }
 
+    # 9. Scoring layer — compress structure into ranked findings
+    results["scores"], results["findings"] = _compute_scores_and_findings(results)
+
     return results
+
+
+# ---------------------------------------------------------------------------
+# Scoring layer
+# ---------------------------------------------------------------------------
+
+def _compute_scores_and_findings(results: Dict[str, Any]) -> Tuple[List[Dict], List[Dict]]:
+    """Compute per-(user, channel) scores and generate ranked findings.
+
+    Uses volume anomaly, entropy anomaly, rarity, MI relationships,
+    and session characteristics to produce explainable risk scores.
+
+    Returns (scores, findings) where:
+        scores: list of {user, channel, score, components}
+        findings: list of {severity, title, description, evidence}
+    """
+    ce = results.get("channel_entropy", [])
+    pmi = results.get("pairwise_mi", [])
+    segments = results.get("segments", [])
+    s = results.get("summary", {})
+    scales = results.get("discovered_scales", [])
+
+    if not ce:
+        return [], []
+
+    total_events = s.get("total_events", 1)
+
+    # --- Per-(user, channel) scoring ---
+
+    # Compute baselines per channel
+    channel_stats = defaultdict(lambda: {"events": [], "entropy": []})
+    for entry in ce:
+        ch = entry["channel"]
+        channel_stats[ch]["events"].append(entry["events"])
+        channel_stats[ch]["entropy"].append(entry["entropy"])
+
+    channel_avg_events = {}
+    channel_avg_entropy = {}
+    for ch, stats in channel_stats.items():
+        channel_avg_events[ch] = np.mean(stats["events"]) if stats["events"] else 1
+        channel_avg_entropy[ch] = np.mean(stats["entropy"]) if stats["entropy"] else 0
+
+    # Count users per channel (rarity)
+    channel_user_count = defaultdict(int)
+    for entry in ce:
+        channel_user_count[entry["channel"]] += 1
+
+    total_users = s.get("unique_users", s.get("unique_userIdentity", 1))
+
+    scores = []
+    for entry in ce:
+        ch = entry["channel"]
+        events = entry["events"]
+        ent = entry["entropy"]
+        user = list(entry["keys"].values())[0] if entry["keys"] else "unknown"
+
+        # Volume anomaly: how much more than average for this channel
+        avg_ev = max(channel_avg_events.get(ch, 1), 1)
+        volume_score = min(np.log1p(events) / np.log1p(avg_ev), 3.0) / 3.0
+
+        # Entropy anomaly: how different from channel average
+        avg_ent = channel_avg_entropy.get(ch, 0)
+        if avg_ent > 0:
+            entropy_score = min(abs(ent - avg_ent) / avg_ent, 2.0) / 2.0
+        else:
+            entropy_score = 0.0
+
+        # Rarity: how uncommon is this channel
+        n_users = channel_user_count.get(ch, 1)
+        rarity_score = 1.0 - (n_users / max(total_users, 1))
+
+        # Activity share
+        share = events / max(total_events, 1)
+
+        # Combined score (equal weights for v0)
+        combined = (volume_score + entropy_score + rarity_score + share) / 4.0
+
+        scores.append({
+            "user": user,
+            "channel": ch,
+            "score": round(combined, 4),
+            "events": events,
+            "share": round(share, 4),
+            "volume_anomaly": round(volume_score, 4),
+            "entropy_anomaly": round(entropy_score, 4),
+            "rarity": round(rarity_score, 4),
+        })
+
+    scores.sort(key=lambda x: x["score"], reverse=True)
+
+    # --- Findings generation ---
+    findings = []
+
+    # Finding: dominant identity
+    if scores:
+        top = scores[0]
+        if top["share"] > 0.1:
+            findings.append({
+                "severity": "attention" if top["share"] > 0.3 else "info",
+                "title": "Dominant Identity",
+                "description": (
+                    f"`{top['user']}` accounts for {top['share']:.0%} of all activity "
+                    f"via `{top['channel']}` ({top['events']:,} events). "
+                    f"Verify this identity is authorized and operating as expected."
+                ),
+                "evidence": {"user": top["user"], "channel": top["channel"],
+                             "events": top["events"], "share": top["share"]},
+            })
+
+    # Finding: behavioral twins (users with very similar scores on same channels)
+    user_vectors = defaultdict(dict)
+    for sc in scores:
+        user_vectors[sc["user"]][sc["channel"]] = sc["events"]
+
+    users = list(user_vectors.keys())
+    for i in range(len(users)):
+        for j in range(i + 1, len(users)):
+            u1, u2 = users[i], users[j]
+            common_channels = set(user_vectors[u1]) & set(user_vectors[u2])
+            if len(common_channels) < 3:
+                continue
+            # Compare event counts on common channels
+            v1 = np.array([user_vectors[u1].get(ch, 0) for ch in common_channels])
+            v2 = np.array([user_vectors[u2].get(ch, 0) for ch in common_channels])
+            if np.linalg.norm(v1) == 0 or np.linalg.norm(v2) == 0:
+                continue
+            cos_sim = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+            if cos_sim > 0.95:
+                findings.append({
+                    "severity": "attention",
+                    "title": "Behavioral Twin Detected",
+                    "description": (
+                        f"`{_shorten_user(u1)}` and `{_shorten_user(u2)}` exhibit nearly identical "
+                        f"behavior across {len(common_channels)} shared actions "
+                        f"(similarity: {cos_sim:.2f}). This may indicate shared automation, "
+                        f"shared role, or a shared credential surface."
+                    ),
+                    "evidence": {"user_a": u1, "user_b": u2,
+                                 "similarity": round(cos_sim, 4),
+                                 "common_channels": len(common_channels)},
+                })
+
+    # Finding: high error rate
+    error_rate = s.get("error_rate", 0)
+    if error_rate > 0.1:
+        findings.append({
+            "severity": "concern",
+            "title": "Elevated Error Rate",
+            "description": (
+                f"{error_rate:.1%} of API calls returned errors. "
+                f"This may indicate misconfigurations, permission issues, "
+                f"or unauthorized access attempts."
+            ),
+            "evidence": {"error_rate": error_rate},
+        })
+    elif error_rate > 0.05:
+        findings.append({
+            "severity": "attention",
+            "title": "Notable Error Rate",
+            "description": f"{error_rate:.1%} of API calls returned errors.",
+            "evidence": {"error_rate": error_rate},
+        })
+
+    # Finding: rare API usage
+    for sc in scores:
+        if sc["rarity"] > 0.9 and sc["events"] > 5:
+            findings.append({
+                "severity": "info",
+                "title": "Rare API Usage",
+                "description": (
+                    f"`{_shorten_user(sc['user'])}` used `{sc['channel']}` "
+                    f"({sc['events']} events) — an action used by very few identities. "
+                    f"Uncommon API usage may indicate specialized tooling or reconnaissance."
+                ),
+                "evidence": {"user": sc["user"], "channel": sc["channel"],
+                             "events": sc["events"], "rarity": sc["rarity"]},
+            })
+            if len([f for f in findings if f["title"] == "Rare API Usage"]) >= 3:
+                break
+
+    # Finding: strong cross-service coupling
+    bridges = [p for p in pmi if p.get("group") == "bridge"]
+    if bridges:
+        top_bridge = bridges[0]
+        findings.append({
+            "severity": "info",
+            "title": "Cross-Service Workflow",
+            "description": (
+                f"`{top_bridge['channel_a']}` and `{top_bridge['channel_b']}` are "
+                f"strongly correlated across different services (MI={top_bridge['mi']:.2f}). "
+                f"These actions tend to occur together as part of a workflow."
+            ),
+            "evidence": top_bridge,
+        })
+
+    # Finding: multi-scale structure
+    active_scales = [sc for sc in scales if sc.get("gain", 0) > 0.01]
+    if len(active_scales) > 5:
+        scale_labels = []
+        for sc in active_scales[:6]:
+            w = sc["window"]
+            if w >= 86400: scale_labels.append(f"{w//86400}d")
+            elif w >= 3600: scale_labels.append(f"{w//3600}h")
+            elif w >= 60: scale_labels.append(f"{w//60}m")
+            else: scale_labels.append(f"{w}s")
+        findings.append({
+            "severity": "info",
+            "title": "Rich Multi-Scale Structure",
+            "description": (
+                f"Activity shows meaningful patterns at {len(active_scales)} scales "
+                f"({', '.join(scale_labels)}). This indicates layered behavioral "
+                f"rhythms — daily cycles, shift patterns, automated schedules."
+            ),
+            "evidence": {"n_scales": len(active_scales), "scales": scale_labels},
+        })
+
+    # Sort findings by severity
+    severity_order = {"concern": 0, "attention": 1, "info": 2}
+    findings.sort(key=lambda f: severity_order.get(f["severity"], 3))
+
+    return scores, findings
+
+
+def _shorten_user(u: str, max_len: int = 30) -> str:
+    if "/" in u:
+        u = u.split("/")[-1]
+    if len(u) > max_len:
+        u = u[:max_len - 3] + "..."
+    return u

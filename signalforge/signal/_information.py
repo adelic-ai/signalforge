@@ -72,10 +72,13 @@ def joint_entropy(a: np.ndarray, b: np.ndarray) -> float:
     float
         Joint entropy in bits.
     """
-    a = np.asarray(a, dtype=np.float64)
-    b = np.asarray(b, dtype=np.float64)
+    a = np.asarray(a, dtype=np.float64).ravel()
+    b = np.asarray(b, dtype=np.float64).ravel()
+    # Truncate to common length if different
+    n = min(len(a), len(b))
+    a, b = a[:n], b[:n]
     # Build joint histogram — vectorized
-    paired = np.column_stack([a.ravel(), b.ravel()])
+    paired = np.column_stack([a, b])
     _, joint_counts = np.unique(paired, axis=0, return_counts=True)
     return entropy(joint_counts.astype(np.float64))
 
