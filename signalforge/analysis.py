@@ -745,18 +745,38 @@ def _compute_scores_and_findings(results: Dict[str, Any]) -> Tuple[List[Dict], L
 
     # --- Per-(user, channel) scoring ---
 
-    # Compute baselines per channel
+    # Compute baselines per channel (z-score normalization)
     channel_stats = defaultdict(lambda: {"events": [], "entropy": []})
     for entry in ce:
         ch = entry["channel"]
         channel_stats[ch]["events"].append(entry["events"])
         channel_stats[ch]["entropy"].append(entry["entropy"])
 
-    channel_avg_events = {}
-    channel_avg_entropy = {}
+    channel_mean_events = {}
+    channel_std_events = {}
+    channel_mean_entropy = {}
+    channel_std_entropy = {}
     for ch, stats in channel_stats.items():
-        channel_avg_events[ch] = np.mean(stats["events"]) if stats["events"] else 1
-        channel_avg_entropy[ch] = np.mean(stats["entropy"]) if stats["entropy"] else 0
+        ev = np.array(stats["events"], dtype=np.float64)
+        en = np.array(stats["entropy"], dtype=np.float64)
+        channel_mean_events[ch] = float(np.mean(ev)) if len(ev) else 1.0
+        channel_std_events[ch] = float(np.std(ev)) if len(ev) > 1 else 1.0
+        channel_mean_entropy[ch] = float(np.mean(en)) if len(en) else 0.0
+        channel_std_entropy[ch] = float(np.std(en)) if len(en) > 1 else 1.0
+
+    # Per-identity baselines (z-score within identity)
+    identity_stats = defaultdict(lambda: {"events": [], "entropy": []})
+    for entry in ce:
+        user = list(entry["keys"].values())[0] if entry["keys"] else "unknown"
+        identity_stats[user]["events"].append(entry["events"])
+        identity_stats[user]["entropy"].append(entry["entropy"])
+
+    identity_mean_events = {}
+    identity_std_events = {}
+    for user, stats in identity_stats.items():
+        ev = np.array(stats["events"], dtype=np.float64)
+        identity_mean_events[user] = float(np.mean(ev)) if len(ev) else 1.0
+        identity_std_events[user] = float(np.std(ev)) if len(ev) > 1 else 1.0
 
     # Count users per channel (rarity)
     channel_user_count = defaultdict(int)
@@ -765,6 +785,10 @@ def _compute_scores_and_findings(results: Dict[str, Any]) -> Tuple[List[Dict], L
 
     total_users = s.get("unique_users", s.get("unique_userIdentity", 1))
 
+    # Global event stats for percentile scoring
+    all_events = np.array([e["events"] for e in ce], dtype=np.float64)
+    all_entropy = np.array([e["entropy"] for e in ce], dtype=np.float64)
+
     scores = []
     for entry in ce:
         ch = entry["channel"]
@@ -772,26 +796,36 @@ def _compute_scores_and_findings(results: Dict[str, Any]) -> Tuple[List[Dict], L
         ent = entry["entropy"]
         user = list(entry["keys"].values())[0] if entry["keys"] else "unknown"
 
-        # Volume anomaly: how much more than average for this channel
-        avg_ev = max(channel_avg_events.get(ch, 1), 1)
-        volume_score = min(np.log1p(events) / np.log1p(avg_ev), 3.0) / 3.0
+        # Volume z-score within channel (how unusual is this volume for this action?)
+        std_ev = max(channel_std_events.get(ch, 1), 0.01)
+        channel_z = (events - channel_mean_events.get(ch, 0)) / std_ev
 
-        # Entropy anomaly: how different from channel average
-        avg_ent = channel_avg_entropy.get(ch, 0)
-        if avg_ent > 0:
-            entropy_score = min(abs(ent - avg_ent) / avg_ent, 2.0) / 2.0
-        else:
-            entropy_score = 0.0
+        # Volume z-score within identity (how unusual is this action for this user?)
+        std_id = max(identity_std_events.get(user, 1), 0.01)
+        identity_z = (events - identity_mean_events.get(user, 0)) / std_id
 
-        # Rarity: how uncommon is this channel
+        # Entropy anomaly: z-score of entropy within channel
+        std_ent = max(channel_std_entropy.get(ch, 1), 0.01)
+        entropy_z = abs(ent - channel_mean_entropy.get(ch, 0)) / std_ent
+
+        # Rarity: how uncommon is this channel (sigmoid for smooth scaling)
         n_users = channel_user_count.get(ch, 1)
-        rarity_score = 1.0 - (n_users / max(total_users, 1))
+        rarity_raw = 1.0 - (n_users / max(total_users, 1))
 
-        # Activity share
+        # Activity share (log-scaled for dynamic range)
         share = events / max(total_events, 1)
+        log_share = np.log1p(share * 1000) / np.log1p(1000)  # 0-1 range, log-scaled
 
-        # Combined score (equal weights for v0)
-        combined = (volume_score + entropy_score + rarity_score + share) / 4.0
+        # Combined score: sigmoid of weighted z-scores for good separation
+        raw = (
+            0.30 * min(abs(channel_z), 5) / 5.0 +    # channel volume anomaly
+            0.20 * min(abs(identity_z), 5) / 5.0 +    # identity volume anomaly
+            0.15 * min(entropy_z, 5) / 5.0 +           # entropy anomaly
+            0.20 * rarity_raw +                         # rarity
+            0.15 * log_share                            # activity share
+        )
+        # Sigmoid for 0-1 with good separation in the middle
+        combined = 1.0 / (1.0 + np.exp(-8 * (raw - 0.4)))
 
         scores.append({
             "user": user,
@@ -799,9 +833,10 @@ def _compute_scores_and_findings(results: Dict[str, Any]) -> Tuple[List[Dict], L
             "score": round(combined, 4),
             "events": events,
             "share": round(share, 4),
-            "volume_anomaly": round(volume_score, 4),
-            "entropy_anomaly": round(entropy_score, 4),
-            "rarity": round(rarity_score, 4),
+            "channel_z": round(channel_z, 2),
+            "identity_z": round(identity_z, 2),
+            "entropy_z": round(entropy_z, 2),
+            "rarity": round(rarity_raw, 4),
         })
 
     scores.sort(key=lambda x: x["score"], reverse=True)
