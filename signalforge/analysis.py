@@ -712,10 +712,228 @@ def analyze(
         "n_bridge_pairs": sum(1 for p in pairwise_mi if p["group"] == "bridge"),
     }
 
-    # 9. Scoring layer — compress structure into ranked findings
+    # 9. Scalemap — entropy across discovered scales, folded into 1 day
+    results["scalemap"] = _compute_scalemap(records, results.get("discovered_scales", []),
+                                             results.get("grain", 60))
+
+    # 10. Temporal features — time-of-day distribution per entity
+    results["temporal"] = _compute_temporal_features(records)
+
+    # 11. Session-level scoring
+    results["session_scores"] = _score_sessions(segments, total_events=results["summary"].get("total_events", 1))
+
+    # 12. Scoring layer — compress structure into ranked findings
     results["scores"], results["findings"] = _compute_scores_and_findings(results)
 
     return results
+
+
+# ---------------------------------------------------------------------------
+# Scalemap — entropy heatmap across scales × time-of-day
+# ---------------------------------------------------------------------------
+
+def _compute_scalemap(
+    records: List,
+    discovered_scales: List[Dict],
+    grain: int,
+) -> Dict[str, Any]:
+    """Compute a scalemap: entropy at each discovered scale across time-of-day.
+
+    Folds all events into a single 24h day, then computes entropy
+    at each discovered window size. The result is a 2D array:
+    scales × time_bins, showing where structure lives.
+
+    Returns dict with 'matrix', 'scale_labels', 'time_labels'.
+    """
+    if not records or not discovered_scales or grain <= 0:
+        return {}
+
+    active_scales = [sc for sc in discovered_scales if sc.get("gain", 0) > 0.01]
+    if not active_scales:
+        return {}
+
+    all_epochs = np.array([r.primary_order for r in records], dtype=np.int64)
+    epoch_min = int(all_epochs.min())
+
+    day_seconds = 86400
+    day_bins = day_seconds // grain
+
+    # Build folded density (all events into one 24h period)
+    day_dense = np.zeros(day_bins, dtype=np.float64)
+    for e in all_epochs:
+        sec_of_day = (int(e) - epoch_min) % day_seconds
+        b = sec_of_day // grain
+        if b < day_bins:
+            day_dense[b] += 1.0
+
+    # Compute entropy at each scale
+    n_scales = len(active_scales)
+    # Use 24 time slots (hourly) for the scalemap display
+    n_time_slots = 24
+    slot_size = day_bins // n_time_slots
+
+    matrix = np.zeros((n_scales, n_time_slots), dtype=np.float64)
+    scale_labels = []
+
+    for si, sc in enumerate(active_scales):
+        w_bins = sc.get("window_bins", sc["window"] // grain)
+        w_bins = max(w_bins, 1)
+
+        w = sc["window"]
+        if w >= 86400:
+            scale_labels.append(f"{w // 86400}d")
+        elif w >= 3600:
+            scale_labels.append(f"{w // 3600}h")
+        elif w >= 60:
+            scale_labels.append(f"{w // 60}m")
+        else:
+            scale_labels.append(f"{w}s")
+
+        for ti in range(n_time_slots):
+            start = ti * slot_size
+            end = min(start + max(w_bins, slot_size), day_bins)
+            chunk = day_dense[start:end]
+            if chunk.sum() > 0:
+                from .signal._information import entropy as _entropy
+                matrix[si, ti] = _entropy(chunk)
+
+    time_labels = [f"{h:02d}:00" for h in range(24)]
+
+    return {
+        "matrix": matrix.tolist(),
+        "scale_labels": scale_labels,
+        "time_labels": time_labels,
+        "n_scales": n_scales,
+        "n_time_slots": n_time_slots,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Temporal features — time-of-day distribution per entity
+# ---------------------------------------------------------------------------
+
+def _compute_temporal_features(records: List) -> Dict[str, Any]:
+    """Compute time-of-day activity distribution per entity.
+
+    Returns dict with per-entity hourly histograms and temporal
+    anomaly scores (activity outside normal hours).
+    """
+    if not records:
+        return {}
+
+    # Group by entity
+    entity_hours = defaultdict(lambda: np.zeros(24, dtype=np.float64))
+    global_hours = np.zeros(24, dtype=np.float64)
+
+    for r in records:
+        epoch = r.primary_order
+        hour = (epoch % 86400) // 3600
+        user = list(r.keys.values())[0] if r.keys else "unknown"
+        entity_hours[user][hour] += 1
+        global_hours[hour] += 1
+
+    # Normalize global to get "expected" distribution
+    total = global_hours.sum()
+    if total > 0:
+        global_norm = global_hours / total
+    else:
+        global_norm = np.ones(24) / 24
+
+    # Per-entity temporal anomaly: KL divergence from global pattern
+    from .signal._information import entropy as _entropy
+    entity_temporal = {}
+    for user, hours in entity_hours.items():
+        user_total = hours.sum()
+        if user_total < 5:
+            continue
+        user_norm = hours / user_total
+        # Simple anomaly: how different from global distribution
+        # Use sum of squared differences (chi-squared-like)
+        mask = global_norm > 0
+        diff = np.sum((user_norm[mask] - global_norm[mask]) ** 2 / global_norm[mask])
+        # Peak hour
+        peak_hour = int(np.argmax(hours))
+        # Activity spread (entropy of hourly distribution)
+        temporal_entropy = _entropy(hours)
+        max_entropy = np.log2(24)
+
+        short_user = user.split("/")[-1] if "/" in user else user
+        entity_temporal[short_user] = {
+            "peak_hour": peak_hour,
+            "temporal_entropy": round(temporal_entropy, 3),
+            "spread": round(temporal_entropy / max_entropy, 3) if max_entropy > 0 else 0,
+            "anomaly": round(diff, 4),
+            "hours": hours.tolist(),
+        }
+
+    return {
+        "global_hours": global_hours.tolist(),
+        "entity_temporal": entity_temporal,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Session-level scoring
+# ---------------------------------------------------------------------------
+
+def _score_sessions(segments: List, total_events: int = 1) -> List[Dict]:
+    """Score sessions by size, duration, and channel diversity.
+
+    Returns list of scored sessions, sorted by score descending.
+    """
+    if not segments:
+        return []
+
+    # Compute baselines
+    event_counts = np.array([s.event_count for s in segments], dtype=np.float64)
+    durations = np.array([s.duration for s in segments], dtype=np.float64)
+    channel_counts = np.array([len(s.channels) for s in segments], dtype=np.float64)
+
+    mean_events = np.mean(event_counts) if len(event_counts) else 1
+    std_events = np.std(event_counts) if len(event_counts) > 1 else 1
+    mean_dur = np.mean(durations) if len(durations) else 1
+    std_dur = np.std(durations) if len(durations) > 1 else 1
+
+    scored = []
+    for seg in segments:
+        # Z-scores
+        ev_z = (seg.event_count - mean_events) / max(std_events, 0.01)
+        dur_z = (seg.duration - mean_dur) / max(std_dur, 0.01)
+
+        # Channel diversity (more channels = more complex session)
+        diversity = len(seg.channels) / max(channel_counts.max(), 1)
+
+        # Share of total activity
+        share = seg.event_count / max(total_events, 1)
+
+        # Combined
+        raw = (
+            0.35 * min(abs(ev_z), 5) / 5.0 +
+            0.25 * min(abs(dur_z), 5) / 5.0 +
+            0.20 * diversity +
+            0.20 * np.log1p(share * 1000) / np.log1p(1000)
+        )
+        score = 1.0 / (1.0 + np.exp(-8 * (raw - 0.3)))
+
+        entity_str = list(seg.entity.values())[0] if seg.entity else "unknown"
+        if "/" in entity_str:
+            entity_str = entity_str.split("/")[-1]
+
+        top_ch = max(seg.channels, key=seg.channels.get) if seg.channels else ""
+
+        scored.append({
+            "entity": entity_str,
+            "score": round(score, 4),
+            "events": seg.event_count,
+            "duration": seg.duration,
+            "channels": len(seg.channels),
+            "top_channel": top_ch,
+            "event_z": round(ev_z, 2),
+            "duration_z": round(dur_z, 2),
+        })
+
+    scored.sort(key=lambda x: x["score"], reverse=True)
+    return scored
 
 
 # ---------------------------------------------------------------------------
