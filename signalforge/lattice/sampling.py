@@ -44,14 +44,12 @@ WindowSpec = Union[str, Sequence[int]]
 
 def suggest_cbin(grain: int, windows: Sequence[int]) -> int:
     """
-    Suggest the finest cbin >= grain that divides all windows.
+    Suggest cbin: the coarsest bin that divides all windows and is >= grain.
 
-    cbin must divide every w in windows, so it must divide gcd(windows).
-    Returns the smallest divisor of gcd(windows) that is >= grain.
-
-    If no such divisor exists (gcd(windows) < grain), returns gcd(windows)
-    with a warning: the finest commensurable resolution is finer than
-    the data supports.
+    cbin must divide every w, so it must divide gcd(windows).
+    Returns gcd(windows) when it is >= grain (the coarsest valid choice).
+    Falls back to the largest divisor of gcd(windows) that is >= grain
+    only when gcd(windows) < grain.
 
     Parameters
     ----------
@@ -64,29 +62,35 @@ def suggest_cbin(grain: int, windows: Sequence[int]) -> int:
     Returns
     -------
     int
-        Finest cbin that divides all windows and is >= grain (if possible).
+        Coarsest cbin that divides all windows and is >= grain.
 
     Examples
     --------
     >>> suggest_cbin(60, [3600, 86400, 604800])
-    60
+    3600
     >>> suggest_cbin(7, [3600, 86400])
-    8
-    >>> suggest_cbin(50, [60, 90])   # warns: finest commensurable is 30
+    3600
+    >>> suggest_cbin(50, [60, 90])   # warns: GCD(60,90)=30 < grain=50
     30
     """
     if not windows:
         raise ValueError("windows must be non-empty")
     common = reduce(lambda a, b: gcd(a, b), windows)
     from binjamin import divisors
-    for d in divisors(common):
+
+    if common >= grain:
+        return common
+
+    # gcd(W) < grain: windows are finer than data supports.
+    divs = divisors(common)
+    for d in reversed(divs):
         if d >= grain:
             return d
-    # No divisor of gcd(W) is >= grain
+
     import warnings
     warnings.warn(
-        f"Finest commensurable cbin ({common}) is finer than "
-        f"data_minbin ({grain}). Analysis resolution exceeds "
+        f"GCD of windows ({common}) is finer than "
+        f"grain ({grain}). Analysis resolution exceeds "
         f"what the data supports.",
         stacklevel=2,
     )

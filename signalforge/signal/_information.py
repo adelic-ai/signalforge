@@ -74,13 +74,10 @@ def joint_entropy(a: np.ndarray, b: np.ndarray) -> float:
     """
     a = np.asarray(a, dtype=np.float64)
     b = np.asarray(b, dtype=np.float64)
-    # Build joint histogram from paired values
-    pairs = {}
-    for va, vb in zip(a.flat, b.flat):
-        key = (int(va), int(vb))
-        pairs[key] = pairs.get(key, 0) + 1
-    joint_counts = np.array(list(pairs.values()), dtype=np.float64)
-    return entropy(joint_counts)
+    # Build joint histogram — vectorized
+    paired = np.column_stack([a.ravel(), b.ravel()])
+    _, joint_counts = np.unique(paired, axis=0, return_counts=True)
+    return entropy(joint_counts.astype(np.float64))
 
 
 def mutual_information(a: np.ndarray, b: np.ndarray) -> float:
