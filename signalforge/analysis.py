@@ -722,7 +722,13 @@ def analyze(
     # 11. Session-level scoring
     results["session_scores"] = _score_sessions(segments, total_events=results["summary"].get("total_events", 1))
 
-    # 12. Scoring layer — compress structure into ranked findings
+    # 12. Source IP analysis — per-entity IP baseline
+    results["source_ip"] = _compute_source_ip_features(records)
+
+    # 13. Per-identity error rate
+    results["per_identity_errors"] = _compute_per_identity_errors(records)
+
+    # 14. Scoring layer — compress structure into ranked findings
     results["scores"], results["findings"] = _compute_scores_and_findings(results)
 
     return results
@@ -934,6 +940,139 @@ def _score_sessions(segments: List, total_events: int = 1) -> List[Dict]:
 
     scored.sort(key=lambda x: x["score"], reverse=True)
     return scored
+
+
+# ---------------------------------------------------------------------------
+# Source IP analysis
+# ---------------------------------------------------------------------------
+
+def _compute_source_ip_features(records: List) -> Dict[str, Any]:
+    """Per-entity source IP baseline and anomaly detection.
+
+    For each identity, tracks which IPs they use and flags:
+    - New IPs (never seen for this identity)
+    - High IP diversity (using many different IPs)
+    - Shared IPs (same IP used by multiple identities)
+    """
+    if not records:
+        return {}
+
+    # Per-entity IP sets
+    entity_ips = defaultdict(set)
+    ip_entities = defaultdict(set)
+    entity_ip_counts = defaultdict(lambda: defaultdict(int))
+
+    for r in records:
+        v = r.values
+        user = v.get("userIdentity", v.get(r.schema.group_by[0] if r.schema.group_by else "", "unknown"))
+        ip = v.get("sourceIPAddress", "")
+        if not ip or ip == "unknown":
+            continue
+        if "/" in user:
+            user = user.split("/")[-1]
+        entity_ips[user].add(ip)
+        ip_entities[ip].add(user)
+        entity_ip_counts[user][ip] += 1
+
+    # Compute per-entity features
+    entity_features = {}
+    for user, ips in entity_ips.items():
+        counts = entity_ip_counts[user]
+        total = sum(counts.values())
+        top_ip = max(counts, key=counts.get)
+        top_ip_pct = counts[top_ip] / total if total > 0 else 0
+
+        entity_features[user] = {
+            "unique_ips": len(ips),
+            "total_events": total,
+            "top_ip": top_ip,
+            "top_ip_pct": round(top_ip_pct, 3),
+            "ip_diversity": round(1.0 - top_ip_pct, 3),
+        }
+
+    # Shared IPs (used by 3+ identities)
+    shared_ips = {
+        ip: sorted(users)
+        for ip, users in ip_entities.items()
+        if len(users) >= 3
+    }
+
+    return {
+        "entity_features": entity_features,
+        "shared_ips": shared_ips,
+        "total_unique_ips": len(ip_entities),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Per-identity error rate
+# ---------------------------------------------------------------------------
+
+def _compute_per_identity_errors(records: List) -> Dict[str, Any]:
+    """Per-identity error rate analysis.
+
+    Flags identities with error rates significantly above baseline.
+    """
+    if not records:
+        return {}
+
+    entity_total = defaultdict(int)
+    entity_errors = defaultdict(int)
+    entity_error_types = defaultdict(lambda: defaultdict(int))
+
+    error_axis = None
+    for axis in records[0].schema.categorical_axes:
+        if "error" in axis.name.lower():
+            error_axis = axis.name
+            break
+
+    if not error_axis:
+        return {}
+
+    for r in records:
+        v = r.values
+        user = v.get("userIdentity", v.get(r.schema.group_by[0] if r.schema.group_by else "", "unknown"))
+        if "/" in user:
+            user = user.split("/")[-1]
+        entity_total[user] += 1
+        error_code = v.get(error_axis, "")
+        if error_code:
+            entity_errors[user] += 1
+            entity_error_types[user][error_code] += 1
+
+    # Compute rates
+    global_error_rate = sum(entity_errors.values()) / max(sum(entity_total.values()), 1)
+
+    entity_rates = {}
+    for user in entity_total:
+        total = entity_total[user]
+        errors = entity_errors.get(user, 0)
+        rate = errors / total if total > 0 else 0
+
+        # Flag if significantly above global rate
+        flagged = rate > global_error_rate * 2 and errors >= 5
+
+        entity_rates[user] = {
+            "total": total,
+            "errors": errors,
+            "rate": round(rate, 4),
+            "flagged": flagged,
+            "top_errors": dict(sorted(
+                entity_error_types.get(user, {}).items(),
+                key=lambda x: -x[1]
+            )[:5]),
+        }
+
+    flagged_entities = {
+        user: info for user, info in entity_rates.items()
+        if info["flagged"]
+    }
+
+    return {
+        "global_error_rate": round(global_error_rate, 4),
+        "entity_rates": entity_rates,
+        "flagged_entities": flagged_entities,
+    }
 
 
 # ---------------------------------------------------------------------------
