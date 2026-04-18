@@ -728,7 +728,10 @@ def analyze(
     # 13. Per-identity error rate
     results["per_identity_errors"] = _compute_per_identity_errors(records)
 
-    # 14. Scoring layer — compress structure into ranked findings
+    # 14. MFA analysis (CloudTrail-specific but schema-driven)
+    results["mfa"] = _compute_mfa_features(records)
+
+    # 15. Scoring layer — compress structure into ranked findings
     results["scores"], results["findings"] = _compute_scores_and_findings(results)
 
     return results
@@ -1072,6 +1075,69 @@ def _compute_per_identity_errors(records: List) -> Dict[str, Any]:
         "global_error_rate": round(global_error_rate, 4),
         "entity_rates": entity_rates,
         "flagged_entities": flagged_entities,
+    }
+
+
+# ---------------------------------------------------------------------------
+# MFA analysis
+# ---------------------------------------------------------------------------
+
+def _compute_mfa_features(records: List) -> Dict[str, Any]:
+    """Check for authentication events without MFA.
+
+    CloudTrail ConsoleLogin events include MFA status in
+    additionalEventData or responseElements.
+    """
+    if not records:
+        return {}
+
+    mfa_events = 0
+    no_mfa_events = 0
+    no_mfa_users = defaultdict(int)
+    mfa_users = defaultdict(int)
+
+    for r in records:
+        v = r.values
+        if v.get("eventName") != "ConsoleLogin":
+            continue
+
+        user = v.get("userIdentity", "unknown")
+        if "/" in user:
+            user = user.split("/")[-1]
+
+        # CloudTrail stores MFA in various places depending on version
+        # Check common locations
+        mfa_used = False
+        # additionalEventData.MFAUsed
+        additional = v.get("additionalEventData", "")
+        if isinstance(additional, str) and "Yes" in additional:
+            mfa_used = True
+        elif isinstance(additional, dict) and additional.get("MFAUsed") == "Yes":
+            mfa_used = True
+
+        # responseElements.ConsoleLogin
+        response = v.get("responseElements", "")
+        if isinstance(response, str) and "Success" in response:
+            pass  # login succeeded but doesn't tell us about MFA
+
+        if mfa_used:
+            mfa_events += 1
+            mfa_users[user] += 1
+        else:
+            no_mfa_events += 1
+            no_mfa_users[user] += 1
+
+    total_logins = mfa_events + no_mfa_events
+    if total_logins == 0:
+        return {}
+
+    return {
+        "total_console_logins": total_logins,
+        "mfa_logins": mfa_events,
+        "no_mfa_logins": no_mfa_events,
+        "mfa_rate": round(mfa_events / total_logins, 4) if total_logins else 0,
+        "no_mfa_users": dict(no_mfa_users),
+        "mfa_users": dict(mfa_users),
     }
 
 
