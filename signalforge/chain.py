@@ -187,6 +187,28 @@ class Chain:
         """
         return self._copy(_steps=self._steps + [("stack", {"others": others})])
 
+    # --- Distillation (parallel pipeline: segments → features) ---
+
+    def distill(self, **kwargs):
+        """Discover segments via IL-driven analysis. Terminal — returns DistillResult.
+
+        Equivalent to ``sf.distill(records, **kwargs)``. Use ``.featurize(...)``
+        on the returned DistillResult to extract a feature matrix.
+
+            distilled = sf.load("data.csv").distill(entity_key="Account_Name")
+            features = distilled.featurize(joins=["Client_Address"])
+
+        Parameters
+        ----------
+        **kwargs
+            Forwarded to ``signalforge.distill()``: ``entity_key``, ``method``,
+            ``min_gain``, ``min_segment_events``.
+        """
+        if self._records is None:
+            raise ValueError("No data loaded. Start with sf.load(path) or sf.load(records).")
+        from .distill import distill as _distill_fn
+        return _distill_fn(self._records, **kwargs)
+
     # --- Execution ---
 
     def run(self, **resolve_kwargs) -> Any:

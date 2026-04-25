@@ -86,6 +86,9 @@ from .signal import (
 # Segment-level feature primitives
 from .signal import segments_to_matrix, join_segments
 
+# High-level convenience: distill records → segments → feature matrix
+from .distill import distill, featurize, DistillResult, FeatureSet
+
 # Chaining API
 from .chain import Chain
 load = Chain.load
@@ -143,6 +146,11 @@ __all__ = [
     # Segment-level features
     "segments_to_matrix",
     "join_segments",
+    # High-level convenience
+    "distill",
+    "featurize",
+    "DistillResult",
+    "FeatureSet",
     # Chaining API
     "Chain",
     "load",

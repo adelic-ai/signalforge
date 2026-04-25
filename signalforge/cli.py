@@ -255,7 +255,17 @@ def _auto_ingest(csv_path: Path) -> list:
             for i, row in df.iterrows()
         ]
 
-    # Fallback: first column as index, second as value
+    # Multi-column CSV (3+ columns) with no known domain pattern:
+    # use Schema.infer to preserve all columns in the records' values dict.
+    # This keeps the full row available for downstream operations like
+    # distill(entity_key=...).
+    if len(cols) >= 3:
+        try:
+            return Schema.infer(str(csv_path)).records()
+        except Exception:
+            pass  # fall through to legacy 2-col fallback
+
+    # Legacy fallback: first column as index, second as value
     if len(cols) >= 2:
         value_col = cols[1]
         df[value_col] = pd.to_numeric(df[value_col], errors="coerce")
@@ -1341,6 +1351,74 @@ def cmd_inspect(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_distill(args: argparse.Namespace) -> int:
+    """Distill segments from a CSV; optionally featurize and export."""
+    csv_path = Path(args.csv)
+    if not csv_path.exists():
+        print(f"  File not found: {csv_path}")
+        return 1
+
+    schema_path = getattr(args, "schema", None)
+    if schema_path:
+        from .signal import Schema, records_from_csv
+        schema = Schema.load(schema_path)
+        records = records_from_csv(str(csv_path), schema)
+    else:
+        records = _auto_ingest(csv_path)
+
+    if not records:
+        print(f"  No records ingested from {csv_path}")
+        return 1
+
+    from .distill import distill, featurize
+
+    t0 = time.perf_counter()
+    result = distill(
+        records,
+        entity_key=args.entity_key,
+        method=args.method,
+    )
+    distill_elapsed = time.perf_counter() - t0
+
+    joins = [j.strip() for j in args.joins.split(",")] if args.joins else None
+    t0 = time.perf_counter()
+    fs = featurize(result, joins=joins)
+    feat_elapsed = time.perf_counter() - t0
+
+    print()
+    print(f"  SignalForge  distill  {csv_path.name}")
+    print(f"  {'─' * 40}")
+    print(f"  records   {len(records):,}")
+    print(f"  segments  {len(result):,}")
+    chans = result.channels()
+    if chans:
+        head = ", ".join(chans[:8])
+        suffix = " …" if len(chans) > 8 else ""
+        print(f"  channels  {head}{suffix}")
+    if args.entity_key:
+        print(f"  entity    {args.entity_key}")
+    print(f"  features  {fs.shape}")
+    if joins:
+        print(f"  joins     {', '.join(joins)}")
+    print(f"  method    {args.method}")
+    print(f"  {'─' * 40}")
+    print(f"  distill   {distill_elapsed:.2f}s")
+    print(f"  featurize {feat_elapsed:.2f}s")
+
+    output = args.output
+    if output:
+        import numpy as np
+        out_path = Path(output)
+        np.savez(
+            out_path,
+            matrix=fs.matrix,
+            names=np.array(fs.names),
+        )
+        print(f"  saved     {out_path}")
+    print()
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="signalforge",
@@ -1433,6 +1511,22 @@ def main(argv: list[str] | None = None) -> int:
     p_surf.add_argument("--schema", default=None,
                         help="Schema file (.schema.json) for typed-axis loading")
 
+    # distill
+    p_distill = sub.add_parser("distill",
+                               help="Discover segments and featurize from a CSV")
+    p_distill.add_argument("csv", help="Input CSV file path")
+    p_distill.add_argument("--entity-key", default=None,
+                           help="Field to group records by (e.g. Account_Name)")
+    p_distill.add_argument("--method", default="information_gain",
+                           choices=["information_gain", "gap"],
+                           help="Segment discovery method (default: information_gain)")
+    p_distill.add_argument("--joins", default=None,
+                           help="Comma-separated field names for join enrichment")
+    p_distill.add_argument("--output", default=None,
+                           help="Save feature matrix to .npz (matrix + names)")
+    p_distill.add_argument("--schema", default=None,
+                           help="Schema file (.schema.json) for typed-axis loading")
+
     # neighborhood
     p_nb = sub.add_parser("neighborhood", help="Show the p-adic arithmetic viewing box")
     p_nb.add_argument("anchor", type=int, help="Center integer")
@@ -1453,6 +1547,7 @@ def main(argv: list[str] | None = None) -> int:
         "inspect":      cmd_inspect,
         "load":         cmd_load,
         "surface":      cmd_surface,
+        "distill":      cmd_distill,
         "neighborhood": cmd_neighborhood,
     }
     return dispatch[args.command](args)
