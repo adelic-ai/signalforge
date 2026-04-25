@@ -38,16 +38,52 @@ from ._information import (
 )
 
 __all__ = [
+    # Core signal types
     "LatticeSignal",
     "ComplexSignal",
     "RealSignal",
     "Surface",
+    # Pipeline plumbing
     "Artifact",
     "ArtifactType",
     "CanonicalRecord",
     "KeyValue",
     "Keys",
     "OrderType",
+    # Schema and records (ingest)
+    "Schema",
+    "Axis",
+    "AxisType",
+    "Record",
+    "records_from_csv",
+    # Conversion / measurement
     "records_to_signals",
     "measure_signal",
+    # Segments
+    "Segment",
+    "discover_segments",
+    "segments_to_signals",
+    "print_segment_stats",
+    # Features
+    "entity_signals",
+    "entity_channel_matrix",
+    "label_segments",
+    "segment_summary",
+    "print_segment_summary",
+    "segment_features",
+    "segments_to_matrix",
+    "join_segments",
+    # Information layer
+    "entropy",
+    "joint_entropy",
+    "mutual_information",
+    "kl_divergence",
+    "information_gain",
+    "best_split",
+    "discover_scales",
+    "discover_plan",
+    "entropy_surface",
+    "mutual_information_surface",
+    "divergence_surface",
+    "information_gain_surface",
 ]

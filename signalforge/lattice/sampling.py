@@ -42,61 +42,6 @@ import binjamin as bj
 WindowSpec = Union[str, Sequence[int]]
 
 
-def suggest_cbin(grain: int, windows: Sequence[int]) -> int:
-    """
-    Suggest cbin: the coarsest bin that divides all windows and is >= grain.
-
-    cbin must divide every w, so it must divide gcd(windows).
-    Returns gcd(windows) when it is >= grain (the coarsest valid choice).
-    Falls back to the largest divisor of gcd(windows) that is >= grain
-    only when gcd(windows) < grain.
-
-    Parameters
-    ----------
-    grain : int
-        Data minimum bin — finest resolution the data supports
-        (e.g. from grain_from_orders).
-    windows : sequence of int
-        Desired analysis windows.
-
-    Returns
-    -------
-    int
-        Coarsest cbin that divides all windows and is >= grain.
-
-    Examples
-    --------
-    >>> suggest_cbin(60, [3600, 86400, 604800])
-    3600
-    >>> suggest_cbin(7, [3600, 86400])
-    3600
-    >>> suggest_cbin(50, [60, 90])   # warns: GCD(60,90)=30 < grain=50
-    30
-    """
-    if not windows:
-        raise ValueError("windows must be non-empty")
-    common = reduce(lambda a, b: gcd(a, b), windows)
-    from binjamin import divisors
-
-    if common >= grain:
-        return common
-
-    # gcd(W) < grain: windows are finer than data supports.
-    divs = divisors(common)
-    for d in reversed(divs):
-        if d >= grain:
-            return d
-
-    import warnings
-    warnings.warn(
-        f"GCD of windows ({common}) is finer than "
-        f"grain ({grain}). Analysis resolution exceeds "
-        f"what the data supports.",
-        stacklevel=2,
-    )
-    return common
-
-
 def horizon_for(windows: Sequence[int], grain: int) -> int:
     """
     Compute the smallest horizon that makes all windows valid lattice members.
@@ -517,9 +462,9 @@ class SamplingPlan:
         max(windows) in general, but only the slice [cbin, max(windows)] is
         ever computed. The lattice above max(windows) is never materialized.
 
-        Use suggest_cbin(grain_from_orders(orders), windows) to derive a
-        cbin that is commensurable with your windows and at least as coarse
-        as the data supports.
+        Use binjamin.suggest_cbin(grain_from_orders(orders), windows) to
+        derive a cbin that is commensurable with your windows and at least
+        as coarse as the data supports.
 
         Parameters
         ----------
@@ -528,7 +473,7 @@ class SamplingPlan:
             and divisible by cbin (commensurability).
         cbin : int
             The computational bin — declared analysis unit. Must divide every
-            window. Use suggest_cbin() to derive from grain and windows.
+            window. Use binjamin.suggest_cbin() to derive from grain and windows.
         hops : sequence of int, optional
             One hop per window. Defaults to cbin for every window.
 
@@ -542,8 +487,9 @@ class SamplingPlan:
         >>> plan.cbin
         1
         >>> # With cbin derived from data grain:
+        >>> import binjamin as bj
         >>> grain = grain_from_orders(orders)
-        >>> cb = suggest_cbin(grain, [3600, 86400])
+        >>> cb = bj.suggest_cbin(grain, [3600, 86400])
         >>> plan = SamplingPlan.from_windows([3600, 86400], cbin=cb)
         """
         if not windows:
@@ -561,7 +507,7 @@ class SamplingPlan:
             raise ValueError(
                 f"Windows {bad} are not multiples of cbin ({cbin}). "
                 f"Every window must be divisible by cbin. "
-                f"Use suggest_cbin(grain, windows) to find a compatible cbin."
+                f"Use binjamin.suggest_cbin(grain, windows) to find a compatible cbin."
             )
         all_values = ws + [cbin]
         horizon = reduce(lambda a, b: a * b // gcd(a, b), all_values)

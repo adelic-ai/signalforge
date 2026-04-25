@@ -67,6 +67,25 @@ from .lattice.neighborhood import neighborhood, neighborhood_from_vector, Neighb
 # Types — canonical source is signalforge.signal
 from .signal import CanonicalRecord, OrderType, Surface
 
+# Schema and segment types (ingest + discovery outputs)
+from .signal import Schema, Record, Axis, AxisType, Segment
+
+# Information layer (IL) — primitives for entropy, MI, KL, and IL-driven scale discovery.
+# Domain-agnostic; works on any ordered sequence (time-ordered or event-ordered).
+from .signal import (
+    entropy,
+    mutual_information,
+    kl_divergence,
+    information_gain,
+    best_split,
+    discover_scales,
+    discover_plan,
+    discover_segments,
+)
+
+# Segment-level feature primitives
+from .signal import segments_to_matrix, join_segments
+
 # Chaining API
 from .chain import Chain
 load = Chain.load
@@ -102,10 +121,28 @@ __all__ = [
     "neighborhood",
     "neighborhood_from_vector",
     "Neighborhood",
-    # Types
+    # Core types
     "CanonicalRecord",
     "OrderType",
     "Surface",
+    # Schema and segments (ingest + discovery)
+    "Schema",
+    "Record",
+    "Axis",
+    "AxisType",
+    "Segment",
+    # Information layer (IL)
+    "entropy",
+    "mutual_information",
+    "kl_divergence",
+    "information_gain",
+    "best_split",
+    "discover_scales",
+    "discover_plan",
+    "discover_segments",
+    # Segment-level features
+    "segments_to_matrix",
+    "join_segments",
     # Chaining API
     "Chain",
     "load",

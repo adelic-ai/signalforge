@@ -12,5 +12,5 @@ For SF signal analysis: import from here
 """
 
 from .flipflop import FlipFlop
-from .sampling import SamplingPlan, horizon_for, grain_from_orders, suggest_cbin
+from .sampling import SamplingPlan, horizon_for, grain_from_orders
 from .neighborhood import Neighborhood, neighborhood, neighborhood_from_vector
