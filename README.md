@@ -2,6 +2,8 @@
 
 See the structure in any data, across every scale, instantly.
 
+> **Looking for the fast path?** Read [docs/distill_quickstart.md](docs/distill_quickstart.md) — three commands, ML-ready feature matrices from any ordered dataset.
+
 ## Install
 
 ```bash
@@ -94,13 +96,14 @@ EEG seizure detection: the top panels show amplitude, the bottom panels show pha
 
 | | |
 |---|---|
-| [Quick Start](https://github.com/adelic-ai/signalforge/blob/main/docs/quickstart.md) | Zero to heatmap |
-| [Your Data](https://github.com/adelic-ai/signalforge/blob/main/docs/your-data.md) | Bring your own data |
-| [CLI](https://github.com/adelic-ai/signalforge/blob/main/docs/cli.md) | All commands |
-| [Python API](https://github.com/adelic-ai/signalforge/blob/main/docs/python-api.md) | Chaining and DAG |
-| [Examples](https://github.com/adelic-ai/signalforge/blob/main/docs/examples.md) | VIX, EEG, GRACE, INTERMAGNET |
-| [Concepts](https://github.com/adelic-ai/signalforge/blob/main/docs/concepts.md) | How it works |
-| [Comparison](https://github.com/adelic-ai/signalforge/blob/main/docs/comparison.md) | vs STFT, wavelets, EMD |
+| **[Distill Quickstart](docs/distill_quickstart.md)** | **Trend-finding in any ordered data — start here** |
+| [Quick Start](docs/quickstart.md) | Zero to heatmap |
+| [Your Data](docs/your-data.md) | Bring your own data |
+| [CLI](docs/cli.md) | All commands |
+| [Python API](docs/python-api.md) | Chaining and DAG |
+| [Examples](docs/examples.md) | VIX, EEG, GRACE, INTERMAGNET |
+| [Concepts](docs/concepts.md) | How it works |
+| [Comparison](docs/comparison.md) | vs STFT, wavelets, EMD |
 
 ## License
 
