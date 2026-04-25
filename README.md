@@ -18,7 +18,7 @@ curl -o vix.csv "https://fred.stlouisfed.org/graph/fredgraph.csv?id=VIXCLS&cosd=
 sf surface vix.csv -hm --max-window 360
 ```
 
-![VIX heatmap](https://raw.githubusercontent.com/adelic-ai/signalforge/main/docs/img/heatmap_vix_v2.png)
+![VIX heatmap](docs/img/heatmap_vix_v2.png)
 
 The 2008 financial crisis — visible across every scale at once.
 
@@ -86,7 +86,7 @@ def iqr(values):
 
 The same pipeline processes financial data, EEG brain recordings, satellite gravity measurements, and generic time series — unchanged.
 
-![EEG phase coherence](https://raw.githubusercontent.com/adelic-ai/signalforge/main/docs/img/heatmap_eeg_phase_coherence.png)
+![EEG phase coherence](docs/img/heatmap_eeg_phase_coherence.png)
 
 EEG seizure detection: the top panels show amplitude, the bottom panels show phase relationships between brain hemispheres. The seizure disrupts both — but the phase change is only visible with complex-valued analysis.
 
