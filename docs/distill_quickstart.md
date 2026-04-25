@@ -2,6 +2,8 @@
 
 > **Tune in to trends in any ordered data.** This walks you all the way from clone-the-repo to ML-ready feature matrices on a dataset of your choice. Domain-agnostic — works on financial ticks, sensor logs, web events, security telemetry, anything with an order to it.
 
+> **Working with unordered data?** The information-theoretic primitives (`sf.entropy`, `sf.mutual_information`, `sf.kl_divergence`) work on any distribution — categorical histograms, term frequencies, anything without a sequence axis. The distill/featurize workflow in this guide is for ordered data; for unordered, compose the primitives directly. Open an issue if you want a worked example.
+
 ---
 
 ## 1. Setup
