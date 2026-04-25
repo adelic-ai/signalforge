@@ -8,10 +8,21 @@ This is the fast path for any user who wants to find structure in event-like or 
 
 ## Install
 
+The repo is private; install from a clone (or fork it first if you want your own copy to push to):
+
 ```bash
-pip install adelic-signalforge
-# or, if cloned:
+git clone https://github.com/adelic-ai/signalforge.git
+cd signalforge
+git checkout distill-pipeline   # current demo branch
 uv pip install -e .
+```
+
+If you don't have `uv`, install it from <https://docs.astral.sh/uv/> (recommended), or use any Python 3.12+ environment with `pip install -e .` instead.
+
+Verify:
+
+```bash
+sf --help
 ```
 
 ---
