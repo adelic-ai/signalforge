@@ -4,7 +4,18 @@ Zero to heatmap in 3 minutes.
 
 ## Install
 
+For the CLI:
+
 ```bash
+pipx install adelic-signalforge
+# or, if you have uv:
+uv tool install adelic-signalforge
+```
+
+For library use in your own project:
+
+```bash
+python -m venv .venv && source .venv/bin/activate
 pip install adelic-signalforge
 ```
 
