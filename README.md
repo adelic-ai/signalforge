@@ -36,8 +36,9 @@ The 2008 financial crisis — visible across every scale at once.
 ## Your data
 
 ```bash
-sf schema mydata.csv                    # infer the structure
-sf surface mydata.csv --schema my.schema.json -hm   # see it
+sf schema mydata.csv                                 # see what it inferred
+sf schema mydata.csv --save mydata.schema.json       # save it (correct overrides first if needed)
+sf surface mydata.csv --schema mydata.schema.json -hm
 ```
 
 Any CSV works. Multi-column, multi-channel, per-entity — [sf schema](https://github.com/adelic-ai/signalforge/blob/main/docs/your-data.md) figures it out.
