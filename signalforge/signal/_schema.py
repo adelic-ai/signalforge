@@ -233,15 +233,30 @@ class Schema:
                     axes.append(Axis(col, AxisType.NUMERIC))
                 continue
 
-            # Try datetime
+            # Try datetime — fast path: ISO 8601 (modern exports, journald, etc.)
+            parsed_dates = False
             try:
-                dates = pd.to_datetime(series, errors="raise")
+                dates = pd.to_datetime(series, format="ISO8601", errors="raise")
+                parsed_dates = True
+            except (ValueError, TypeError):
+                pass
+
+            # Try datetime — fallback: dateutil inference for non-ISO formats
+            if not parsed_dates:
+                try:
+                    import warnings
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore", UserWarning)
+                        dates = pd.to_datetime(series, errors="raise")
+                    parsed_dates = True
+                except (ValueError, TypeError):
+                    pass
+
+            if parsed_dates:
                 axes.append(Axis(col, AxisType.ORDERED))
                 if not primary_order:
                     primary_order = col
                 continue
-            except (ValueError, TypeError):
-                pass
 
             # String column
             n_unique = series.nunique()

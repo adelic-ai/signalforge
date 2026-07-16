@@ -848,8 +848,16 @@ def _render_heatmap(surfaces: list, plan, filename: str = "", dates=None,
 
         plt.tight_layout()
         if save_path:
-            plt.savefig(save_path, dpi=150)
-            print(f"  Saved: {save_path}")
+            if len(surfaces) > 1:
+                path = Path(save_path)
+                slug = s.channel
+                if s.keys:
+                    slug += "__" + "_".join(str(v) for v in s.keys.values())
+                actual_save = str(path.parent / f"{path.stem}__{slug}{path.suffix}")
+            else:
+                actual_save = save_path
+            plt.savefig(actual_save, dpi=150)
+            print(f"  Saved: {actual_save}")
         else:
             plt.show()
 
